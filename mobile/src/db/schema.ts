@@ -1,0 +1,146 @@
+import { appSchema, tableSchema } from '@nozbe/watermelondb';
+
+/**
+ * Local (on-device) schema. Column names are the wire format used by
+ * /api/mobile/sync — keep in sync with backend-extension mobile.types.ts.
+ */
+export const SCHEMA_VERSION = 1;
+
+export const schema = appSchema({
+  version: SCHEMA_VERSION,
+  tables: [
+    tableSchema({
+      name: 'customers',
+      columns: [
+        { name: 'customer_code', type: 'string', isIndexed: true },
+        { name: 'firm_name', type: 'string' },
+        { name: 'display_name', type: 'string', isOptional: true },
+        { name: 'mobile', type: 'string', isOptional: true },
+        { name: 'email', type: 'string', isOptional: true },
+        { name: 'gstin', type: 'string', isOptional: true },
+        { name: 'address_line', type: 'string', isOptional: true },
+        { name: 'city', type: 'string', isOptional: true },
+        { name: 'state', type: 'string', isOptional: true },
+        { name: 'pincode', type: 'string', isOptional: true },
+        { name: 'credit_limit', type: 'number' },
+        { name: 'credit_days', type: 'number', isOptional: true },
+        { name: 'outstanding', type: 'number' },
+        { name: 'grade_name', type: 'string', isOptional: true },
+        { name: 'type_name', type: 'string', isOptional: true },
+        { name: 'status', type: 'string' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'invoices',
+      columns: [
+        { name: 'invoice_no', type: 'string' },
+        { name: 'customer_id', type: 'string', isIndexed: true },
+        { name: 'invoice_date', type: 'string' },
+        { name: 'due_date', type: 'string', isOptional: true },
+        { name: 'grand_total', type: 'number' },
+        { name: 'paid_amount', type: 'number' },
+        { name: 'balance', type: 'number' },
+        { name: 'status', type: 'string' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'products',
+      columns: [
+        { name: 'product_code', type: 'string' },
+        { name: 'product_name', type: 'string' },
+        { name: 'uom', type: 'string', isOptional: true },
+        { name: 'rate', type: 'number' },
+        { name: 'grade_rates', type: 'string' },
+        { name: 'category', type: 'string', isOptional: true },
+        { name: 'is_active', type: 'boolean' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'routes',
+      columns: [
+        { name: 'route_code', type: 'string' },
+        { name: 'route_name', type: 'string' },
+      ],
+    }),
+    tableSchema({
+      name: 'route_customers',
+      columns: [
+        { name: 'route_id', type: 'string', isIndexed: true },
+        { name: 'customer_id', type: 'string', isIndexed: true },
+        { name: 'sequence', type: 'number' },
+        { name: 'planned_time', type: 'string', isOptional: true },
+      ],
+    }),
+    tableSchema({
+      name: 'visits',
+      columns: [
+        { name: 'customer_id', type: 'string', isIndexed: true },
+        { name: 'route_id', type: 'string', isOptional: true },
+        { name: 'planned_date', type: 'string', isIndexed: true },
+        { name: 'planned_time', type: 'string', isOptional: true },
+        { name: 'sequence', type: 'number' },
+        { name: 'status', type: 'string' },
+        { name: 'outcome', type: 'string', isOptional: true },
+        { name: 'check_in_at', type: 'number', isOptional: true },
+        { name: 'check_out_at', type: 'number', isOptional: true },
+        { name: 'latitude', type: 'number', isOptional: true },
+        { name: 'longitude', type: 'number', isOptional: true },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'collections',
+      columns: [
+        { name: 'receipt_no', type: 'string', isOptional: true },
+        { name: 'customer_id', type: 'string', isIndexed: true },
+        { name: 'visit_id', type: 'string', isOptional: true },
+        { name: 'amount', type: 'number' },
+        { name: 'payment_mode', type: 'string' },
+        { name: 'reference_no', type: 'string', isOptional: true },
+        { name: 'bank_name', type: 'string', isOptional: true },
+        { name: 'cheque_date', type: 'string', isOptional: true },
+        { name: 'drawer_name', type: 'string', isOptional: true },
+        { name: 'collected_at', type: 'number', isIndexed: true },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'allocations', type: 'string' },
+        { name: 'attachments', type: 'string' },
+        { name: 'status', type: 'string' },
+        { name: 'sync_error', type: 'string', isOptional: true },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'orders',
+      columns: [
+        { name: 'order_no', type: 'string', isOptional: true },
+        { name: 'sales_order_id', type: 'string', isOptional: true },
+        { name: 'customer_id', type: 'string', isIndexed: true },
+        { name: 'visit_id', type: 'string', isOptional: true },
+        { name: 'order_date', type: 'string', isIndexed: true },
+        { name: 'items', type: 'string' },
+        { name: 'total_amount', type: 'number' },
+        { name: 'remarks', type: 'string', isOptional: true },
+        { name: 'status', type: 'string' },
+        { name: 'sync_error', type: 'string', isOptional: true },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    // Device-only: photos waiting to be uploaded. Never pulled from the server.
+    tableSchema({
+      name: 'attachments',
+      columns: [
+        { name: 'collection_id', type: 'string', isIndexed: true },
+        { name: 'kind', type: 'string' },
+        { name: 'local_uri', type: 'string' },
+        { name: 'mime_type', type: 'string' },
+        { name: 'remote_url', type: 'string', isOptional: true },
+        { name: 'upload_error', type: 'string', isOptional: true },
+        { name: 'created_at', type: 'number' },
+      ],
+    }),
+  ],
+});

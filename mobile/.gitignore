@@ -1,0 +1,17 @@
+node_modules/
+.expo/
+dist/
+web-build/
+android/
+ios/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.env
+.env.*
+!.env.example
+npm-debug.*
+*.tsbuildinfo

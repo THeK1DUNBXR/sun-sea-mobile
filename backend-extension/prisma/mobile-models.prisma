@@ -1,0 +1,115 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// SUN SEA ERP — Mobile (Sales Executive) app models
+// Appended to backend/prisma/schema.prisma by scripts/apply-schema.js
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// A planned / executed customer visit for one field agent on one day.
+/// `id` is generated on the device (uuid v4) so the record can be created
+/// offline and pushed later without an id remap.
+model MobileVisit {
+  id          String    @id @db.Uuid
+  agentUserId String    @map("agent_user_id") @db.VarChar(36)
+  customerId  String    @map("customer_id") @db.Uuid
+  routeId     String?   @map("route_id") @db.Uuid
+  plannedDate DateTime  @map("planned_date") @db.Date
+  plannedTime String?   @map("planned_time") @db.VarChar(5)
+  sequence    Int       @default(0)
+  status      String    @default("PLANNED") @db.VarChar(20) // PLANNED | IN_PROGRESS | COMPLETED | SKIPPED
+  outcome     String?   @db.VarChar(20)                     // COLLECTION | ORDER | BOTH | NO_ACTION
+  checkInAt   DateTime? @map("check_in_at") @db.Timestamptz(6)
+  checkOutAt  DateTime? @map("check_out_at") @db.Timestamptz(6)
+  latitude    Decimal?  @db.Decimal(10, 7)
+  longitude   Decimal?  @db.Decimal(10, 7)
+  notes       String?   @db.VarChar(1000)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt   DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  route    Route?   @relation(fields: [routeId], references: [id])
+
+  @@index([agentUserId, plannedDate])
+  @@index([customerId])
+  @@index([updatedAt])
+  @@map("mobile_visits")
+}
+
+/// A field collection captured on the mobile app. Posting into the ERP
+/// (invoice payments + receipt vouchers) happens server-side on push; the
+/// resulting voucher ids are kept here for traceability.
+model MobileCollection {
+  id           String    @id @db.Uuid
+  receiptNo    String    @unique @map("receipt_no") @db.VarChar(30)
+  agentUserId  String    @map("agent_user_id") @db.VarChar(36)
+  customerId   String    @map("customer_id") @db.Uuid
+  visitId      String?   @map("visit_id") @db.Uuid
+  amount       Decimal   @db.Decimal(14, 2)
+  paymentMode  String    @map("payment_mode") @db.VarChar(20) // Cash | Cheque | UPI | NEFT
+  referenceNo  String?   @map("reference_no") @db.VarChar(100)
+  bankName     String?   @map("bank_name") @db.VarChar(120)
+  chequeDate   DateTime? @map("cheque_date") @db.Date
+  drawerName   String?   @map("drawer_name") @db.VarChar(160)
+  collectedAt  DateTime  @map("collected_at") @db.Timestamptz(6)
+  notes        String?   @db.VarChar(1000)
+  allocations  Json      @default("[]")   // [{ invoiceId, invoiceNo, amount }]
+  attachments  Json      @default("[]")   // [{ kind, url, fileId }]
+  voucherIds   Json?     @map("voucher_ids")
+  status       String    @default("POSTED") @db.VarChar(20) // POSTED | FAILED | REVERSED
+  syncError    String?   @map("sync_error") @db.VarChar(500)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([agentUserId, collectedAt])
+  @@index([customerId])
+  @@index([updatedAt])
+  @@map("mobile_collections")
+}
+
+/// Ordered list of customers on a route (used to auto-plan daily visits).
+model MobileRouteCustomer {
+  id          String  @id @default(uuid()) @db.Uuid
+  routeId     String  @map("route_id") @db.Uuid
+  customerId  String  @map("customer_id") @db.Uuid
+  sequence    Int     @default(0)
+  plannedTime String? @map("planned_time") @db.VarChar(5)
+
+  route    Route    @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([routeId, customerId])
+  @@map("mobile_route_customers")
+}
+
+/// Which agent covers a route, optionally restricted to a weekday (0 = Sunday).
+model MobileRouteAssignment {
+  id          String   @id @default(uuid()) @db.Uuid
+  routeId     String   @map("route_id") @db.Uuid
+  agentUserId String   @map("agent_user_id") @db.VarChar(36)
+  dayOfWeek   Int?     @map("day_of_week")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  route Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@index([agentUserId])
+  @@map("mobile_route_assignments")
+}
+
+/// Idempotency map for records created on a device (client id -> server id).
+model MobileSyncRecord {
+  id          String   @id @default(uuid()) @db.Uuid
+  clientId    String   @unique @map("client_id") @db.VarChar(64)
+  entityType  String   @map("entity_type") @db.VarChar(30) // COLLECTION | ORDER
+  serverId    String?  @map("server_id") @db.VarChar(64)
+  agentUserId String   @map("agent_user_id") @db.VarChar(36)
+  status      String   @default("OK") @db.VarChar(20)      // OK | FAILED
+  error       String?  @db.VarChar(500)
+  payload     Json?                                       // original device record (rebuilds failed orders on pull)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([agentUserId, entityType])
+  @@map("mobile_sync_records")
+}

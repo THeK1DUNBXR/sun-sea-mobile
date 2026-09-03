@@ -1,0 +1,70 @@
+import React, { useEffect, useState } from 'react';
+import { Alert, Text } from 'react-native';
+import { Screen } from '../components/Screen';
+import { Button, Card, Divider, Field, KeyValue } from '../components/ui';
+import { useAuth } from '../auth/AuthContext';
+import { getApiUrl, setApiUrl } from '../api/client';
+import { APP_VERSION, DEFAULT_API_URL } from '../config';
+import { spacing, type } from '../theme';
+import { resetDatabase } from '../db';
+
+export function SettingsScreen() {
+  const { agent, logout, isAuthenticated, bootstrap } = useAuth();
+  const [url, setUrl] = useState('');
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    getApiUrl().then(setUrl);
+  }, []);
+
+  const save = async () => {
+    await setApiUrl(url === DEFAULT_API_URL ? null : url);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
+
+  const wipe = () =>
+    Alert.alert('Clear local data', 'Deletes all downloaded data AND any unsynced collections or orders on this device. Continue?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: async () => {
+          await resetDatabase();
+          Alert.alert('Done', 'Local data cleared. Run a sync to download again.');
+        },
+      },
+    ]);
+
+  return (
+    <Screen title="Settings" back right={<Text />}>
+      {isAuthenticated && agent ? (
+        <Card>
+          <KeyValue label="Signed in as" value={agent.fullName} />
+          <Divider />
+          <KeyValue label="Email" value={agent.email ?? '—'} />
+          {bootstrap?.company ? (
+            <>
+              <Divider />
+              <KeyValue label="Company" value={bootstrap.company.companyName} />
+            </>
+          ) : null}
+        </Card>
+      ) : null}
+
+      <Text style={[type.h3, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>Server</Text>
+      <Field label="API base URL" value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url" hint={`Default: ${DEFAULT_API_URL}`} />
+      <Button title={saved ? 'Saved' : 'Save server URL'} variant="outline" onPress={save} />
+
+      {isAuthenticated ? (
+        <>
+          <Text style={[type.h3, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>Account</Text>
+          <Button title="Log out" variant="danger" onPress={() => void logout()} />
+          <Button title="Clear local data" variant="ghost" small onPress={wipe} style={{ marginTop: spacing.sm }} />
+        </>
+      ) : null}
+
+      <Text style={[type.tiny, { textAlign: 'center', marginTop: spacing.xxl }]}>Sun Sea Field v{APP_VERSION}</Text>
+    </Screen>
+  );
+}

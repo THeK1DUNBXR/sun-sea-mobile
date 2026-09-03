@@ -1,0 +1,77 @@
+{
+  "expo": {
+    "name": "Sun Sea Field",
+    "slug": "sunsea-field",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "sunseafield",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1F3A5F"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "in.sunsea.field",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Capture cash receipts and cheque photos for collections.",
+        "NSPhotoLibraryUsageDescription": "Attach UPI screenshots and receipt photos to collections.",
+        "NSLocationWhenInUseUsageDescription": "Record where a customer visit was checked in."
+      }
+    },
+    "android": {
+      "package": "in.sunsea.field",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1F3A5F"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_NETWORK_STATE"
+      ],
+      "usesCleartextTraffic": true
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-location",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Sun Sea Field uses the camera to capture cash receipts and cheques.",
+          "photosPermission": "Sun Sea Field attaches receipt photos and UPI screenshots to collections."
+        }
+      ],
+      [
+        "@morrowdigital/watermelondb-expo-plugin",
+        {
+          "disableJsi": false,
+          "excludeSimArch": true
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.1.20",
+            "packagingOptions": {
+              "pickFirst": [
+                "**/libc++_shared.so"
+              ]
+            }
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "apiUrl": "https://sunsea-api.example.com/api",
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}
