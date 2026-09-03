@@ -49,7 +49,7 @@
       [
         "@morrowdigital/watermelondb-expo-plugin",
         {
-          "disableJsi": false,
+          "disableJsi": true,
           "excludeSimArch": true
         }
       ],

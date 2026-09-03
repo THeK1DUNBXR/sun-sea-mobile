@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { Database } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 import { schema } from './schema';
@@ -16,7 +17,9 @@ const adapter = new SQLiteAdapter({
   schema,
   migrations,
   dbName: 'sunseafield',
-  jsi: true,
+  // JSI is used on iOS. On Android the JSI hook (JSIModulePackage) no longer
+  // exists in React Native 0.74+, so the bridge adapter is used there.
+  jsi: Platform.OS === 'ios',
   onSetUpError: (error) => {
     console.error('[db] failed to set up the local database', error);
   },
