@@ -29,6 +29,8 @@ export function SyncStatusScreen() {
   const totalOrders = useCount(() => tables.orders().query(), []);
   const totalAttachments = useCount(() => tables.attachments().query(), []);
   const totalVisits = useCount(() => tables.visits().query(), []);
+  const pendingExtras = useCount(() => tables.followUps().query(Q.where('_status', Q.notEq('synced'))), []) + useCount(() => tables.handovers().query(Q.where('_status', Q.notEq('synced'))), []) + useCount(() => tables.expenses().query(Q.where('_status', Q.notEq('synced'))), []) + useCount(() => tables.leads().query(Q.where('_status', Q.notEq('synced'))), []);
+  const totalExtras = useCount(() => tables.followUps().query(), []) + useCount(() => tables.handovers().query(), []) + useCount(() => tables.expenses().query(), []) + useCount(() => tables.leads().query(), []);
   const failed = useQuery(() => tables.collections().query(Q.where('status', 'FAILED'), Q.sortBy('collected_at', Q.desc)), []);
   const failedOrders = useQuery(() => tables.orders().query(Q.where('status', 'FAILED'), Q.sortBy('order_date', Q.desc)), []);
   const customers = useCount(() => tables.customers().query(), []);
@@ -54,6 +56,8 @@ export function SyncStatusScreen() {
         <Line label="Visits" done={totalVisits - pending.visits} total={totalVisits} />
         <Divider />
         <Line label="Attachments" done={totalAttachments - pending.attachments} total={totalAttachments} />
+        <Divider />
+        <Line label="Follow-ups, handovers, expenses, outlets" done={demo ? totalExtras : totalExtras - pendingExtras} total={totalExtras} />
       </Card>
 
       <Button title={syncing ? 'Syncing…' : 'Sync Now'} icon="refresh" onPress={() => void sync()} loading={syncing} disabled={!online} style={{ marginTop: spacing.lg }} />

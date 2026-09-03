@@ -16,28 +16,41 @@ export interface OrderDraft {
   remarks?: string;
 }
 
+export type CustomerTab = 'overview' | 'invoices' | 'orders' | 'activity';
+
 export type RootStackParamList = {
   Login: undefined;
   Main: undefined;
-  CustomerDetail: { customerId: string; visitId?: string };
-  CollectionEntry: { customerId: string; visitId?: string };
+  CustomerDetail: { customerId: string; visitId?: string; tab?: CustomerTab };
+  CollectionEntry: { customerId: string; visitId?: string; selectAll?: boolean };
   PaymentMode: { draft: CollectionDraft };
   CashPayment: { draft: CollectionDraft };
   ChequePayment: { draft: CollectionDraft };
   UpiPayment: { draft: CollectionDraft; mode: Extract<PaymentMode, 'UPI' | 'NEFT'> };
   CollectionSuccess: { collectionId: string };
-  NewOrder: { customerId: string; visitId?: string };
+  NewOrder: { customerId: string; visitId?: string; prefill?: OrderLine[] };
   OrderReview: { draft: OrderDraft };
   OrderSuccess: { orderId: string };
   Outstanding: { customerId: string };
+  FollowUpLog: { customerId: string; visitId?: string };
+  Cheques: undefined;
+  Day: undefined;
+  Handover: { suggestedAmount?: number };
+  Expenses: undefined;
+  ExpenseNew: undefined;
+  Leads: undefined;
+  LeadNew: undefined;
+  Performance: undefined;
+  SyncStatus: undefined;
   Settings: undefined;
 };
 
 export type MainTabParamList = {
-  Dashboard: undefined;
+  Home: undefined;
   Route: undefined;
   Customers: undefined;
-  Sync: undefined;
+  FollowUps: undefined;
+  More: undefined;
 };
 
 export type ScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;

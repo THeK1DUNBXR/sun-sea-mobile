@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Text } from 'react-native';
+import { Alert, Switch, Text, View } from 'react-native';
+import { deviceSupportsLock, isAppLockEnabled, setAppLockEnabled } from '../auth/AppLock';
 import { Screen } from '../components/Screen';
 import { Button, Card, Divider, Field, KeyValue, Notice } from '../components/ui';
 import { useAuth } from '../auth/AuthContext';
@@ -12,9 +13,13 @@ export function SettingsScreen() {
   const { agent, logout, isAuthenticated, bootstrap, isDemo } = useAuth();
   const [url, setUrl] = useState('');
   const [saved, setSaved] = useState(false);
+  const [lock, setLock] = useState(false);
+  const [lockSupported, setLockSupported] = useState(false);
 
   useEffect(() => {
     getApiUrl().then(setUrl);
+    isAppLockEnabled().then(setLock);
+    deviceSupportsLock().then(setLockSupported).catch(() => setLockSupported(false));
   }, []);
 
   const save = async () => {
@@ -52,6 +57,22 @@ export function SettingsScreen() {
           ) : null}
         </Card>
       ) : null}
+
+      <Text style={[type.h3, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>Security</Text>
+      <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <View style={{ flex: 1 }}>
+          <Text style={type.h3}>App lock</Text>
+          <Text style={type.small}>{lockSupported ? 'Ask for fingerprint / face / device PIN when opening the app or after a minute in the background.' : 'Set up a screen lock or fingerprint on this phone to enable.'}</Text>
+        </View>
+        <Switch
+          value={lock}
+          disabled={!lockSupported}
+          onValueChange={async (v) => {
+            setLock(v);
+            await setAppLockEnabled(v);
+          }}
+        />
+      </Card>
 
       <Text style={[type.h3, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>Server</Text>
       <Field label="API base URL" value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url" hint={`Default: ${DEFAULT_API_URL}`} />

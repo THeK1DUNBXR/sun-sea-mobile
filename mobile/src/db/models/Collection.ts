@@ -30,6 +30,7 @@ export default class Collection extends Model {
   @json('attachments', sanitizeArray<AttachmentRef>) attachments: AttachmentRef[];
   @text('status') status: CollectionStatus;
   @text('sync_error') syncError: string | null;
+  @field('shared_at') sharedAt: number | null;
   @field('updated_at') updatedAt: number;
 
   get isSynced() {

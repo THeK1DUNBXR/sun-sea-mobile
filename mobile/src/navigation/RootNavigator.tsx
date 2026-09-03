@@ -3,9 +3,11 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { Q } from '@nozbe/watermelondb';
 import { colors } from '../theme';
 import { useAuth } from '../auth/AuthContext';
-import { useSync } from '../sync/SyncContext';
+import { tables } from '../db';
+import { useCount } from '../db/hooks';
 import type { MainTabParamList, RootStackParamList } from './types';
 import { LoginScreen } from '../screens/LoginScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -24,6 +26,15 @@ import { OrderReviewScreen } from '../screens/OrderReviewScreen';
 import { OrderSuccessScreen } from '../screens/OrderSuccessScreen';
 import { OutstandingScreen } from '../screens/OutstandingScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { FollowUpsScreen } from '../screens/FollowUpsScreen';
+import { FollowUpLogScreen } from '../screens/FollowUpLogScreen';
+import { MoreScreen } from '../screens/MoreScreen';
+import { ChequesScreen } from '../screens/ChequesScreen';
+import { DayScreen } from '../screens/DayScreen';
+import { HandoverScreen } from '../screens/HandoverScreen';
+import { ExpensesScreen, ExpenseNewScreen } from '../screens/ExpensesScreen';
+import { LeadsScreen, LeadNewScreen } from '../screens/LeadsScreen';
+import { PerformanceScreen } from '../screens/PerformanceScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tabs = createBottomTabNavigator<MainTabParamList>();
@@ -34,29 +45,32 @@ const theme = {
 };
 
 function MainTabs() {
-  const { pending } = useSync();
+  const dueFollowUps = useCount(() => tables.followUps().query(Q.where('status', 'OPEN'), Q.where('due_at', Q.lte(Date.now() + 86400000))), []);
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
-        tabBarStyle: { borderTopColor: colors.line },
-        tabBarIcon: ({ color, size }) => {
-          const icon: Record<keyof MainTabParamList, keyof typeof Ionicons.glyphMap> = {
-            Dashboard: 'grid-outline',
-            Route: 'map-outline',
-            Customers: 'people-outline',
-            Sync: 'cloud-upload-outline',
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarStyle: { borderTopColor: colors.line, height: 64, paddingBottom: 8, paddingTop: 6 },
+        tabBarIcon: ({ color, size, focused }) => {
+          const icon: Record<keyof MainTabParamList, [keyof typeof Ionicons.glyphMap, keyof typeof Ionicons.glyphMap]> = {
+            Home: ['home-outline', 'home'],
+            Route: ['map-outline', 'map'],
+            Customers: ['people-outline', 'people'],
+            FollowUps: ['alarm-outline', 'alarm'],
+            More: ['grid-outline', 'grid'],
           };
-          return <Ionicons name={icon[route.name]} size={size} color={color} />;
+          return <Ionicons name={icon[route.name][focused ? 1 : 0]} size={size} color={color} />;
         },
       })}
     >
-      <Tabs.Screen name="Dashboard" component={DashboardScreen} />
-      <Tabs.Screen name="Route" component={RoutePlanScreen} options={{ title: 'Route Plan' }} />
+      <Tabs.Screen name="Home" component={DashboardScreen} />
+      <Tabs.Screen name="Route" component={RoutePlanScreen} options={{ title: 'Route' }} />
       <Tabs.Screen name="Customers" component={CustomersScreen} />
-      <Tabs.Screen name="Sync" component={SyncStatusScreen} options={{ tabBarBadge: pending.total > 0 ? pending.total : undefined }} />
+      <Tabs.Screen name="FollowUps" component={FollowUpsScreen} options={{ title: 'Follow-ups', tabBarBadge: dueFollowUps > 0 ? dueFollowUps : undefined, tabBarBadgeStyle: { backgroundColor: colors.warning } }} />
+      <Tabs.Screen name="More" component={MoreScreen} />
     </Tabs.Navigator>
   );
 }
@@ -67,7 +81,10 @@ export function RootNavigator() {
     <NavigationContainer theme={theme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+          </>
         ) : (
           <>
             <Stack.Screen name="Main" component={MainTabs} />
@@ -82,6 +99,16 @@ export function RootNavigator() {
             <Stack.Screen name="OrderReview" component={OrderReviewScreen} />
             <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} options={{ gestureEnabled: false }} />
             <Stack.Screen name="Outstanding" component={OutstandingScreen} />
+            <Stack.Screen name="FollowUpLog" component={FollowUpLogScreen} />
+            <Stack.Screen name="Cheques" component={ChequesScreen} />
+            <Stack.Screen name="Day" component={DayScreen} />
+            <Stack.Screen name="Handover" component={HandoverScreen} />
+            <Stack.Screen name="Expenses" component={ExpensesScreen} />
+            <Stack.Screen name="ExpenseNew" component={ExpenseNewScreen} />
+            <Stack.Screen name="Leads" component={LeadsScreen} />
+            <Stack.Screen name="LeadNew" component={LeadNewScreen} />
+            <Stack.Screen name="Performance" component={PerformanceScreen} />
+            <Stack.Screen name="SyncStatus" component={SyncStatusScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
           </>
         )}

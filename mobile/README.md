@@ -26,6 +26,28 @@ existing Sun Sea ERP backend through the `/api/mobile` module in
 | Customers (search)            | `src/screens/CustomersScreen.tsx`      | yes |
 | Settings (server URL, logout) | `src/screens/SettingsScreen.tsx`       | yes |
 
+## What's new in v1.1
+
+Designed from the ERP's own capabilities and field-sales best practice (see
+[`../docs/RESEARCH.md`](../docs/RESEARCH.md)):
+
+| Feature | Where |
+| ------- | ----- |
+| Start day / End day with GPS, attendance-style timestamps and an end-of-day summary (cash by mode, visits, orders, expenses) | More → Cash & day |
+| Cash in hand, handover to office / bank deposit with slip photo | More → Cash handover |
+| Follow-ups & promise-to-pay with reason codes, quick dates, reminders, reschedule, broken-promise detection | Follow-ups tab, customer → Follow-up |
+| Digital receipt to the customer on WhatsApp / share sheet (works offline) | Collection success |
+| Send invoice PDF on WhatsApp (ERP WhatsApp service; simulated in demo) | Customer → Invoices |
+| Cheque register with post-dated cheques due | More → Cheque register |
+| Customer 360: credit status (limit, exposure, overdue days, hold/blocked), invoices with overdue tags, ERP order history, activity timeline | Customer detail tabs |
+| Repeat last order, frequently bought, category chips, stock on hand, minimum qty, credit check before submit | New order / review |
+| Monthly targets with progress rings, pace vs month, 7-day chart, collections by mode, visit productivity, promises kept | Home, Performance |
+| Field expense claims with bill photo | More → Expense claims |
+| New outlet (lead) capture with GPS and shop photo | Customers → New outlet |
+| Customer filters (today's route, overdue, on hold, leads) and sort by outstanding | Customers |
+| App lock with device biometrics / PIN | Settings |
+| Field-ready UI: 48 dp touch targets, 16 px body text, high contrast, haptics, pull-to-refresh sync, toasts, tappable sync pill | everywhere |
+
 ## Prototype / demo mode
 
 The login screen has **Explore the demo (no server needed)**. It seeds the

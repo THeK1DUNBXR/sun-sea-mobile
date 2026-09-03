@@ -51,6 +51,7 @@ export async function createCollection(input: NewCollectionInput): Promise<Colle
       await tables.attachments().create((a) => {
         a._raw.id = newId();
         a.collectionId = id;
+        a.parentType = 'collection';
         a.kind = kind;
         a.localUri = photo.uri;
         a.mimeType = photo.mimeType;

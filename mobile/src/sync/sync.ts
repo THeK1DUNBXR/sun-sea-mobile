@@ -120,18 +120,27 @@ async function uploadPendingAttachments(report: (p: Partial<SyncProgress>) => vo
     const stored = await mobileApi.uploadAttachment(
       { uri: att.localUri, mimeType: att.mimeType, name: `${att.kind.toLowerCase()}-${att.id}.jpg` },
       att.kind,
-      att.collectionId
+      `${att.parentType || 'collection'}-${att.collectionId}`
     );
     await database.write(async () => {
       await att.update((a) => {
         a.remoteUrl = stored.url;
         a.uploadError = null;
       });
-      const collection = await tables.collections().find(att.collectionId).catch(() => null);
-      if (collection) {
-        const ref: AttachmentRef = { kind: att.kind, url: stored.url, fileId: stored.fileId ?? null, localId: att.id };
-        await collection.update((c) => {
-          c.attachments = [...c.attachments.filter((x) => x.localId !== att.id), ref];
+      const ref: AttachmentRef = { kind: att.kind, url: stored.url, fileId: stored.fileId ?? null, localId: att.id };
+      // Stamp the URL onto whichever record owns the photo.
+      const parentType = att.parentType || 'collection';
+      const parent =
+        parentType === 'handover'
+          ? await tables.handovers().find(att.collectionId).catch(() => null)
+          : parentType === 'expense'
+            ? await tables.expenses().find(att.collectionId).catch(() => null)
+            : parentType === 'lead'
+              ? await tables.leads().find(att.collectionId).catch(() => null)
+              : await tables.collections().find(att.collectionId).catch(() => null);
+      if (parent) {
+        await parent.update((rec: { attachments: AttachmentRef[] }) => {
+          rec.attachments = [...rec.attachments.filter((x) => x.localId !== att.id), ref];
         });
       }
     });
@@ -146,6 +155,10 @@ async function cleanupUploadedAttachments() {
   if (uploaded.length === 0) return;
   const toDelete: Attachment[] = [];
   for (const att of uploaded) {
+    if ((att.parentType || 'collection') !== 'collection') {
+      toDelete.push(att); // non-collection parents carry the URL already
+      continue;
+    }
     const c: Collection | null = await tables.collections().find(att.collectionId).catch(() => null);
     if (!c || (c.status !== 'PENDING' && c.syncStatus === 'synced')) toDelete.push(att);
   }

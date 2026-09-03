@@ -17,6 +17,10 @@ export async function demoSync() {
   const pendingAttachments = await tables.attachments().query(Q.where('remote_url', null)).fetch();
   const posted = await tables.collections().query(Q.where('status', 'POSTED')).fetchCount();
   const orders = await tables.orders().query(Q.where('status', Q.notEq('PENDING'))).fetchCount();
+  const pendingHandovers = await tables.handovers().query(Q.where('receipt_no', null)).fetch();
+  const pendingExpenses = await tables.expenses().query(Q.where('expense_number', null)).fetch();
+  const pendingLeads = await tables.leads().query(Q.where('status', 'SUBMITTED')).fetch();
+  const customersCount = await tables.customers().query().fetchCount();
 
   await database.write(async () => {
     let seq = 125 + posted;
@@ -41,6 +45,54 @@ export async function demoSync() {
     for (const a of pendingAttachments) {
       await a.update((r) => {
         r.remoteUrl = r.localUri; // "uploaded"
+      });
+    }
+    let hseq = 42;
+    for (const h of pendingHandovers) {
+      hseq += 1;
+      await h.update((r) => {
+        r.receiptNo = `HO-${year}-${String(hseq).padStart(5, '0')}`;
+        r.updatedAt = Date.now();
+      });
+    }
+    let eseq = 31;
+    for (const e of pendingExpenses) {
+      eseq += 1;
+      await e.update((r) => {
+        r.expenseNumber = `MEXP-${year}-${String(eseq).padStart(4, '0')}`;
+        r.updatedAt = Date.now();
+      });
+    }
+    // Leads become ERP customers with status "Lead" — they then show up in the customer list.
+    let cseq = customersCount;
+    for (const l of pendingLeads) {
+      cseq += 1;
+      const code = `CUST${String(cseq).padStart(3, '0')}`;
+      const customer = await tables.customers().create((c) => {
+        c._raw.id = l.id.replace(/^........-/, 'c1000000-');
+        c.customerCode = code;
+        c.firmName = l.firmName;
+        c.displayName = null;
+        c.mobile = l.mobile;
+        c.email = l.email;
+        c.gstin = l.gstin;
+        c.addressLine = l.addressLine;
+        c.city = l.city;
+        c.state = l.state;
+        c.pincode = l.pincode;
+        c.creditLimit = 0;
+        c.creditDays = null;
+        c.outstanding = 0;
+        c.gradeName = null;
+        c.typeName = 'Retailer';
+        c.status = 'Lead';
+        c.updatedAt = Date.now();
+      });
+      await l.update((r) => {
+        r.status = 'CREATED';
+        r.customerId = customer.id;
+        r.customerCode = code;
+        r.updatedAt = Date.now();
       });
     }
   });

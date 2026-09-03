@@ -62,6 +62,17 @@ status, new order, outstanding ageing) can be walked through offline.
    ```
    Details: [mobile/README.md](mobile/README.md).
 
+## What the prototype covers (v1.1)
+
+Beyond the wireframe's 13 screens, v1.1 adds the working practices that
+field-sales and collections teams rely on, each grounded in what the Sun Sea ERP
+already records: day start/end and cash-in-hand control, cash handover and bank
+deposit, promise-to-pay follow-ups with reminders, digital receipts on WhatsApp,
+invoice PDF sharing, a post-dated cheque register, a customer 360 with credit
+status and order history, repeat/frequent orders with stock and minimum-quantity
+checks, targets and performance, expense claims, new-outlet capture, and an app
+lock. Details and sources: [docs/RESEARCH.md](docs/RESEARCH.md).
+
 ## Documentation
 
 * [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — design decisions, sync protocol, posting rules, security model.

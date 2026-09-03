@@ -245,10 +245,45 @@ export function Notice({ tone = 'info', text }: { tone?: 'info' | 'warning' | 'd
   );
 }
 
+export function Pill({ text, tone = 'muted', icon }: { text: string; tone?: 'info' | 'success' | 'warning' | 'danger' | 'muted' | 'accent'; icon?: IconName }) {
+  const map = {
+    info: [colors.infoSoft, colors.info],
+    success: [colors.successSoft, colors.success],
+    warning: [colors.warningSoft, colors.warning],
+    danger: [colors.dangerSoft, colors.danger],
+    muted: [colors.line, colors.muted],
+    accent: [colors.accentSoft, colors.accent],
+  } as const;
+  const [bg, fg] = map[tone];
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: bg, paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill }}>
+      {icon ? <Ionicons name={icon} size={12} color={fg} /> : null}
+      <Text style={{ color: fg, fontSize: 12, fontWeight: '700' }}>{text}</Text>
+    </View>
+  );
+}
+
+export function IconTile({ icon, tone = 'primary', size = 44 }: { icon: IconName; tone?: 'primary' | 'accent' | 'success' | 'warning' | 'danger' | 'info'; size?: number }) {
+  const map = {
+    primary: [colors.primarySoft, colors.primary],
+    accent: [colors.accentSoft, colors.accent],
+    success: [colors.successSoft, colors.success],
+    warning: [colors.warningSoft, colors.warning],
+    danger: [colors.dangerSoft, colors.danger],
+    info: [colors.infoSoft, colors.info],
+  } as const;
+  const [bg, fg] = map[tone];
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 3.2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+      <Ionicons name={icon} size={size * 0.5} color={fg} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  btn: { paddingVertical: 14, paddingHorizontal: spacing.lg, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  btnSmall: { paddingVertical: 9, paddingHorizontal: spacing.md },
-  btnText: { fontSize: 15, fontWeight: '600' },
+  btn: { minHeight: 50, paddingVertical: 12, paddingHorizontal: spacing.lg, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  btnSmall: { minHeight: 40, paddingVertical: 8, paddingHorizontal: spacing.md },
+  btnText: { fontSize: 16, fontWeight: '700' },
   rowCenter: { flexDirection: 'row', alignItems: 'center' },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   card: { backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, borderWidth: 1, borderColor: colors.line },
@@ -256,10 +291,10 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: colors.line, marginVertical: spacing.sm },
   badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill },
   label: { ...type.small, marginBottom: 6, fontWeight: '600' },
-  input: { borderWidth: 1, borderColor: colors.line, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12, fontSize: 15, color: colors.text, backgroundColor: colors.card },
-  checkbox: { width: 22, height: 22, borderRadius: 5, borderWidth: 1.5, borderColor: colors.faint, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
+  input: { minHeight: 50, borderWidth: 1.5, borderColor: colors.line, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: 12, fontSize: 16, color: colors.text, backgroundColor: colors.card },
+  checkbox: { width: 26, height: 26, borderRadius: 6, borderWidth: 1.5, borderColor: colors.faint, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
   stepper: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.line, borderRadius: radius.md, overflow: 'hidden' },
-  stepBtn: { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: colors.primarySoft },
-  stepInput: { width: 52, textAlign: 'center', paddingVertical: 6, fontSize: 15, color: colors.text },
-  listItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: spacing.lg, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.line },
+  stepBtn: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft },
+  stepInput: { width: 56, textAlign: 'center', paddingVertical: 6, fontSize: 16, fontWeight: '600', color: colors.text },
+  listItem: { flexDirection: 'row', alignItems: 'center', minHeight: 60, paddingVertical: 12, paddingHorizontal: spacing.lg, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.line },
 });

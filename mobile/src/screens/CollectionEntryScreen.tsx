@@ -15,7 +15,7 @@ interface Line {
 }
 
 export function CollectionEntryScreen({ route, navigation }: ScreenProps<'CollectionEntry'>) {
-  const { customerId, visitId } = route.params;
+  const { customerId, visitId, selectAll } = route.params;
   const customer = useRecord(() => tables.customers().findAndObserve(customerId), [customerId]);
   const invoices = useQuery(() => tables.invoices().query(Q.where('customer_id', customerId), Q.where('balance', Q.gt(0)), Q.sortBy('invoice_date', Q.asc)), [customerId]);
   const [lines, setLines] = useState<Record<string, Line>>({});
@@ -25,10 +25,10 @@ export function CollectionEntryScreen({ route, navigation }: ScreenProps<'Collec
   useEffect(() => {
     setLines((prev) => {
       const next: Record<string, Line> = {};
-      for (const inv of invoices) next[inv.id] = prev[inv.id] ?? { selected: false, amount: String(inv.balance) };
+      for (const inv of invoices) next[inv.id] = prev[inv.id] ?? { selected: !!selectAll, amount: String(inv.balance) };
       return next;
     });
-  }, [invoices]);
+  }, [invoices, selectAll]);
 
   const allSelected = invoices.length > 0 && invoices.every((i) => lines[i.id]?.selected);
   const toggleAll = () =>

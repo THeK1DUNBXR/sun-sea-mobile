@@ -12,6 +12,13 @@ import Visit from './models/Visit';
 import Collection from './models/Collection';
 import Order from './models/Order';
 import Attachment from './models/Attachment';
+import FollowUp from './models/FollowUp';
+import DaySession from './models/DaySession';
+import Handover from './models/Handover';
+import Expense from './models/Expense';
+import Lead from './models/Lead';
+import Target from './models/Target';
+import OrderHistory from './models/OrderHistory';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -27,10 +34,10 @@ const adapter = new SQLiteAdapter({
 
 export const database = new Database({
   adapter,
-  modelClasses: [Customer, Invoice, Product, Route, RouteCustomer, Visit, Collection, Order, Attachment],
+  modelClasses: [Customer, Invoice, Product, Route, RouteCustomer, Visit, Collection, Order, Attachment, FollowUp, DaySession, Handover, Expense, Lead, Target, OrderHistory],
 });
 
-export { Customer, Invoice, Product, Route, RouteCustomer, Visit, Collection, Order, Attachment };
+export { Customer, Invoice, Product, Route, RouteCustomer, Visit, Collection, Order, Attachment, FollowUp, DaySession, Handover, Expense, Lead, Target, OrderHistory };
 
 export const tables = {
   customers: () => database.get<Customer>('customers'),
@@ -42,6 +49,13 @@ export const tables = {
   collections: () => database.get<Collection>('collections'),
   orders: () => database.get<Order>('orders'),
   attachments: () => database.get<Attachment>('attachments'),
+  followUps: () => database.get<FollowUp>('follow_ups'),
+  daySessions: () => database.get<DaySession>('day_sessions'),
+  handovers: () => database.get<Handover>('handovers'),
+  expenses: () => database.get<Expense>('expenses'),
+  leads: () => database.get<Lead>('leads'),
+  targets: () => database.get<Target>('targets'),
+  orderHistory: () => database.get<OrderHistory>('order_history'),
 };
 
 /** Wipes everything (used when a different agent logs in on the same device). */
