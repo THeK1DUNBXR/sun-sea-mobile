@@ -13,6 +13,9 @@ on:
       - "mobile/**"
       - ".github/workflows/android-apk.yml"
 
+permissions:
+  contents: write
+
 concurrency:
   group: apk-${{ github.ref }}
   cancel-in-progress: true
@@ -65,11 +68,15 @@ jobs:
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Rename APK
+        id: apk
         run: |
           VERSION=$(node -p "require('./app.json').expo.version")
           mkdir -p ../dist
-          cp android/app/build/outputs/apk/release/app-release.apk "../dist/SunSeaField-v${VERSION}-${GITHUB_SHA::7}.apk"
+          NAME="SunSeaField-v${VERSION}-${GITHUB_SHA::7}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "../dist/${NAME}"
           ls -la ../dist
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -77,3 +84,24 @@ jobs:
           path: dist/*.apk
           retention-days: 30
           if-no-files-found: error
+
+      - name: Publish GitHub Release
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="apk-v${{ steps.apk.outputs.version }}-build.${{ github.run_number }}"
+          NOTES="Sun Sea Field (sales executive app) — Android APK
+
+          * Version: ${{ steps.apk.outputs.version }} (build ${{ github.run_number }})
+          * Commit: ${GITHUB_SHA}
+          * Branch: ${GITHUB_REF_NAME}
+          * Default API URL baked in: \`${EXPO_PUBLIC_API_URL}\` (change it from *Server settings* on the login screen)
+
+          Install: download the APK on the phone, allow installs from unknown sources, open it. The app needs the backend extension applied on the ERP server (see backend-extension/README.md)."
+          gh release create "$TAG" dist/*.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Sun Sea Field APK v${{ steps.apk.outputs.version }} (build ${{ github.run_number }})" \
+            --notes "$NOTES"
+          echo "Released $TAG" >> "$GITHUB_STEP_SUMMARY"
