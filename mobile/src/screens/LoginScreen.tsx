@@ -10,7 +10,8 @@ import type { ScreenProps } from '../navigation/types';
 import { ApiError } from '../api/client';
 
 export function LoginScreen({ navigation }: ScreenProps<'Login'>) {
-  const { login, sessionExpired, agent } = useAuth();
+  const { login, enterDemo, sessionExpired, agent } = useAuth();
+  const [demoBusy, setDemoBusy] = useState(false);
   const [username, setUsername] = useState(agent?.email ?? '');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -56,6 +57,29 @@ export function LoginScreen({ navigation }: ScreenProps<'Login'>) {
           </View>
           <Button title="Login" onPress={submit} loading={busy} />
 
+          <View style={styles.orRow}>
+            <View style={styles.orLine} />
+            <Text style={type.tiny}>PROTOTYPE</Text>
+            <View style={styles.orLine} />
+          </View>
+          <Button
+            title="Explore the demo (no server needed)"
+            variant="outline"
+            icon="play-circle-outline"
+            loading={demoBusy}
+            onPress={async () => {
+              setDemoBusy(true);
+              try {
+                await enterDemo();
+              } catch (e) {
+                setError((e as Error).message);
+              } finally {
+                setDemoBusy(false);
+              }
+            }}
+          />
+          <Text style={[type.tiny, { textAlign: 'center', marginTop: 8 }]}>Loads sample customers, invoices, a route plan and products on this device. Nothing is sent anywhere.</Text>
+
           <Pressable onPress={() => navigation.navigate('Settings' as never)} style={{ marginTop: spacing.xl, alignSelf: 'center' }}>
             <Text style={[type.small, { color: colors.primary }]}>Server settings</Text>
           </Pressable>
@@ -70,4 +94,6 @@ const styles = StyleSheet.create({
   wrap: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
   logo: { alignItems: 'center', marginBottom: spacing.xxl },
   eye: { position: 'absolute', right: 12, top: 36, padding: 4, borderRadius: radius.sm },
+  orRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: spacing.xl },
+  orLine: { flex: 1, height: 1, backgroundColor: colors.line },
 });

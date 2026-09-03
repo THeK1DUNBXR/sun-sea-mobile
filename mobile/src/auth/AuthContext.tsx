@@ -5,6 +5,7 @@ import { ApiError, setUnauthorizedHandler, tokenStore } from '../api/client';
 import type { Bootstrap } from '../api/types';
 import { STORAGE_KEYS } from '../config';
 import { resetDatabase } from '../db';
+import { DEMO_AGENT, seedDemoData } from '../demo/seed';
 
 export interface AgentProfile {
   userId: string;
@@ -20,7 +21,10 @@ interface AuthState {
   sessionExpired: boolean;
   agent: AgentProfile | null;
   bootstrap: Bootstrap | null;
+  /** Prototype mode: sample data on the device, no server calls at all. */
+  isDemo: boolean;
   login: (username: string, password: string) => Promise<void>;
+  enterDemo: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -32,18 +36,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hasToken, setHasToken] = useState(false);
   const [sessionExpired, setSessionExpired] = useState(false);
   const [bootstrap, setBootstrap] = useState<Bootstrap | null>(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const [token, agentJson, bootJson] = await Promise.all([
+        const [token, agentJson, bootJson, demo] = await Promise.all([
           tokenStore.get(),
           AsyncStorage.getItem(STORAGE_KEYS.agent),
           AsyncStorage.getItem(STORAGE_KEYS.bootstrap),
+          AsyncStorage.getItem(STORAGE_KEYS.demo),
         ]);
         if (agentJson) setAgent(JSON.parse(agentJson));
         if (bootJson) setBootstrap(JSON.parse(bootJson));
-        setHasToken(!!token);
+        setIsDemo(demo === '1');
+        setHasToken(!!token || demo === '1');
       } finally {
         setReady(true);
       }
@@ -92,6 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         [STORAGE_KEYS.agent, JSON.stringify(nextAgent)],
         [STORAGE_KEYS.bootstrap, JSON.stringify(boot)],
       ]);
+      await AsyncStorage.removeItem(STORAGE_KEYS.demo);
+      setIsDemo(false);
       setAgent(nextAgent);
       setBootstrap(boot);
       setSessionExpired(false);
@@ -100,7 +109,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [agent]
   );
 
+  const enterDemo = useCallback(async () => {
+    await seedDemoData();
+    const demoAgent: AgentProfile = { ...DEMO_AGENT };
+    await AsyncStorage.multiSet([
+      [STORAGE_KEYS.demo, '1'],
+      [STORAGE_KEYS.agent, JSON.stringify(demoAgent)],
+      [STORAGE_KEYS.lastSyncAt, String(Date.now())],
+      [STORAGE_KEYS.lastSyncError, ''],
+    ]);
+    await AsyncStorage.removeItem(STORAGE_KEYS.bootstrap);
+    await tokenStore.clear();
+    setBootstrap(null);
+    setAgent(demoAgent);
+    setIsDemo(true);
+    setSessionExpired(false);
+    setHasToken(true);
+  }, []);
+
   const logout = useCallback(async () => {
+    if (isDemo) {
+      await AsyncStorage.multiRemove([STORAGE_KEYS.demo, STORAGE_KEYS.agent, STORAGE_KEYS.lastSyncAt]);
+      await resetDatabase();
+      setIsDemo(false);
+      setAgent(null);
+      setHasToken(false);
+      return;
+    }
     try {
       await mobileApi.logout();
     } catch {
@@ -110,11 +145,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setHasToken(false);
     setSessionExpired(false);
     // Agent profile + local data are kept so the same person can log back in offline-safe.
-  }, []);
+  }, [isDemo]);
 
   const value = useMemo<AuthState>(
-    () => ({ ready, isAuthenticated: hasToken, sessionExpired, agent, bootstrap, login, logout }),
-    [ready, hasToken, sessionExpired, agent, bootstrap, login, logout]
+    () => ({ ready, isAuthenticated: hasToken, sessionExpired, agent, bootstrap, isDemo, login, enterDemo, logout }),
+    [ready, hasToken, sessionExpired, agent, bootstrap, isDemo, login, enterDemo, logout]
   );
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }

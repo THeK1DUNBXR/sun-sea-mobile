@@ -26,6 +26,19 @@ existing Sun Sea ERP backend through the `/api/mobile` module in
 | Customers (search)            | `src/screens/CustomersScreen.tsx`      | yes |
 | Settings (server URL, logout) | `src/screens/SettingsScreen.tsx`       | yes |
 
+## Prototype / demo mode
+
+The login screen has **Explore the demo (no server needed)**. It seeds the
+on-device database with sample data (8 Chennai customers, open and settled
+invoices, a route with today's and tomorrow's visits, the product catalogue,
+earlier collections and a draft order) and marks the session as demo:
+
+* every screen works exactly as it will against the ERP;
+* "sync" is simulated on the device — new collections and orders receive
+  receipt / order numbers after a short delay;
+* cheque OCR returns a simulated result (flagged as such);
+* nothing is sent to any server. *Exit demo* in Settings wipes the sample data.
+
 ## Project layout
 
 ```

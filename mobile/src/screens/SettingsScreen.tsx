@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Text } from 'react-native';
 import { Screen } from '../components/Screen';
-import { Button, Card, Divider, Field, KeyValue } from '../components/ui';
+import { Button, Card, Divider, Field, KeyValue, Notice } from '../components/ui';
 import { useAuth } from '../auth/AuthContext';
 import { getApiUrl, setApiUrl } from '../api/client';
 import { APP_VERSION, DEFAULT_API_URL } from '../config';
@@ -9,7 +9,7 @@ import { spacing, type } from '../theme';
 import { resetDatabase } from '../db';
 
 export function SettingsScreen() {
-  const { agent, logout, isAuthenticated, bootstrap } = useAuth();
+  const { agent, logout, isAuthenticated, bootstrap, isDemo } = useAuth();
   const [url, setUrl] = useState('');
   const [saved, setSaved] = useState(false);
 
@@ -38,6 +38,7 @@ export function SettingsScreen() {
 
   return (
     <Screen title="Settings" back right={<Text />}>
+      {isDemo ? <Notice tone="info" text="Demo mode — you are exploring sample data on this device. Sync and cheque OCR are simulated. Log out to return to the login screen." /> : null}
       {isAuthenticated && agent ? (
         <Card>
           <KeyValue label="Signed in as" value={agent.fullName} />
@@ -59,8 +60,8 @@ export function SettingsScreen() {
       {isAuthenticated ? (
         <>
           <Text style={[type.h3, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>Account</Text>
-          <Button title="Log out" variant="danger" onPress={() => void logout()} />
-          <Button title="Clear local data" variant="ghost" small onPress={wipe} style={{ marginTop: spacing.sm }} />
+          <Button title={isDemo ? 'Exit demo' : 'Log out'} variant="danger" onPress={() => void logout()} />
+          {!isDemo ? <Button title="Clear local data" variant="ghost" small onPress={wipe} style={{ marginTop: spacing.sm }} /> : null}
         </>
       ) : null}
 

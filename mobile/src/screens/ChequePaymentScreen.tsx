@@ -12,12 +12,13 @@ import { mobileApi } from '../api/mobileApi';
 import { useSync } from '../sync/SyncContext';
 import { useAuth } from '../auth/AuthContext';
 import type { ChequeFields } from '../api/types';
+import { demoChequeOcr } from '../demo/demoSync';
 
 export function ChequePaymentScreen({ route, navigation }: ScreenProps<'ChequePayment'>) {
   const { draft } = route.params;
   const { online } = useSync();
-  const { bootstrap } = useAuth();
-  const ocrEnabled = bootstrap?.settings.chequeOcrEnabled ?? true;
+  const { bootstrap, isDemo } = useAuth();
+  const ocrEnabled = isDemo || (bootstrap?.settings.chequeOcrEnabled ?? true);
 
   const [front, setFront] = useState<CapturedPhoto | null>(null);
   const [bankName, setBankName] = useState('');
@@ -30,10 +31,10 @@ export function ChequePaymentScreen({ route, navigation }: ScreenProps<'ChequePa
   const [busy, setBusy] = useState(false);
 
   const runOcr = async (photo: CapturedPhoto) => {
-    if (!online || !ocrEnabled) return;
+    if (!isDemo && (!online || !ocrEnabled)) return;
     setOcr({ busy: true, result: null, error: null });
     try {
-      const r = await mobileApi.ocrCheque({ uri: photo.uri, mimeType: photo.mimeType, name: 'cheque.jpg' });
+      const r = isDemo ? await demoChequeOcr(Number(amount) || draft.total) : await mobileApi.ocrCheque({ uri: photo.uri, mimeType: photo.mimeType, name: 'cheque.jpg' });
       if (r.bankName) setBankName(r.bankName);
       if (r.chequeNumber) setChequeNumber(r.chequeNumber);
       if (r.date) setDate(r.date);
@@ -82,7 +83,7 @@ export function ChequePaymentScreen({ route, navigation }: ScreenProps<'ChequePa
         <Text style={type.h3}>Upload Cheque Front</Text>
         {ocr.busy ? <Badge text="Reading cheque…" tone="info" /> : ocr.result ? <Badge text={`OCR ${ocr.result.confidence}`} tone={ocr.result.confidence === 'high' ? 'success' : 'warning'} /> : null}
       </View>
-      <PhotoBox label="" name={`cheque-${Date.now()}`} photo={front} onChange={onPhoto} hint={online && ocrEnabled ? 'Details below are auto-filled from the photo — please verify' : 'Offline: enter the details manually'} />
+      <PhotoBox label="" name={`cheque-${Date.now()}`} photo={front} onChange={onPhoto} hint={isDemo || (online && ocrEnabled) ? 'Details below are auto-filled from the photo — please verify' : 'Offline: enter the details manually'} />
       {ocr.error ? <Notice tone="warning" text={`Auto-fill unavailable: ${ocr.error}`} /> : null}
       {ocr.result?.warnings?.length ? <Notice tone="warning" text={ocr.result.warnings.join(' · ')} /> : null}
       {ocr.result?.isPostDated ? <Notice tone="info" text="Post-dated cheque — the office will see the cheque date on the receipt." /> : null}

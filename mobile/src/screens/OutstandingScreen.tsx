@@ -12,10 +12,12 @@ import type { ScreenProps } from '../navigation/types';
 import { mobileApi } from '../api/mobileApi';
 import type { CustomerStatement } from '../api/types';
 import { useSync } from '../sync/SyncContext';
+import { useAuth } from '../auth/AuthContext';
 
 export function OutstandingScreen({ route }: ScreenProps<'Outstanding'>) {
   const { customerId } = route.params;
   const { online } = useSync();
+  const { isDemo } = useAuth();
   const customer = useRecord(() => tables.customers().findAndObserve(customerId), [customerId]);
   const invoices = useQuery(() => tables.invoices().query(Q.where('customer_id', customerId), Q.sortBy('invoice_date', Q.asc)), [customerId]);
   const [statement, setStatement] = useState<CustomerStatement | null>(null);
@@ -26,14 +28,14 @@ export function OutstandingScreen({ route }: ScreenProps<'Outstanding'>) {
   const aging = agingBuckets(open.map((i) => ({ invoiceDate: i.invoiceDate, balance: i.balance })));
 
   useEffect(() => {
-    if (!online) return;
+    if (!online || isDemo) return;
     setLoading(true);
     mobileApi
       .customerStatement(customerId)
       .then(setStatement)
       .catch(() => setStatement(null))
       .finally(() => setLoading(false));
-  }, [customerId, online]);
+  }, [customerId, online, isDemo]);
 
   return (
     <Screen title="Outstanding Details" back>
@@ -76,7 +78,7 @@ export function OutstandingScreen({ route }: ScreenProps<'Outstanding'>) {
       ) : null}
 
       <Section title="Recent receipts (from ERP ledger)">
-        {!online ? <Notice tone="warning" text="Offline — receipt history is available when connected." /> : null}
+        {isDemo ? <Notice tone="info" text="Demo mode — the ERP ledger history appears here once the app is connected to the Sun Sea backend." /> : !online ? <Notice tone="warning" text="Offline — receipt history is available when connected." /> : null}
         {loading ? <Text style={type.small}>Loading…</Text> : null}
         {statement ? (
           <Card style={{ padding: 0 }}>

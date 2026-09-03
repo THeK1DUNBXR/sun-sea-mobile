@@ -7,7 +7,15 @@ import { colors, spacing, type } from '../theme';
 import { useSync } from '../sync/SyncContext';
 
 export function OfflineBadge() {
-  const { online, syncing } = useSync();
+  const { online, syncing, demo } = useSync();
+  if (demo) {
+    return (
+      <View style={[styles.pill, { backgroundColor: colors.infoSoft }]}>
+        <View style={[styles.dot, { backgroundColor: colors.info }]} />
+        <Text style={{ fontSize: 11, fontWeight: '600', color: colors.info }}>{syncing ? 'Syncing…' : 'Demo'}</Text>
+      </View>
+    );
+  }
   return (
     <View style={[styles.pill, { backgroundColor: online ? colors.successSoft : colors.dangerSoft }]}>
       <View style={[styles.dot, { backgroundColor: online ? colors.success : colors.danger }]} />

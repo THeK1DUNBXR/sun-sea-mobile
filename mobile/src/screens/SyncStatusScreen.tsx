@@ -24,7 +24,7 @@ function Line({ label, done, total }: { label: string; done: number; total: numb
 }
 
 export function SyncStatusScreen() {
-  const { online, syncing, progress, lastSyncAt, lastError, pending, sync, lastOutcome } = useSync();
+  const { online, demo, syncing, progress, lastSyncAt, lastError, pending, sync, lastOutcome } = useSync();
   const totalCollections = useCount(() => tables.collections().query(), []);
   const totalOrders = useCount(() => tables.orders().query(), []);
   const totalAttachments = useCount(() => tables.attachments().query(), []);
@@ -43,6 +43,7 @@ export function SyncStatusScreen() {
         <Text style={type.small}>Last sync: {relativeTime(lastSyncAt)}</Text>
       </View>
 
+      {demo ? <Notice tone="info" text="Demo mode — sync is simulated on the device. New collections and orders get receipt / order numbers as if the ERP had accepted them." /> : null}
       {lastError ? <Notice tone={online ? 'danger' : 'warning'} text={lastError} /> : null}
 
       <Card>
@@ -56,7 +57,7 @@ export function SyncStatusScreen() {
       </Card>
 
       <Button title={syncing ? 'Syncing…' : 'Sync Now'} icon="refresh" onPress={() => void sync()} loading={syncing} disabled={!online} style={{ marginTop: spacing.lg }} />
-      <Button title="Full refresh from server" variant="ghost" small onPress={() => void sync({ full: true })} disabled={!online || syncing} style={{ marginTop: spacing.xs }} />
+      {!demo ? <Button title="Full refresh from server" variant="ghost" small onPress={() => void sync({ full: true })} disabled={!online || syncing} style={{ marginTop: spacing.xs }} /> : null}
       {syncing ? <Text style={[type.tiny, { textAlign: 'center', marginTop: spacing.sm }]}>Please keep the app open</Text> : null}
 
       {lastOutcome?.pushResults ? (

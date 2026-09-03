@@ -28,4 +28,5 @@ export const STORAGE_KEYS = {
   lastSyncAt: 'sunsea.lastSyncAt',
   lastSyncError: 'sunsea.lastSyncError',
   bootstrap: 'sunsea.bootstrap',
+  demo: 'sunsea.demo',
 } as const;

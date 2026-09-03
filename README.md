@@ -34,6 +34,14 @@ Orders / Sales Orders.
                                                                     └───────────────────────────────────────┘
 ```
 
+## Try the prototype without a server
+
+Install the latest APK from [Releases](https://github.com/THeK1DUNBXR/sun-sea-mobile/releases)
+and tap **Explore the demo (no server needed)** on the login screen. The app
+loads sample customers, invoices, a route plan and products onto the device and
+simulates sync, so the whole flow (route → visit → collection → payment → sync
+status, new order, outstanding ageing) can be walked through offline.
+
 ## Quick start
 
 1. **Backend** — apply the extension to your `sunsea-main/backend` checkout and migrate:

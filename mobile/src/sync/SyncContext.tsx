@@ -7,9 +7,11 @@ import { tables } from '../db';
 import { useObservable } from '../db/hooks';
 import { useAuth } from '../auth/AuthContext';
 import { getLastSync, runSync, SyncOutcome, SyncProgress } from './sync';
+import { demoSync } from '../demo/demoSync';
 
 interface SyncState {
   online: boolean;
+  demo: boolean;
   syncing: boolean;
   progress: SyncProgress | null;
   lastSyncAt: number | null;
@@ -22,7 +24,7 @@ interface SyncState {
 const SyncCtx = createContext<SyncState | null>(null);
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isDemo } = useAuth();
   const [online, setOnline] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
@@ -32,9 +34,22 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const onlineRef = useRef(true);
 
   // Live counts of unsynced records — drives the badge on the Sync tab.
-  const pendingCollections = useObservable(() => tables.collections().query(Q.where('_status', Q.notEq('synced'))).observeCount(false), [], 0);
-  const pendingOrders = useObservable(() => tables.orders().query(Q.where('_status', Q.notEq('synced'))).observeCount(false), [], 0);
-  const pendingVisits = useObservable(() => tables.visits().query(Q.where('_status', Q.notEq('synced'))).observeCount(false), [], 0);
+  // In demo mode nothing is ever "synced" in WatermelonDB's sense, so pending is derived from our own status columns.
+  const pendingCollections = useObservable(
+    () => tables.collections().query(isDemo ? Q.where('status', 'PENDING') : Q.where('_status', Q.notEq('synced'))).observeCount(false),
+    [isDemo],
+    0
+  );
+  const pendingOrders = useObservable(
+    () => tables.orders().query(isDemo ? Q.where('status', 'PENDING') : Q.where('_status', Q.notEq('synced'))).observeCount(false),
+    [isDemo],
+    0
+  );
+  const pendingVisits = useObservable(
+    () => tables.visits().query(isDemo ? Q.where('id', '__none__') : Q.where('_status', Q.notEq('synced'))).observeCount(false),
+    [isDemo],
+    0
+  );
   const pendingAttachments = useObservable(() => tables.attachments().query(Q.where('remote_url', null)).observeCount(false), [], 0);
 
   useEffect(() => {
@@ -47,6 +62,21 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const sync = useCallback(
     async (opts?: { full?: boolean }) => {
       if (!isAuthenticated) return null;
+      if (isDemo) {
+        setSyncing(true);
+        setProgress({ phase: 'push', attachmentsDone: 0, attachmentsTotal: 0 });
+        try {
+          await demoSync();
+          const outcome: SyncOutcome = { ok: true, finishedAt: Date.now() };
+          setLastOutcome(outcome);
+          setLastSyncAt(outcome.finishedAt);
+          setLastError(null);
+          setProgress({ phase: 'done', attachmentsDone: 0, attachmentsTotal: 0 });
+          return outcome;
+        } finally {
+          setSyncing(false);
+        }
+      }
       if (!onlineRef.current) {
         setLastError('Offline — changes are saved on the device and will sync automatically.');
         return null;
@@ -66,7 +96,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         setSyncing(false);
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, isDemo]
   );
 
   // Connectivity: sync as soon as we come back online.
@@ -106,6 +136,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<SyncState>(
     () => ({
       online,
+      demo: isDemo,
       syncing,
       progress,
       lastSyncAt,
@@ -120,7 +151,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       },
       sync,
     }),
-    [online, syncing, progress, lastSyncAt, lastError, lastOutcome, pendingCollections, pendingOrders, pendingVisits, pendingAttachments, pendingTotal, sync]
+    [online, isDemo, syncing, progress, lastSyncAt, lastError, lastOutcome, pendingCollections, pendingOrders, pendingVisits, pendingAttachments, pendingTotal, sync]
   );
 
   return <SyncCtx.Provider value={value}>{children}</SyncCtx.Provider>;

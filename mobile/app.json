@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sun Sea Field",
     "slug": "sunsea-field",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "scheme": "sunseafield",
     "userInterfaceStyle": "light",
