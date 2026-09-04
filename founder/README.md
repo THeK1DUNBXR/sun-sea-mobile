@@ -1,7 +1,12 @@
 # Sun Sea Insights — founder's monitoring app (prototype)
 
-A read-only Android/iOS app for the founder. It shows the business the way the
-ERP records it — no data entry, no login in the prototype, seeded demo data.
+A read-only Android/iOS app for the founder, styled after the ERP's **Management
+TV Dashboard** (`frontend/src/modules/dashboard/tv`): near-black board with CRT
+scanlines, monospace tabular numbers, a blinking LIVE badge and clock, an
+attention banner, a scrolling ticker, coloured-rail KPI cards with count-up
+numbers, glowing gauges, threshold-coloured bar rows, giant pipeline tiles and
+red-bordered attention panels. Dark by default with a light mode toggle. No data
+entry, no login in the prototype, seeded demo data.
 
 | Tab | What it shows |
 | --- | ------------- |

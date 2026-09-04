@@ -1,130 +1,121 @@
 import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Card, Pill, Screen, Section, Segmented, StatTile } from '../components/ui';
-import { Bars, Legend, Progress } from '../components/charts';
-import { colors, series, spacing, type } from '../theme';
-import { compact, delta, fmtDate, fmtDateLong, money, pct } from '../format';
-import { attention, bank, production } from '../data/demo';
+import { AttentionRow, BarChart, Board, Gauge, KpiCard, Panel, PipelineTile, Pills, Sub, TrendCard, mono } from '../tv/primitives';
+import { inrCompact, pctColor, trendColor, trendText, useTheme } from '../tv/theme';
+import { attention, bank, orderFunnel, production } from '../data/demo';
 import { kpis, last14, monthProgress, receivables, team, type Period } from '../data/metrics';
+import { fmtDate, pct } from '../format';
 import type { RootStackParamList } from '../navigation/types';
-import { useRefresh } from '../components/useRefresh';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
-const SEV = { critical: 'danger', serious: 'danger', warning: 'warning', info: 'info' } as const;
+const LEVEL = { critical: 'CRITICAL', serious: 'HIGH', warning: 'MEDIUM', info: 'INFO' } as const;
 
 export function OverviewScreen() {
   const nav = useNavigation<Nav>();
+  const { T, A } = useTheme();
   const [period, setPeriod] = useState<Period>('mtd');
-  const { refreshing, refresh, updatedAt } = useRefresh();
   const k = kpis(period);
+  const trend = (a: number, b: number) => (b ? ((a - b) / b) * 100 : null);
   const hot = attention.filter((a) => a.severity === 'critical' || a.severity === 'serious');
-  const hour = new Date().getHours();
+  const ach = Math.round((production.produced / production.planned) * 100);
+  const pace = team.collected / team.target >= monthProgress;
+
+  const ticker = [
+    `SALES MTD ${inrCompact(kpis('mtd').cur.invoiced)}`,
+    `COLLECTED TODAY ${inrCompact(kpis('today').cur.collected)}`,
+    `PRODUCTION ${ach}%`,
+    `ORDERS ${orderFunnel.slice(0, 5).reduce((s, f) => s + f.value, 0)} OPEN (${orderFunnel[1].value} AWAITING APPROVAL)`,
+    `RECEIVABLE ${inrCompact(receivables.total)} · OVERDUE ${inrCompact(receivables.overdue)}`,
+    `CASH+BANK ${inrCompact(bank.cash + bank.bank)}`,
+    `FIELD ${team.visitsDone}/${team.visitsPlanned} VISITS · ${inrCompact(team.cashInHand)} CASH WITH AGENTS`,
+  ].join('   ·   ');
 
   return (
-    <Screen
-      title="Sun Sea Insights"
-      subtitle={`Updated ${updatedAt}`}
-      onRefresh={refresh}
-      refreshing={refreshing}
-      right={
-        <Pressable onPress={() => nav.navigate('Settings')} hitSlop={8}>
-          <Ionicons name="settings-outline" size={22} color={colors.text} />
-        </Pressable>
-      }
+    <Board
+      scene="Executive overview"
+      banner={hot.length ? { level: 'alert', headline: `ATTENTION — ${hot[0].title.toUpperCase()}`, sub: `${attention.length} items flagged` } : { level: 'ok', headline: 'ALL SYSTEMS ON TRACK' }}
+      ticker={ticker}
     >
-      <Text style={type.small}>{hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'}</Text>
-      <Text style={type.h1}>Business at a glance</Text>
-      <Text style={[type.small, { marginBottom: spacing.md }]}>{fmtDateLong(new Date())}</Text>
+      <Pills value={period} onChange={setPeriod} options={[{ value: 'today', label: 'Today' }, { value: 'mtd', label: 'MTD' }, { value: '30d', label: '30 days' }]} />
 
-      <Segmented value={period} onChange={setPeriod} options={[{ value: 'today', label: 'Today' }, { value: 'mtd', label: 'This month' }, { value: '30d', label: 'Last 30 days' }]} />
-
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.md }}>
-        <StatTile label="Invoiced sales" value={compact(k.cur.invoiced)} delta={delta(k.cur.invoiced, k.before.invoiced)} icon="trending-up-outline" tone="primary" />
-        <StatTile label="Collections" value={compact(k.cur.collected)} delta={delta(k.cur.collected, k.before.collected)} icon="cash-outline" tone="success" />
-        <StatTile label="Orders booked" value={`${k.cur.orders}`} sub={`${compact(k.cur.orderValue)} value`} icon="cart-outline" tone="info" />
-        <StatTile label="Receivables" value={compact(receivables.total)} sub={`${compact(receivables.overdue)} overdue · DSO ${Math.round(receivables.dso)} d`} icon="time-outline" tone={receivables.overdue / receivables.total > 0.4 ? 'danger' : 'warning'} />
+      {/* KPI STRIP */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+        <KpiCard label="Sales" numeric={k.cur.invoiced} format={inrCompact} sub={`prev ${inrCompact(k.before.invoiced)}`} trend={trendText(trend(k.cur.invoiced, k.before.invoiced))} trendColor={trendColor(trend(k.cur.invoiced, k.before.invoiced), A)} color={A.amber} />
+        <KpiCard label="Collections" numeric={k.cur.collected} format={inrCompact} sub={`prev ${inrCompact(k.before.collected)}`} trend={trendText(trend(k.cur.collected, k.before.collected))} trendColor={trendColor(trend(k.cur.collected, k.before.collected), A)} color={A.green} />
+        <KpiCard label="Orders" numeric={k.cur.orders} format={(n) => String(Math.round(n))} sub={`${inrCompact(k.cur.orderValue)} booked`} trend={trendText(trend(k.cur.orders, k.before.orders))} trendColor={trendColor(trend(k.cur.orders, k.before.orders), A)} color={A.blue} />
+        <KpiCard label="Receivables" numeric={receivables.total} format={inrCompact} sub={`${inrCompact(receivables.overdue)} overdue · DSO ${Math.round(receivables.dso)}d`} color={receivables.overdue > 0 ? A.red : A.green} />
       </View>
 
-      <Section title="Sales vs collections · last 14 days" right={<Legend items={[{ label: 'Invoiced', color: series[0] }, { label: 'Collected', color: series[1] }]} />}>
-        <Card>
-          <Text style={[type.tiny, { marginBottom: 4 }]}>Invoiced</Text>
-          <Bars data={last14.map((d) => ({ label: fmtDate(d.date).slice(0, 2), value: d.invoiced }))} height={120} color={series[0]} labelEvery={2} />
-          <Text style={[type.tiny, { marginTop: spacing.sm, marginBottom: 4 }]}>Collected</Text>
-          <Bars data={last14.map((d) => ({ label: fmtDate(d.date).slice(0, 2), value: d.collected }))} height={120} color={series[1]} labelEvery={2} />
-        </Card>
-      </Section>
+      {/* PRODUCTION + FIELD */}
+      <Panel title="PRODUCTION PERFORMANCE" right={<Gauge pct={ach} color={pctColor(ach, A)} size={64} />}>
+        <Sub>
+          Planned <Text style={{ color: T.text, fontWeight: '700' }}>{production.planned.toLocaleString('en-IN')}</Text> · Produced <Text style={{ color: T.text, fontWeight: '700' }}>{production.produced.toLocaleString('en-IN')}</Text> {production.uom} · {production.machinesRunning}/{production.machinesTotal} machines
+        </Sub>
+        <View style={{ gap: 8, marginTop: 10 }}>
+          {production.lines.map((l) => {
+            const p = Math.round((l.done / l.target) * 100);
+            return <BarRowLine key={l.product} name={l.product.replace('Sun Sea ', '')} pct={p} color={pctColor(p, A)} status={l.status === 'COMPLETED' ? 'Done' : l.status === 'DELAYED' ? 'Delayed' : 'Running'} />;
+          })}
+        </View>
+      </Panel>
 
-      <Section title="Month so far">
-        <Card>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-            <Text style={type.h3}>Field collections vs target</Text>
-            <Pill text={team.collected / team.target >= monthProgress ? 'On pace' : 'Behind pace'} tone={team.collected / team.target >= monthProgress ? 'success' : 'warning'} icon={team.collected / team.target >= monthProgress ? 'checkmark' : 'alert'} />
-          </View>
-          <Progress value={team.collected} target={team.target} />
-          <Text style={[type.tiny, { marginTop: 6 }]}>{pct(monthProgress)} of the month elapsed · {team.active} of 5 agents active today</Text>
-        </Card>
-      </Section>
+      <Panel title="FIELD COLLECTIONS VS TARGET" right={<Text style={mono({ fontSize: 12, fontWeight: '800', color: pace ? A.green : A.amber })}>{pace ? 'ON PACE' : 'BEHIND PACE'}</Text>}>
+        <BarRowLine name="Team" pct={Math.round((team.collected / team.target) * 100)} color={pace ? A.green : A.amber} valueText={inrCompact(team.collected)} status={`of ${inrCompact(team.target)}`} />
+        <Sub>{pct(monthProgress)} of the month elapsed · {team.active} of 5 agents active · {team.visitsDone}/{team.visitsPlanned} visits done</Sub>
+      </Panel>
 
-      <Section
-        title={`Needs your attention (${attention.length})`}
+      {/* PIPELINE */}
+      <Panel title="ORDER / DISPATCH STATUS">
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          <PipelineTile count={orderFunnel[0].value} label="NEW (FIELD)" color={A.blue} />
+          <PipelineTile count={orderFunnel[1].value} label="AWAITING APPROVAL" color={A.amber} alert={orderFunnel[1].value > 0} />
+          <PipelineTile count={orderFunnel[2].value + orderFunnel[3].value} label="PROCESSING" color={A.blue} />
+          <PipelineTile count={orderFunnel[4].value} label="DISPATCHED" color={A.green} />
+          <PipelineTile count={production.lines.filter((l) => l.status === 'DELAYED').length} label="DELAYED" color={A.red} alert={production.lines.some((l) => l.status === 'DELAYED')} />
+        </View>
+      </Panel>
+
+      {/* ATTENTION */}
+      <Panel
+        title="MANAGEMENT ATTENTION"
+        accentBorder={hot.length ? A.red : undefined}
         right={
           <Pressable onPress={() => nav.navigate('Attention')}>
-            <Text style={[type.small, { color: colors.primary, fontWeight: '700' }]}>See all</Text>
+            <Text style={mono({ fontSize: 11, fontWeight: '800', color: A.accentBg, letterSpacing: 0.6 })}>ALL {attention.length} ›</Text>
           </Pressable>
         }
       >
-        <Card style={{ padding: 0 }}>
-          {hot.slice(0, 4).map((a, i) => (
-            <Pressable key={a.id} onPress={() => nav.navigate('Attention')} style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.md, borderBottomWidth: i < Math.min(4, hot.length) - 1 ? 1 : 0, borderBottomColor: colors.line }}>
-              <Ionicons name={a.severity === 'critical' ? 'alert-circle' : 'warning'} size={22} color={a.severity === 'critical' ? colors.danger : colors.warning} />
-              <View style={{ flex: 1, marginHorizontal: spacing.md }}>
-                <Text style={type.h3} numberOfLines={1}>
-                  {a.title}
-                </Text>
-                <Text style={type.small} numberOfLines={1}>
-                  {a.detail}
-                </Text>
-              </View>
-              <Pill text={a.since} tone={SEV[a.severity]} />
-            </Pressable>
+        <View style={{ gap: 6 }}>
+          {attention.slice(0, 5).map((a) => (
+            <AttentionRow key={a.id} level={LEVEL[a.severity]} text={a.title} right={a.amount ? inrCompact(a.amount) : undefined} />
           ))}
-        </Card>
-      </Section>
-
-      <Section title="Cash position">
-        <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <Card style={{ flex: 1 }}>
-            <Text style={type.small}>Bank + cash</Text>
-            <Text style={[type.money, { fontSize: 20 }]}>{compact(bank.bank + bank.cash)}</Text>
-            <Text style={type.tiny}>Payables due 7 d: {compact(bank.payablesDue7d)}</Text>
-          </Card>
-          <Card style={{ flex: 1 }}>
-            <Text style={type.small}>Cheques in hand</Text>
-            <Text style={[type.money, { fontSize: 20 }]}>{compact(bank.chequesValue)}</Text>
-            <Text style={type.tiny}>{bank.chequesInHand} cheques · {compact(bank.pdcValue)} post-dated</Text>
-          </Card>
         </View>
-        <Card style={{ marginTop: spacing.md }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={type.h3}>Cash with agents</Text>
-            <Text style={[type.h3, { color: team.cashInHand > 30000 ? colors.warning : colors.text }]}>{money(team.cashInHand)}</Text>
-          </View>
-          <Text style={type.tiny}>Collected today, not yet handed over · {team.stale.length} agent{team.stale.length === 1 ? '' : 's'} not synced in the last hour</Text>
-        </Card>
-      </Section>
+      </Panel>
 
-      <Section title="Plant today">
-        <Card>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-            <Text style={type.h3}>Production {production.produced.toLocaleString('en-IN')} / {production.planned.toLocaleString('en-IN')} {production.uom}</Text>
-            <Pill text={`${production.machinesRunning}/${production.machinesTotal} machines`} tone="info" />
-          </View>
-          <Progress value={production.produced} target={production.planned} color={series[0]} />
-        </Card>
-      </Section>
-    </Screen>
+      {/* TRENDS */}
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <TrendCard label="Sales · 14d" trend={trendText(trend(last14.slice(-7).reduce((s, d) => s + d.invoiced, 0), last14.slice(0, 7).reduce((s, d) => s + d.invoiced, 0)))} trendColor={trendColor(trend(last14.slice(-7).reduce((s, d) => s + d.invoiced, 0), last14.slice(0, 7).reduce((s, d) => s + d.invoiced, 0)), A)} points={last14.map((d) => d.invoiced)} color={A.blue} />
+        <TrendCard label="Collections · 14d" trend={trendText(trend(last14.slice(-7).reduce((s, d) => s + d.collected, 0), last14.slice(0, 7).reduce((s, d) => s + d.collected, 0)))} trendColor={trendColor(trend(last14.slice(-7).reduce((s, d) => s + d.collected, 0), last14.slice(0, 7).reduce((s, d) => s + d.collected, 0)), A)} points={last14.map((d) => d.collected)} color={A.green} />
+      </View>
+
+      <Panel title="INVOICED — LAST 14 DAYS">
+        <BarChart points={last14.map((d) => ({ day: fmtDate(d.date).slice(0, 2), value: d.invoiced }))} color={A.amber} />
+      </Panel>
+
+      {/* CASH */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+        <KpiCard label="Cash + Bank" numeric={bank.cash + bank.bank} format={inrCompact} sub={`payables 7d ${inrCompact(bank.payablesDue7d)}`} color={A.blue} valueSize={22} />
+        <KpiCard label="Cheques in hand" numeric={bank.chequesValue} format={inrCompact} sub={`${bank.chequesInHand} cheques · PDC ${inrCompact(bank.pdcValue)}`} color={A.amber} valueSize={22} />
+        <KpiCard label="Cash with agents" numeric={team.cashInHand} format={inrCompact} sub={`${team.stale.length} agent${team.stale.length === 1 ? '' : 's'} not synced 1h+`} color={team.cashInHand > 30000 ? A.amber : A.green} valueSize={22} />
+        <KpiCard label="Inventory" value={`${Math.round((1 - 5 / 15) * 100)}%`} sub="healthy · 5 items to reorder" color={A.amber} valueSize={22} />
+      </View>
+    </Board>
   );
+}
+
+function BarRowLine(props: { name: string; pct: number; color: string; valueText?: string; status?: string }) {
+  const { BarRow } = require('../tv/primitives') as typeof import('../tv/primitives');
+  return <BarRow {...props} />;
 }

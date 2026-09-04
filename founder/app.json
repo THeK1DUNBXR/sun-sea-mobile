@@ -2,20 +2,36 @@
   "expo": {
     "name": "Sun Sea Insights",
     "slug": "sun-sea-insights",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": { "image": "./assets/splash.png", "resizeMode": "contain", "backgroundColor": "#0F2440" },
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0F17"
+    },
     "android": {
       "package": "in.sunsea.insights",
       "versionCode": 1,
-      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#0F2440" },
-      "permissions": ["INTERNET"]
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B0F17"
+      },
+      "permissions": [
+        "INTERNET"
+      ]
     },
-    "ios": { "bundleIdentifier": "in.sunsea.insights", "supportsTablet": true },
-    "plugins": ["expo-splash-screen"],
-    "extra": { "apiUrl": "http://192.168.1.10:5000/api" }
+    "ios": {
+      "bundleIdentifier": "in.sunsea.insights",
+      "supportsTablet": true
+    },
+    "plugins": [
+      "expo-splash-screen"
+    ],
+    "extra": {
+      "apiUrl": "http://192.168.1.10:5000/api"
+    }
   }
 }

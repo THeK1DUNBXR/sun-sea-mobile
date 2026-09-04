@@ -1,84 +1,81 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
-import { Card, KV, Pill, Screen, Section, Segmented, StatTile } from '../components/ui';
-import { Bars, Donut, HBars } from '../components/charts';
-import { series, spacing, type } from '../theme';
-import { compact, delta, fmtDate, money } from '../format';
+import { BarChart, BarRow, Board, KpiCard, Panel, PipelineTile, Pills, Sub, TileRow, mono } from '../tv/primitives';
+import { inrCompact, trendColor, trendText, useTheme } from '../tv/theme';
 import { customers, orderFunnel, products } from '../data/demo';
 import { kpis, periodRows, type Period } from '../data/metrics';
-import { useRefresh } from '../components/useRefresh';
+import { fmtDate } from '../format';
 
 export function SalesScreen() {
+  const { T, A } = useTheme();
   const [period, setPeriod] = useState<Period>('mtd');
-  const { refreshing, refresh, updatedAt } = useRefresh();
   const k = kpis(period);
   const { rows } = periodRows(period);
-  const byCategory = Object.entries(products.reduce<Record<string, number>>((m, p) => ({ ...m, [p.category]: (m[p.category] ?? 0) + p.mtdValue }), {})).map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value);
+  const trend = (a: number, b: number) => (b ? ((a - b) / b) * 100 : null);
+  const byCategory = Object.entries(products.reduce<Record<string, number>>((m, p) => ({ ...m, [p.category]: (m[p.category] ?? 0) + p.mtdValue }), {})).sort((a, b) => b[1] - a[1]);
+  const catMax = Math.max(...byCategory.map((c) => c[1]));
   const topProducts = [...products].sort((a, b) => b.mtdValue - a.mtdValue).slice(0, 6);
   const topCustomers = [...customers].filter((c) => c.status !== 'Lead').sort((a, b) => b.mtdSales - a.mtdSales).slice(0, 6);
-  const avgOrder = k.cur.orders ? k.cur.orderValue / k.cur.orders : 0;
+  const dormant = customers.filter((c) => c.status === 'Active' && c.lastOrderDays >= 30).slice(0, 5);
+  const colors = [A.blue, A.amber, A.green, A.accentBg, A.red];
 
   return (
-    <Screen title="Sales" subtitle={`Updated ${updatedAt}`} onRefresh={refresh} refreshing={refreshing}>
-      <Segmented value={period} onChange={setPeriod} options={[{ value: 'today', label: 'Today' }, { value: 'mtd', label: 'This month' }, { value: '30d', label: 'Last 30 days' }]} />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.md }}>
-        <StatTile label="Invoiced" value={compact(k.cur.invoiced)} delta={delta(k.cur.invoiced, k.before.invoiced)} icon="receipt-outline" />
-        <StatTile label="Orders" value={String(k.cur.orders)} delta={delta(k.cur.orders, k.before.orders)} icon="cart-outline" tone="info" />
-        <StatTile label="Avg order value" value={compact(avgOrder)} sub="orders booked" icon="pricetag-outline" tone="accent" />
-        <StatTile label="Order value" value={compact(k.cur.orderValue)} delta={delta(k.cur.orderValue, k.before.orderValue)} icon="trending-up-outline" tone="success" />
+    <Board scene="Sales & orders" ticker={`INVOICED ${inrCompact(k.cur.invoiced)} · ORDERS ${k.cur.orders} · AVG ORDER ${inrCompact(k.cur.orders ? k.cur.orderValue / k.cur.orders : 0)} · TOP ${topProducts[0]?.name.toUpperCase()} · ${dormant.length} DORMANT CUSTOMERS`}>
+      <Pills value={period} onChange={setPeriod} options={[{ value: 'today', label: 'Today' }, { value: 'mtd', label: 'MTD' }, { value: '30d', label: '30 days' }]} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+        <KpiCard label="Sales invoiced" numeric={k.cur.invoiced} format={inrCompact} sub={`${trendText(trend(k.cur.invoiced, k.before.invoiced))} vs previous`} color={A.amber} />
+        <KpiCard label="Orders booked" numeric={k.cur.orders} format={(n) => String(Math.round(n))} sub={`${inrCompact(k.cur.orderValue)} value`} trend={trendText(trend(k.cur.orders, k.before.orders))} trendColor={trendColor(trend(k.cur.orders, k.before.orders), A)} color={A.blue} />
+        <KpiCard label="Avg order" numeric={k.cur.orders ? k.cur.orderValue / k.cur.orders : 0} format={inrCompact} sub="per order booked" color={A.accentBg} />
+        <KpiCard label="Active orders" value={String(orderFunnel.slice(0, 5).reduce((s, f) => s + f.value, 0))} sub={`${orderFunnel[1].value} awaiting approval`} color={orderFunnel[1].value ? A.amber : A.green} />
       </View>
+
+      <Panel title="ORDER PIPELINE">
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {orderFunnel.slice(0, 5).map((f, i) => (
+            <PipelineTile key={f.label} count={f.value} label={f.label.toUpperCase()} color={i === 4 ? A.green : A.blue} alert={i === 1 && f.value > 0} />
+          ))}
+        </View>
+        <Sub>Pipeline value {inrCompact(orderFunnel.slice(0, 5).reduce((s, f) => s + f.amount, 0))} · approvals happen in the ERP web app</Sub>
+      </Panel>
 
       {rows.length > 1 ? (
-        <Section title="Invoiced per day">
-          <Card>
-            <Bars data={rows.slice(-30).map((d) => ({ label: fmtDate(d.date).slice(0, 2), value: d.invoiced }))} height={150} labelEvery={rows.length > 14 ? 5 : 2} />
-          </Card>
-        </Section>
+        <Panel title={period === 'mtd' ? 'INVOICED PER DAY — THIS MONTH' : 'INVOICED PER DAY — 30 DAYS'}>
+          <BarChart points={rows.slice(-30).map((d) => ({ day: rows.length > 14 ? (Number(fmtDate(d.date).slice(0, 2)) % 5 === 0 ? fmtDate(d.date).slice(0, 2) : '') : fmtDate(d.date).slice(0, 2), value: d.invoiced }))} color={A.amber} height={130} />
+        </Panel>
       ) : null}
 
-      <Section title="Order pipeline">
-        <Card>
-          {orderFunnel.map((f, i) => (
-            <View key={f.label} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: i < orderFunnel.length - 1 ? 1 : 0, borderBottomColor: '#EEF2F7' }}>
-              <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: series[Math.min(i, series.length - 1)], marginRight: 10 }} />
-              <Text style={[type.small, { color: '#0F172A', flex: 1 }]}>{f.label}</Text>
-              <Text style={[type.h3, { width: 40, textAlign: 'right' }]}>{f.value}</Text>
-              <Text style={[type.small, { width: 76, textAlign: 'right' }]}>{compact(f.amount)}</Text>
-            </View>
+      <Panel title="SALES BY CATEGORY — MTD">
+        <View style={{ gap: 8 }}>
+          {byCategory.map(([cat, v], i) => (
+            <BarRow key={cat} name={cat} pct={(v / catMax) * 100} color={colors[i % colors.length]} valueText={inrCompact(v)} />
           ))}
-          <Text style={[type.tiny, { marginTop: 8 }]}>Approvals and confirmations are done in the ERP web app.</Text>
-        </Card>
-      </Section>
+        </View>
+      </Panel>
 
-      <Section title="Sales by category · this month">
-        <Card>
-          <Donut data={byCategory} center={{ value: compact(byCategory.reduce((s, c) => s + c.value, 0)), label: 'MTD' }} />
-        </Card>
-      </Section>
-
-      <Section title="Top products · this month">
-        <Card>
-          <HBars data={topProducts.map((p) => ({ label: p.name, value: p.mtdValue, sub: `${p.mtdQty.toLocaleString('en-IN')} ${p.uom}` }))} />
-        </Card>
-      </Section>
-
-      <Section title="Top customers · this month">
-        <Card>
-          <HBars data={topCustomers.map((c) => ({ label: c.name, value: c.mtdSales, sub: c.city }))} color={series[1]} />
-        </Card>
-      </Section>
-
-      <Section title="Dormant customers">
-        <Card>
-          {customers.filter((c) => c.status === 'Active' && c.lastOrderDays >= 30).slice(0, 5).map((c) => (
-            <KV key={c.id} label={c.name} value={`${c.lastOrderDays} days since order`} tone="warning" />
+      <Panel title="TOP PRODUCTS — MTD">
+        <View style={{ gap: 8 }}>
+          {topProducts.map((p) => (
+            <BarRow key={p.name} name={p.name.replace('Sun Sea ', '')} pct={(p.mtdValue / topProducts[0].mtdValue) * 100} color={A.blue} valueText={inrCompact(p.mtdValue)} status={`${p.mtdQty.toLocaleString('en-IN')} ${p.uom}`} />
           ))}
-          <Text style={type.tiny}>Active customers with no order in 30+ days — worth a visit from the agent.</Text>
-        </Card>
-      </Section>
-      <View style={{ marginTop: spacing.md, alignItems: 'center' }}>
-        <Pill text={`Collections by mode: Cash ${money(k.byMode.Cash)} · UPI ${money(k.byMode.UPI)}`} tone="muted" />
-      </View>
-    </Screen>
+        </View>
+      </Panel>
+
+      <Panel title="TOP CUSTOMERS — MTD">
+        <View style={{ gap: 6 }}>
+          {topCustomers.map((c, i) => (
+            <TileRow key={c.id} title={`${i + 1}. ${c.name}`} sub={`${c.city} · ${c.grade}`} right={inrCompact(c.mtdSales)} />
+          ))}
+        </View>
+      </Panel>
+
+      <Panel title="DORMANT CUSTOMERS" accentBorder={dormant.length ? A.amber : undefined}>
+        <View style={{ gap: 6 }}>
+          {dormant.map((c) => (
+            <TileRow key={c.id} title={c.name} sub={`${c.city} · last order ${c.lastOrderDays} days ago`} right={`${c.lastOrderDays}d`} rightColor={A.amber} leftColor={A.amber} />
+          ))}
+        </View>
+        <Text style={mono({ fontSize: 11, color: T.textMute, marginTop: 8 })}>Active customers with no order in 30+ days.</Text>
+      </Panel>
+    </Board>
   );
 }

@@ -1,42 +1,40 @@
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Card, Pill, Screen, Segmented } from '../components/ui';
-import { colors, spacing, type } from '../theme';
-import { money } from '../format';
+import { AttentionRow, Board, Panel, Pills, mono } from '../tv/primitives';
+import { inrCompact, useTheme } from '../tv/theme';
 import { attention, type Attention } from '../data/demo';
 
 type Filter = 'all' | 'money' | 'ops';
-const ICON: Record<Attention['kind'], keyof typeof Ionicons.glyphMap> = { APPROVAL: 'checkmark-done-outline', CREDIT: 'card-outline', HANDOVER: 'briefcase-outline', PROMISE: 'alarm-outline', CHEQUE: 'document-text-outline', STOCK: 'cube-outline', DISPATCH: 'car-outline', PURCHASE: 'cart-outline' };
-const SEV = { critical: ['Critical', 'danger'], serious: ['Serious', 'danger'], warning: ['Warning', 'warning'], info: ['Info', 'info'] } as const;
 const MONEY: Attention['kind'][] = ['APPROVAL', 'CREDIT', 'HANDOVER', 'PROMISE', 'CHEQUE'];
+const LEVEL = { critical: 'CRITICAL', serious: 'HIGH', warning: 'MEDIUM', info: 'INFO' } as const;
+const GROUP: Record<Attention['kind'], string> = { APPROVAL: 'ORDERS AWAITING APPROVAL', CREDIT: 'CREDIT', HANDOVER: 'CASH HANDOVERS', PROMISE: 'PROMISES TO PAY', CHEQUE: 'CHEQUES', STOCK: 'STOCK', DISPATCH: 'DISPATCH', PURCHASE: 'PURCHASES' };
 
 export function AttentionScreen() {
+  const { T, A } = useTheme();
   const [filter, setFilter] = useState<Filter>('all');
   const list = attention.filter((a) => (filter === 'all' ? true : filter === 'money' ? MONEY.includes(a.kind) : !MONEY.includes(a.kind)));
+  const groups = Array.from(new Set(list.map((a) => a.kind)));
+  const critical = attention.filter((a) => a.severity === 'critical').length;
   return (
-    <Screen title="Needs attention" subtitle={`${attention.length} items · handled in the ERP web app`} back>
-      <Segmented value={filter} onChange={setFilter} options={[{ value: 'all', label: `All (${attention.length})` }, { value: 'money', label: 'Money' }, { value: 'ops', label: 'Operations' }]} />
-      <View style={{ height: spacing.md }} />
-      {list.map((a) => (
-        <Card key={a.id} style={{ marginBottom: spacing.sm }}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-            <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: a.severity === 'critical' || a.severity === 'serious' ? colors.dangerSoft : a.severity === 'warning' ? colors.warningSoft : colors.infoSoft, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name={ICON[a.kind]} size={20} color={a.severity === 'critical' || a.severity === 'serious' ? colors.danger : a.severity === 'warning' ? colors.warning : colors.info} />
-            </View>
-            <View style={{ flex: 1, marginLeft: spacing.md }}>
-              <Text style={type.h3}>{a.title}</Text>
-              <Text style={[type.small, { marginTop: 2 }]}>{a.detail}</Text>
-              <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, alignItems: 'center' }}>
-                <Pill text={SEV[a.severity][0]} tone={SEV[a.severity][1]} icon={a.severity === 'critical' ? 'alert-circle' : a.severity === 'serious' ? 'warning' : 'information-circle'} />
-                <Pill text={a.since} tone="muted" icon="time-outline" />
-                {a.amount ? <Text style={[type.h3, { marginLeft: 'auto' }]}>{money(a.amount)}</Text> : null}
-              </View>
-            </View>
+    <Board scene="Management attention" back banner={{ level: critical ? 'alert' : 'ok', headline: critical ? `${critical} CRITICAL · ${attention.length} ITEMS FLAGGED` : `${attention.length} ITEMS FLAGGED` }} ticker={attention.map((a) => a.title.toUpperCase()).join('   ·   ')}>
+      <Pills value={filter} onChange={setFilter} options={[{ value: 'all', label: `All ${attention.length}` }, { value: 'money', label: 'Money' }, { value: 'ops', label: 'Operations' }]} />
+      {groups.map((g) => (
+        <Panel key={g} title={GROUP[g]} accentBorder={list.some((a) => a.kind === g && a.severity === 'critical') ? A.red : undefined}>
+          <View style={{ gap: 6 }}>
+            {list
+              .filter((a) => a.kind === g)
+              .map((a) => (
+                <View key={a.id}>
+                  <AttentionRow level={LEVEL[a.severity]} text={a.title} right={a.amount ? inrCompact(a.amount) : undefined} />
+                  <Text style={mono({ fontSize: 11, color: T.textDim, marginLeft: 74, marginTop: 3, marginBottom: 4 })}>
+                    {a.detail} · {a.since}
+                  </Text>
+                </View>
+              ))}
           </View>
-        </Card>
+        </Panel>
       ))}
-      <Text style={[type.tiny, { textAlign: 'center', marginTop: spacing.md }]}>This app is read-only. Approvals, confirmations and follow-ups are actioned by the office in the Sun Sea ERP.</Text>
-    </Screen>
+      <Text style={mono({ fontSize: 11, color: T.textMute, textAlign: 'center', marginTop: 6 })}>Read-only. Approvals, confirmations and follow-ups are actioned by the office in the Sun Sea ERP.</Text>
+    </Board>
   );
 }
