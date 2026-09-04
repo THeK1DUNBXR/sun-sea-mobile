@@ -1,0 +1,101 @@
+name: Founder APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+    paths:
+      - "founder/**"
+      - ".github/workflows/founder-apk.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: founder-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build release APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: founder
+    env:
+      EXPO_NO_TELEMETRY: "1"
+      CI: "1"
+      # Real phones only (skips the x86/x86_64 emulator ABIs) — roughly halves the native build time.
+      ORG_GRADLE_PROJECT_reactNativeArchitectures: "arm64-v8a,armeabi-v7a"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: founder/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-35 build-tools;35.0.0 ndk;27.1.12297006 cmake;3.22.1"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install JS dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Generate native Android project (expo prebuild)
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Build release APK
+        working-directory: founder/android
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+
+      - name: Rename APK
+        id: apk
+        run: |
+          VERSION=$(node -p "require('./app.json').expo.version")
+          mkdir -p ../dist
+          NAME="SunSeaInsights-v${VERSION}-${GITHUB_SHA::7}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "../dist/${NAME}"
+          ls -la ../dist
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SunSeaInsights-apk
+          path: dist/*.apk
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="insights-v${{ steps.apk.outputs.version }}-build.${{ github.run_number }}"
+          NOTES="Sun Sea Insights (founder monitoring app) — Android APK
+
+          * Version: ${{ steps.apk.outputs.version }} (build ${{ github.run_number }})
+          * Commit: ${GITHUB_SHA}
+          * Branch: ${GITHUB_REF_NAME}
+          * Data: seeded demo dataset (prototype)
+
+          Install: download the APK on the phone, allow installs from unknown sources, open it. Read-only prototype with demo data — no login needed."
+          gh release create "$TAG" dist/*.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Sun Sea Insights APK v${{ steps.apk.outputs.version }} (build ${{ github.run_number }})" \
+            --notes "$NOTES"
+          echo "Released $TAG" >> "$GITHUB_STEP_SUMMARY"

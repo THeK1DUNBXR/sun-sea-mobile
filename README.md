@@ -34,6 +34,13 @@ Orders / Sales Orders.
                                                                     └───────────────────────────────────────┘
 ```
 
+## Two apps
+
+| App | Folder | For | APK releases |
+| --- | ------ | --- | ------------ |
+| **Sun Sea Field** | `mobile/` | Sales executives / collection agents — enter collections, orders, visits, follow-ups, expenses, new outlets (offline-first) | tags `apk-v…` |
+| **Sun Sea Insights** | `founder/` | The founder — read-only monitoring of sales, collections, receivables, field team, plant and everything needing a decision | tags `insights-v…` |
+
 ## Try the prototype without a server
 
 Install the latest APK from [Releases](https://github.com/THeK1DUNBXR/sun-sea-mobile/releases)
