@@ -1,0 +1,270 @@
+<title>Sun Sea Companion App Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+  :root{--ground:#F6F8F7;--surface:#FFFFFF;--surface-2:#EEF2F1;--ink:#141A19;--ink-2:#3E4947;--ink-3:#6B7876;--rule:#D6DEDC;--rule-soft:#E6ECEA;--accent:#0B5F58;--accent-soft:#0B5F581A;--ok:#256B4D;--ok-soft:#256B4D14;--warn:#9A5B00;--warn-soft:#9A5B0014;--no:#B3261E;--no-soft:#B3261E14;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;--sans:"IBM Plex Sans",system-ui,sans-serif;--serif:"Source Serif 4",Georgia,serif}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ground:#0E1312;--surface:#151B1A;--surface-2:#1C2423;--ink:#EAF0EE;--ink-2:#B4C0BD;--ink-3:#7F8D8A;--rule:#2A3433;--rule-soft:#212A29;--accent:#4FD1C5;--accent-soft:#4FD1C51F;--ok:#6FD3A2;--ok-soft:#6FD3A21F;--warn:#F0B45E;--warn-soft:#F0B45E1F;--no:#FF8A80;--no-soft:#FF8A801F}}
+  :root[data-theme="dark"]{--ground:#0E1312;--surface:#151B1A;--surface-2:#1C2423;--ink:#EAF0EE;--ink-2:#B4C0BD;--ink-3:#7F8D8A;--rule:#2A3433;--rule-soft:#212A29;--accent:#4FD1C5;--accent-soft:#4FD1C51F;--ok:#6FD3A2;--ok-soft:#6FD3A21F;--warn:#F0B45E;--warn-soft:#F0B45E1F;--no:#FF8A80;--no-soft:#FF8A801F}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--serif);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:64rem;margin:0 auto;padding:4rem 1.5rem 6rem}
+  .mast{border-bottom:2px solid var(--ink);padding-bottom:1.5rem}
+  .eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin:0 0 .9rem}
+  h1{font-family:var(--sans);font-weight:700;font-size:clamp(2rem,5vw,3rem);line-height:1.06;letter-spacing:-.025em;margin:0 0 .7rem;text-wrap:balance}
+  .standfirst{font-size:1.15rem;color:var(--ink-2);margin:0;max-width:52ch}
+  .meta{display:flex;flex-wrap:wrap;gap:1.6rem;margin-top:1.6rem;font-family:var(--mono);font-size:.78rem;color:var(--ink-3)}.meta b{color:var(--ink-2);font-weight:500}
+  h2{font-family:var(--sans);font-weight:600;font-size:1.5rem;letter-spacing:-.015em;margin:4rem 0 .4rem;padding-bottom:.6rem;border-bottom:1px solid var(--rule)}
+  h3{font-family:var(--sans);font-weight:600;font-size:1.12rem;margin:2.2rem 0 .5rem}
+  .sec-note{font-family:var(--mono);font-size:.75rem;color:var(--ink-3);margin:0 0 1.4rem}
+  p{max-width:70ch;color:var(--ink-2)} p strong{color:var(--ink);font-weight:600}
+  code{font-family:var(--mono);font-size:.84em;background:var(--surface-2);padding:.1em .34em;color:var(--ink)}
+  .verdict{margin:2.5rem 0 0;background:var(--surface);border:1px solid var(--rule);padding:1.6rem 1.7rem}.verdict p{margin:0;font-size:1.05rem}.verdict p+p{margin-top:.8rem}
+  .tally{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:1.8rem 0 0}
+  .tally div{background:var(--surface);padding:1.1rem 1.2rem}.tally .n{font-family:var(--mono);font-size:1.7rem;font-weight:600;line-height:1;display:block;font-variant-numeric:tabular-nums}.tally .l{font-family:var(--mono);font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-top:.5rem;display:block}
+  .tw{overflow-x:auto;margin:.6rem 0 1.2rem}
+  table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:.85rem}
+  th,td{text-align:left;padding:.55rem .75rem;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+  th{font-family:var(--mono);font-size:.64rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--rule);font-weight:500;white-space:nowrap}
+  td.id{font-family:var(--mono);font-size:.74rem;color:var(--ink-3);white-space:nowrap}
+  td.num{font-family:var(--mono);font-size:.8rem;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+  td.ok,td.warn,td.no{font-family:var(--mono);font-size:.72rem;white-space:nowrap}td.ok{color:var(--ok)}td.warn{color:var(--warn)}td.no{color:var(--no)}
+  td .d{display:block;color:var(--ink-3);font-size:.78rem;margin-top:.15rem}
+  tr.sum td{border-top:2px solid var(--rule);font-weight:600;color:var(--ink)}
+  .callout{background:var(--accent-soft);border-left:3px solid var(--accent);padding:.9rem 1.1rem;margin:1.2rem 0}.callout p{margin:0;font-size:.95rem}.callout.warn{background:var(--no-soft);border-left-color:var(--no)}
+  .label{font-family:var(--mono);font-size:.66rem;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:.35rem}.callout.warn .label{color:var(--no)}
+  ol.steps{padding-left:1.2rem;color:var(--ink-2);max-width:72ch}ol.steps li{margin:.5rem 0}ol.steps li strong{color:var(--ink)}
+  ul.list{padding-left:1.1rem;color:var(--ink-2);max-width:72ch}ul.list li{margin:.35rem 0}
+  .gate{font-family:var(--mono);font-size:.78rem;background:var(--ok-soft);border-left:3px solid var(--ok);padding:.6rem .9rem;margin:.6rem 0 1.4rem;color:var(--ink-2)}.gate b{color:var(--ok);letter-spacing:.1em;font-size:.66rem;text-transform:uppercase;display:block;margin-bottom:.2rem}
+  .roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:1rem 0 1.8rem}
+  .roles div{background:var(--surface);padding:1rem 1.1rem}
+  .roles .who{font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+  .roles .what{font-family:var(--sans);font-weight:600;font-size:.95rem;margin:.3rem 0 .25rem}
+  .roles .st{font-family:var(--mono);font-size:.7rem}.roles .st.ok{color:var(--ok)}.roles .st.warn{color:var(--warn)}.roles .st.no{color:var(--no)}
+  .roles p{font-size:.82rem;margin:.35rem 0 0;color:var(--ink-3)}
+  pre{font-family:var(--mono);font-size:.78rem;line-height:1.6;background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--ink-3);padding:.95rem 1.1rem;overflow-x:auto;margin:.6rem 0 1rem;color:var(--ink-2)}pre b{color:var(--ink);font-weight:600}
+  ul.src{font-size:.85rem;color:var(--ink-2);padding-left:1.1rem}ul.src li{margin:.25rem 0}
+  footer{margin-top:4.5rem;padding-top:1.5rem;border-top:1px solid var(--rule);font-family:var(--mono);font-size:.74rem;color:var(--ink-3)}
+  a{color:var(--accent)} :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  @media (max-width:640px){body{font-size:16px}.wrap{padding:2.5rem 1.1rem 4rem}}
+</style>
+
+<div class="wrap">
+<header class="mast">
+  <p class="eyebrow">Delivery plan · Sun Sea SaaS · part five</p>
+  <h1>Two prototypes exist. The plan makes them one product.</h1>
+  <p class="standfirst">A companion app strategy for Sun Sea, reconciled against the 95-item backlog and against what the <code>sun-sea-mobile</code> repository already runs on a phone: a field-sales app, a founder's dashboard, and a backend extension the ERP has not yet absorbed.</p>
+  <div class="meta"><span><b>Built</b> 2 apps · 35 screens · ~9,000 lines · 2 CI pipelines · 7 APK releases</span><span><b>Backlog touched</b> S1, S3–S6, PC4, PL2–PL4, HR1, HR5, M4, M6, MES2, WM3, ES2, FI5</span><span><b>Basis</b> repo measured directly · sizes on part three's scale</span></div>
+</header>
+
+<div class="verdict">
+  <p><strong>The companion app is not one app; it is one codebase with four roles, and the first two roles are already prototyped.</strong> The field-sales app (<em>Sun Sea Field</em>, v1.1) captures collections, orders, visits, follow-ups, expenses and new outlets offline and syncs them through a backend extension written against the real schema. The founder's app (<em>Sun Sea Insights</em>, v0.2) reads the business the way the management TV wall does. Both install from GitHub Releases today.</p>
+  <p><strong>What separates a prototype from a product is unglamorous:</strong> the backend extension has to be merged behind Phase 0's tenancy, sync needs conflict rules that are tested rather than assumed, the APK is signed with a debug key, there is no over-the-air update path, no crash reporting, no end-to-end test, and login is a password with no second factor. That work is about seven developer-weeks and it comes first. The supervisor and store roles, and a customer app, follow the ERP phases they depend on.</p>
+</div>
+
+<div class="tally">
+  <div><span class="n">4</span><span class="l">Roles, one codebase</span></div>
+  <div><span class="n">~24</span><span class="l">Dev-weeks, mobile</span></div>
+  <div><span class="n">4</span><span class="l">Phases, each gated</span></div>
+  <div><span class="n">7</span><span class="l">Weeks to a pilot-grade Field app</span></div>
+  <div><span class="n">2.0–3.7M</span><span class="l">Agent tokens</span></div>
+</div>
+
+<h2>What the repository already holds</h2>
+<p class="sec-note">Measured from <code>sun-sea-mobile</code> on 6 September 2026 — not from the README.</p>
+<div class="tw"><table>
+<thead><tr><th>Asset</th><th>What it is</th><th>State</th></tr></thead>
+<tbody>
+<tr><td><strong>Sun Sea Field</strong> <span class="d"><code>mobile/</code> · Expo SDK 54 · React Native 0.86 · WatermelonDB</span></td><td>28 screens, 14 local tables with a v2 migration. Route and visits with GPS check-in, invoice-wise collections in cash / cheque / UPI / NEFT with receipt and cheque photos, cheque OCR, new orders with grade pricing, credit check, stock and minimum-qty rules, follow-ups and promise-to-pay, day start/end with cash in hand, handovers, expense claims, new-outlet capture, targets and performance, WhatsApp receipt sharing, app lock. Demo mode seeds all of it on the device.</td><td class="ok">runs · v1.1.0 APK<span class="d">demo data; login path built but unexercised against a live ERP</span></td></tr>
+<tr><td><strong>Sun Sea Insights</strong> <span class="d"><code>founder/</code> · Expo · SVG charts</span></td><td>7 screens in the TV-dashboard visual language: executive overview, sales, receivables, field team with agent drill-down, plant, attention list. Count-up KPIs, gauges, ticker, live badge, dark/light.</td><td class="warn">runs · v0.2.0 APK<span class="d">seeded dataset only; no API layer yet</span></td></tr>
+<tr><td><strong>Backend extension</strong> <span class="d"><code>backend-extension/</code> · ~2,000 lines</span></td><td>A <code>mobile</code> module for the ERP: 5 Prisma models (routes, route customers, visits, collections, attachments), 15 routes — bootstrap, pull/push sync, collection posting that creates <code>SalesInvoicePayment</code> rows and RECEIPT vouchers, draft-order creation with the agent as source, attachment upload, cheque OCR via Claude, admin route planning. Apply script that appends the models and relations to the schema.</td><td class="warn">written, not merged<span class="d">no tests; predates tenancy (F3); OCR endpoint needs an API key in the ERP's vault</span></td></tr>
+<tr><td><strong>Release pipeline</strong> <span class="d"><code>.github/workflows/</code></span></td><td>Two GitHub Actions workflows build a release APK on every push to the app folders and publish it to GitHub Releases with notes.</td><td class="warn">works<span class="d">debug keystore; no Play track; no OTA; no device tests</span></td></tr>
+<tr><td><strong>Design research</strong> <span class="d"><code>docs/RESEARCH.md</code></span></td><td>ERP capability map and field-sales / collections practice mapped to features, with sources.</td><td class="ok">done</td></tr>
+</tbody></table></div>
+
+<div class="callout"><span class="label">What this changes in the backlog</span><p>Four part-three items are further along than the Build Plan assumes because the field app exists. <strong>S1</strong> (real field-sales GPS, L · 3 weeks) is largely the Field app plus a position feed for the TV wall — about 1.5 weeks remain. <strong>PC4</strong> (offline-first sync, L · 3 weeks) has its engine; what remains is conflict rules under test and the tenancy backfill, about 1 week. <strong>HR1</strong>'s attendance gets a second, cheaper source: the agent's day start. And the founder's app is the first consumer of <strong>PF5</strong>'s public read surface, which argues for building that surface as read-only aggregation endpoints in Phase 1 rather than a full platform in Phase 4.</p></div>
+
+<h2>What the market says a companion app must do</h2>
+<p class="sec-note">Sources at the end. Summarised to the points that changed a decision below.</p>
+<ul class="list">
+<li><strong>Offline is the normal case, not the edge.</strong> Field guides converge on local-first storage, an outbox with idempotency keys, delta sync, tombstones and explicit conflict policy per table. Most data loss in field apps comes from "last write wins" applied to records that two people legitimately edit. The Field app already has the outbox and delta pull; it does not yet have written conflict rules or tests for them.</li>
+<li><strong>Security is a level, not a feature.</strong> OWASP MASVS gives a testable baseline (L1 for most apps, L2 where payments or regulated data flow). DPDP's Rule 6 safeguards apply to a device that carries 500 customers' phones and balances. The concrete asks: no secrets in the bundle, tokens in the OS keystore, short-lived access tokens with server-side revocation per device, a second factor for login, consent for location and camera, erase-on-logout.</li>
+<li><strong>Ship JavaScript without waiting for a store review.</strong> Over-the-air updates on Expo's protocol are the industry default for React Native, either hosted (EAS Update) or self-hosted on the Expo Updates protocol. For a product whose tenancy and PII posture is being certified, self-hosting keeps the update server inside the same boundary as the ERP.</li>
+<li><strong>Test on a device, in CI.</strong> Maestro's YAML flows run on an emulator in GitHub Actions with low flakiness and no native instrumentation; Detox earns its setup cost only for deep synchronisation cases such as offline sync and biometric prompts. The ERP's own Phase 0 test discipline should extend to the app.</li>
+<li><strong>Supervisors want alerts, not dashboards.</strong> Shop-floor mobile products lead with andon-style push alerts (line stopped, downtime running, quality hold) and short capture forms, with the dashboard second. That shapes the supervisor role below.</li>
+<li><strong>Field-sales practice</strong> (already researched for v1.1): beat discipline, promise-to-pay, instant digital receipts, end-of-day cash control, targets and nudges, a customer 360 at the doorstep. Built.</li>
+</ul>
+
+<h2>The decision: one codebase, four roles</h2>
+<p>Today there are two Expo apps with two package names and two release pipelines. That was right for prototypes that had to be evaluated separately. It is wrong for a product: two logins, two MFA enrolments, two OTA channels, two Play listings per tenant, and a UI kit that has already forked twice.</p>
+<p><strong>Recommendation:</strong> a single repository with a shared core and role modules, shipped as <em>one</em> installable app. The user's role from the ERP's own permission registry decides which modules appear after login — a founder sees Insights, an agent sees Field, a supervisor sees the plant module, and a person with two roles sees both. The founder's TV-style theme becomes the Manager module's theme rather than a separate binary.</p>
+<pre><b>sun-sea-mobile/</b>
+  apps/sunsea/            one Expo app, one bundle id, role-gated navigation
+  packages/core/          api client · auth · device registry · sync engine · outbox · telemetry
+  packages/ui/            design tokens (field theme + TV theme) · components · charts
+  packages/module-field/  the current mobile/ app, as a module
+  packages/module-insights/  the current founder/ app, as a module (live data)
+  packages/module-plant/  supervisor: production, downtime, QC, documents, incidents
+  packages/module-store/  barcode putaway / picking, GRN, dispatch gate
+  backend-extension/      merged into the ERP repo in Phase A; stays here only as history</pre>
+<div class="callout"><span class="label">Where a second binary still makes sense</span><p>A <strong>customer / retailer app</strong> is a different audience with a different trust boundary (a customer must never hold a session that can read another customer) and different distribution (public Play listing, marketing). It stays a separate, much smaller app — or, more likely for the first year, a WhatsApp-first flow plus the S4 web portal with FI5 payment links, and no app at all until customers ask.</p></div>
+
+<h3>The four roles</h3>
+<div class="roles">
+  <div><span class="who">Field agent</span><div class="what">Sun Sea Field</div><span class="st ok">built · v1.1 · offline-first</span><p>Route, visits, collections, orders, follow-ups, cash & day, expenses, outlets, targets. Backlog: S1, S3, S5, S6, PC4, HR1 (attendance source), FI5 (pay link on receipts).</p></div>
+  <div><span class="who">Founder / manager</span><div class="what">Insights module</div><span class="st warn">built · v0.2 · demo data</span><p>Executive overview, sales, receivables, field team, plant, attention. Backlog: consumes the TV summary and accounts endpoints; first client of PF5's read surface; M4 andon feed.</p></div>
+  <div><span class="who">Shop-floor supervisor</span><div class="what">Plant module</div><span class="st no">not started</span><p>Andon alerts, hourly production and downtime capture offline, mould shots, QC checklists, work instructions, incidents. Backlog: M1/M4, M5, M6/G5, MES2, ES2, HR7.</p></div>
+  <div><span class="who">Store / dispatch</span><div class="what">Store module</div><span class="st no">not started</span><p>Barcode putaway and picking, GRN by scan, dispatch gate and store approvals on the phone. Backlog: WM1–WM3, P3, the goods-dispatch approval gates that exist on the web today.</p></div>
+</div>
+<p>Two more surfaces ride on the same core but are not roles of their own: <strong>employee self-service</strong> (HR5 — payslips, leave, attendance) appears for every employee who logs in, and <strong>customer</strong> stays outside the binary as described above.</p>
+
+<h2>Sync, made honest</h2>
+<p class="sec-note">PC4 is "offline-first mobile sync". The engine exists; the rules do not.</p>
+<p>The Field app pulls changed rows by <code>updated_at</code> per table and pushes its outbox with device-generated UUIDs, so a retried push is idempotent. That is the right shape. What a product needs on top is a written policy per table, enforced on the server and tested with a cross-device suite:</p>
+<div class="tw"><table>
+<thead><tr><th>Table</th><th>Who owns it</th><th>On conflict</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>customers, invoices, products, routes</td><td>ERP</td><td class="ok">server wins, always</td><td>Masters and ledgers are never edited on the device. The app shows stale-by-N-minutes, never a local edit.</td></tr>
+<tr><td>collections, orders, expenses, handovers, leads</td><td>device (create-only)</td><td class="ok">append; server assigns numbers</td><td>Device creates, server posts and stamps receipt / order / expense numbers back. A duplicate UUID is a no-op, not a second receipt.</td></tr>
+<tr><td>visits, follow-ups, day sessions</td><td>shared</td><td class="warn">field-level merge, latest <code>updated_at</code> per field, server tie-break</td><td>An office user can re-plan a visit while the agent checks in. Merging by field keeps both; a whole-row overwrite loses one.</td></tr>
+<tr><td>attachments</td><td>device</td><td class="ok">upload once, URL stamped on parent</td><td>Photos survive app restarts because the queue is a table, not memory.</td></tr>
+<tr><td>deleted rows</td><td>either</td><td class="warn">tombstones in pull, 30-day retention</td><td>Without tombstones a cancelled visit lives forever on a phone that was offline that day.</td></tr>
+</tbody></table></div>
+<p>Three more rules belong in the contract: every push carries the device id and app version; the server rejects a push from a device the tenant has revoked; and a clock skew above five minutes is reported to the user rather than silently reordering events.</p>
+
+<h2>Security for a device that carries the ledger</h2>
+<div class="tw"><table>
+<thead><tr><th>Control</th><th>Today</th><th>Target (MASVS-L1, L2 for payments)</th></tr></thead>
+<tbody>
+<tr><td>Session</td><td class="warn">JWT in SecureStore, long-lived</td><td>Short-lived access token, refresh token bound to a registered device, server-side revoke per device from the admin console (PF3).</td></tr>
+<tr><td>Second factor</td><td class="no">password only</td><td>OTP via MSG91 (S6) on first login per device; TOTP for admins (PL2). The <code>mfaEnabled</code> field already exists on users.</td></tr>
+<tr><td>Data at rest</td><td class="warn">SQLite in app sandbox; optional biometric app lock</td><td>Encrypted database key in the OS keystore; app lock on by policy for roles that see balances; erase on logout and on revoke.</td></tr>
+<tr><td>Transport</td><td class="ok">HTTPS</td><td>Certificate pinning for the ERP host once its hosting is fixed (PC8); no plaintext fallbacks.</td></tr>
+<tr><td>Secrets</td><td class="ok">none in the bundle; OCR key lives server-side</td><td>Keep it so. OTA update signing key and release keystore in a vault with two custodians.</td></tr>
+<tr><td>Consent & DPDP</td><td class="no">none</td><td>Consent screens for location and camera with purpose text; privacy notice in-app; retention of photos 90 days on device; data-principal export and erase handled by PL3 on the server.</td></tr>
+<tr><td>Demo data</td><td class="ok">synthetic</td><td>Stays synthetic. The real BUSY customer list never enters a build.</td></tr>
+</tbody></table></div>
+
+<h2>Delivery pipeline</h2>
+<div class="tw"><table>
+<thead><tr><th>Stage</th><th>Today</th><th>Plan</th></tr></thead>
+<tbody>
+<tr><td>Build</td><td class="ok">GitHub Actions · APK to Releases</td><td>Keep. Add a release keystore from the vault, versionCode from the run number, an AAB for Play alongside the APK for side-loading.</td></tr>
+<tr><td>Distribution</td><td class="warn">Releases page</td><td>Google Play <strong>internal testing</strong> track for the pilot, <strong>closed testing</strong> per tenant, production when Gate B passes. iOS via TestFlight only when a tenant asks; the founder's phone decides the date.</td></tr>
+<tr><td>Updates</td><td class="no">reinstall</td><td>Expo Updates protocol, <strong>self-hosted</strong> next to the ERP (xprem or xavia-ota) with staged rollout and one-click rollback; native changes still go through a build. Channel per Play track.</td></tr>
+<tr><td>Quality</td><td class="warn">typecheck · 12 unit tests · Metro export</td><td>Sync engine integration tests against a throwaway ERP stack; Maestro smoke on an emulator in CI for login, sync, one collection, one order; Detox only for the offline-sync and biometric flows.</td></tr>
+<tr><td>Telemetry</td><td class="no">none</td><td>Crash reporting (Sentry, self-hosted or EU region), sync success rate and age-of-last-sync per device as the two product metrics; no third-party analytics SDK.</td></tr>
+<tr><td>Support</td><td class="no">none</td><td>"Send diagnostics" from Settings uploads the sync log; the admin console shows devices, versions and last sync per agent.</td></tr>
+</tbody></table></div>
+
+<h2>The phases</h2>
+<p class="sec-note">Aligned to the Build Plan's phases so the app never waits on the ERP longer than it must. Sizes on part three's scale; one mobile developer plus me, in parallel with the ERP team.</p>
+
+<h3>Phase A — From prototype to pilot · alongside ERP Phase 0, weeks 4–13</h3>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Item</th><th>Backlog</th><th>Size</th><th>Weeks</th><th>Tokens</th></tr></thead>
+<tbody>
+<tr><td class="id">A1</td><td><strong>Merge the backend extension behind tenancy</strong><span class="d">Move <code>backend-extension/</code> into the ERP repo as the <code>mobile</code> module; <code>companyId</code> on all five models; permission keys in the registry; integration tests for bootstrap, pull, push, collection posting and voucher creation; the OCR key in the vault.</span></td><td class="id">F3, PC4</td><td class="id">M</td><td class="num">2</td><td class="num">150–250K</td></tr>
+<tr><td class="id">A2</td><td><strong>Conflict rules and tombstones, under test</strong><span class="d">The table above, enforced server-side; a two-device test suite that edits the same visit offline on both and proves the merge.</span></td><td class="id">PC4</td><td class="id">S–M</td><td class="num">1</td><td class="num">70–130K</td></tr>
+<tr><td class="id">A3</td><td><strong>Monorepo, one app, role gating</strong><span class="d">Fold <code>mobile/</code> and <code>founder/</code> into the structure above; navigation driven by the permission keys the bootstrap already returns.</span></td><td class="id">—</td><td class="id">S–M</td><td class="num">1</td><td class="num">70–130K</td></tr>
+<tr><td class="id">A4</td><td><strong>Signing, Play internal track, OTA, crash reporting</strong><span class="d">Release keystore in the vault; AAB + APK per build; self-hosted update server with rollback; Sentry.</span></td><td class="id">F2</td><td class="id">S</td><td class="num">1</td><td class="num">50–90K</td></tr>
+<tr><td class="id">A5</td><td><strong>Position feed for the TV wall</strong><span class="d">Agent check-ins and a 10-minute foreground ping while the day is open feed the Field Sales scene; the "LIVE" badge on the simulated map goes away the same week.</span></td><td class="id">S1</td><td class="id">M</td><td class="num">1.5</td><td class="num">120–200K</td></tr>
+<tr><td class="id">A6</td><td><strong>Maestro smoke in CI</strong><span class="d">Login, sync, one collection, one order, one follow-up on an emulator, on every push.</span></td><td class="id">F1</td><td class="id">S</td><td class="num">0.5</td><td class="num">30–60K</td></tr>
+<tr class="sum"><td></td><td>Phase A</td><td></td><td></td><td class="num">7</td><td class="num">0.5–0.85M</td></tr>
+</tbody></table></div>
+<p><em>Waits on you:</em> a Google Play developer account, two custodians for the keystore, five agents with Android phones for the pilot, one office user to plan routes.</p>
+<div class="gate"><b>Gate A</b>Five agents run a real week on the Play internal track · every collection appears as a RECEIPT voucher in the ERP within a minute of signal · zero cross-tenant rows in the leak tests · a crash reaches Sentry with the sync log attached · an OTA rollback exercised once</div>
+
+<h3>Phase B — Identity, channels, live Insights · alongside ERP Phase 1, weeks 14–22</h3>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Item</th><th>Backlog</th><th>Size</th><th>Weeks</th><th>Tokens</th></tr></thead>
+<tbody>
+<tr><td class="id">B1</td><td><strong>OTP login, device registry, remote revoke</strong><span class="d">MSG91 OTP on first login per device; refresh tokens bound to the device; revoke and wipe from the admin console.</span></td><td class="id">S6, PL2, PF3</td><td class="id">M</td><td class="num">1.5</td><td class="num">120–200K</td></tr>
+<tr><td class="id">B2</td><td><strong>Push notifications and a notification centre</strong><span class="d">FCM. For agents: route changes, promise due, cheque due. For managers: the attention items the TV wall already computes. For supervisors later: andon.</span></td><td class="id">M4 (feed)</td><td class="id">M</td><td class="num">1.5</td><td class="num">120–200K</td></tr>
+<tr><td class="id">B3</td><td><strong>Insights on live data</strong><span class="d">Read-only aggregation endpoints — the TV summary, accounts summary, receivables ageing, field team — behind the tenant and a manager permission; the module's seeded dataset becomes its offline cache.</span></td><td class="id">PF5 (read slice)</td><td class="id">M</td><td class="num">1.5</td><td class="num">120–200K</td></tr>
+<tr><td class="id">B4</td><td><strong>Tamil and Hindi in the app</strong><span class="d">String table for the Field module first — the agents are the floor of this product's language need — using the same i18n layer PL4 gives the web app.</span></td><td class="id">PL4</td><td class="id">S–M</td><td class="num">1</td><td class="num">70–130K</td></tr>
+<tr class="sum"><td></td><td>Phase B</td><td></td><td></td><td class="num">5.5</td><td class="num">0.4–0.75M</td></tr>
+</tbody></table></div>
+<p><em>Waits on you:</em> MSG91 account (already on the ERP list for week 12), a Firebase project for FCM, the decision on self-hosted versus EAS updates.</p>
+<div class="gate"><b>Gate B</b>A lost phone is revoked and wiped from the console · the founder opens Insights and sees this morning's collections without asking anyone · an agent in Tamil completes a route · Play closed-testing track passes review</div>
+
+<h3>Phase C — Plant and store · alongside ERP Phase 2, weeks 23–33</h3>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Item</th><th>Backlog</th><th>Size</th><th>Weeks</th><th>Tokens</th></tr></thead>
+<tbody>
+<tr><td class="id">C1</td><td><strong>Supervisor capture, offline</strong><span class="d">Hourly production, downtime with reason codes, mould shots — the same forms the web has, sized for a phone held in one hand on the floor, queued through the same outbox.</span></td><td class="id">M5, HR7</td><td class="id">M</td><td class="num">2</td><td class="num">150–250K</td></tr>
+<tr><td class="id">C2</td><td><strong>Andon alerts</strong><span class="d">Machine stopped, downtime running past threshold, plan behind by N% — pushed from M1's state to the supervisor on shift.</span></td><td class="id">M1, M4</td><td class="id">S</td><td class="num">0.75</td><td class="num">50–90K</td></tr>
+<tr><td class="id">C3</td><td><strong>QC checklists and incident reports</strong><span class="d">G5's templates rendered as tap-through checklists with photos; a near-miss form that takes 30 seconds.</span></td><td class="id">M6, G5, ES2</td><td class="id">M</td><td class="num">1.5</td><td class="num">120–200K</td></tr>
+<tr><td class="id">C4</td><td><strong>Work instructions on the phone</strong><span class="d">Current revision only, cached per machine assignment, read receipt back to MES2.</span></td><td class="id">MES2</td><td class="id">S</td><td class="num">0.75</td><td class="num">50–90K</td></tr>
+<tr><td class="id">C5</td><td><strong>Store module</strong><span class="d">Camera barcode scanning for putaway, picking and GRN; the dispatch gate and store approvals that exist on the web today, on the phone at the gate.</span></td><td class="id">WM3, WM1, P3</td><td class="id">M</td><td class="num">2</td><td class="num">150–250K</td></tr>
+<tr class="sum"><td></td><td>Phase C</td><td></td><td></td><td class="num">7</td><td class="num">0.5–0.9M</td></tr>
+</tbody></table></div>
+<p><em>Waits on you:</em> the press with OPC UA (ERP Phase 2's own dependency), barcode labels on at least one store's racks, a supervisor willing to run a shift on the phone.</p>
+<div class="gate"><b>Gate C</b>A shift's hourly production is entered from the floor with no desktop · a downtime alert reaches the supervisor before anyone phones · a GRN is received by scan · the gate approves a dispatch from a phone</div>
+
+<h3>Phase D — Employees and customers · alongside ERP Phase 3, weeks 34–47</h3>
+<div class="tw"><table>
+<thead><tr><th>#</th><th>Item</th><th>Backlog</th><th>Size</th><th>Weeks</th><th>Tokens</th></tr></thead>
+<tbody>
+<tr><td class="id">D1</td><td><strong>Employee self-service</strong><span class="d">Payslips, leave request and balance, attendance history, for every employee who can log in.</span></td><td class="id">HR4, HR5</td><td class="id">M</td><td class="num">1.5</td><td class="num">120–200K</td></tr>
+<tr><td class="id">D2</td><td><strong>Customer surface</strong><span class="d">WhatsApp-first: statement, invoices and a UPI link on request; the S4 web portal for the rest; a customer app only if the pipeline demands it.</span></td><td class="id">S4, FI5</td><td class="id">M</td><td class="num">2</td><td class="num">150–250K</td></tr>
+<tr><td class="id">D3</td><td><strong>Schemes and CRM in the Field module</strong><span class="d">Scheme periods and slabs in the catalogue; IndiaMART leads assigned to agents as follow-ups.</span></td><td class="id">S2, S3, S5</td><td class="id">S</td><td class="num">1</td><td class="num">60–110K</td></tr>
+<tr class="sum"><td></td><td>Phase D</td><td></td><td></td><td class="num">4.5</td><td class="num">0.35–0.6M</td></tr>
+</tbody></table></div>
+<div class="gate"><b>Gate D</b>A payslip is opened on a phone without HR involvement · a customer pays an invoice from a WhatsApp link and the receipt posts itself · a lead from IndiaMART is visited within two days</div>
+
+<h3>Totals and calendar</h3>
+<div class="tw"><table>
+<thead><tr><th>Phase</th><th>Dev-weeks</th><th>Tokens</th><th>Runs alongside</th></tr></thead>
+<tbody>
+<tr><td>A · Prototype to pilot</td><td class="num">7</td><td class="num">0.5–0.85M</td><td>ERP Phase 0</td></tr>
+<tr><td>B · Identity, channels, live Insights</td><td class="num">5.5</td><td class="num">0.4–0.75M</td><td>ERP Phase 1</td></tr>
+<tr><td>C · Plant and store</td><td class="num">7</td><td class="num">0.5–0.9M</td><td>ERP Phase 2</td></tr>
+<tr><td>D · Employees and customers</td><td class="num">4.5</td><td class="num">0.35–0.6M</td><td>ERP Phase 3</td></tr>
+<tr class="sum"><td>Mobile programme (with 20% regression overhead)</td><td class="num">24 → ~29</td><td class="num">2.0–3.7M</td><td>≈ 11 months, one mobile developer + me</td></tr>
+</tbody></table></div>
+<p>Folded into the Build Plan's two-developer team instead of a third person, the same work adds roughly three months to the 12–14 month calendar. A dedicated mobile developer keeps the ERP calendar intact and is the recommendation.</p>
+
+<h2>Risks I'd name now</h2>
+<div class="tw"><table>
+<thead><tr><th>Risk</th><th>Why it's real</th><th>Mitigation in the plan</th></tr></thead>
+<tbody>
+<tr><td>The debug-signed APK spreads</td><td>Anyone with the Releases link can install it; a debug key cannot be rotated into a Play listing later without a new package name.</td><td>A4 in the first weeks; the current package name is kept only if the release key is created before any tenant installs.</td></tr>
+<tr><td>Sync loses a collection</td><td>A receipt that exists on a phone but not in the ledger is a cash discrepancy the office cannot see.</td><td>A2's tests; the sync screen already shows pending counts per table; Sentry captures failed pushes with payloads redacted.</td></tr>
+<tr><td>Losing the release keystore</td><td>Loses the ability to update the app for every tenant.</td><td>Vault with two custodians, Play App Signing so Google holds the upload key's counterpart.</td></tr>
+<tr><td>Background location and Play policy</td><td>Google rejects apps that request background location without a visible need.</td><td>Foreground-only pings while the day is open; the position feed is opt-in per tenant and explained in the consent screen.</td></tr>
+<tr><td>Cheap Android hardware</td><td>Agents carry ₹8,000 phones with 3 GB RAM; the demo runs on 48 MB of native modules.</td><td>Maestro on an API 26 emulator profile; no maps SDK in the Field module; images resized on capture (already).</td></tr>
+<tr><td>Two prototypes drift before the merge</td><td>Every week the two apps stay separate, their UI kits diverge further.</td><td>A3 is in the first phase; no new features land in <code>founder/</code> before it.</td></tr>
+<tr><td>Phone data under DPDP</td><td>A lost phone holds customer balances and phone numbers.</td><td>App lock by policy, revoke-and-wipe (B1), 90-day photo retention, encrypted database key.</td></tr>
+</tbody></table></div>
+
+<h2>What I need from you, by when</h2>
+<div class="tw"><table>
+<thead><tr><th>Needed</th><th>By</th><th>Gates</th></tr></thead>
+<tbody>
+<tr><td>Decision: one app with roles (recommended) or keep two binaries</td><td>Week 3</td><td>A3</td></tr>
+<tr><td>Google Play developer account; two keystore custodians named</td><td>Week 4</td><td>A4, Gate A</td></tr>
+<tr><td>Five pilot agents with Android phones; one office user for route planning</td><td>Week 8</td><td>Gate A</td></tr>
+<tr><td>Anthropic API key in the ERP vault for cheque OCR (or the decision to drop OCR)</td><td>Week 8</td><td>A1</td></tr>
+<tr><td>Decision: self-hosted update server (recommended) or EAS Update</td><td>Week 10</td><td>A4</td></tr>
+<tr><td>MSG91 account; Firebase project for push</td><td>Week 12</td><td>B1, B2</td></tr>
+<tr><td>Apple Developer account, only if an iPhone user is in scope</td><td>Week 20</td><td>Gate B (optional)</td></tr>
+<tr><td>Barcode labels on one store; one supervisor for a phone shift</td><td>Week 22</td><td>Gate C</td></tr>
+<tr><td>Meta WhatsApp Business verification; Razorpay (shared with ERP Phase 3)</td><td>Week 30</td><td>D2</td></tr>
+</tbody></table></div>
+
+<div class="callout"><span class="label">Where to start on Monday</span><p>Create the Play developer account and name the two keystore custodians. Then say "start Phase A" and I begin with A4 — signing and the update server — because it is the one item that gets harder every week a debug build stays in someone's hands, and A1 the same week once the ERP repository exists.</p></div>
+
+<h2>Sources</h2>
+<ul class="src">
+<li><a href="https://www.alphasoftware.com/blog/offline-sync-architecture-tutorial-examples-tools-for-field-operations">Offline + sync architecture for field operations</a> · <a href="https://alldaystech.com/guides/mobile-development/offline-first-mobile-apps-sync-conflict-resolution">Offline-first sync strategies and conflict resolution</a> · <a href="https://www.ianhafkenschiel.com/blog/offline-first-architecture-enterprise-mobile/">Offline-first architecture for enterprise mobile</a> · <a href="https://dev.to/odunayo_dada/offline-first-mobile-app-architecture-syncing-caching-and-conflict-resolution-518n">Syncing, caching and conflict resolution</a></li>
+<li><a href="https://mas.owasp.org/MASVS/">OWASP MASVS</a> · <a href="https://codesecure.in/blogs/mobile-app-pentest-owasp-masvs-methodology">MASVS 2026 pentest methodology</a> · <a href="https://hiesencyber.com/blog/dpdp-act-compliance-checklist-mobile-apps-india/">DPDP compliance checklist for mobile apps</a> · <a href="https://nevatrix.com/blog/dpdp-act-compliance-mobile-apps-india">DPDP for mobile apps: founder's guide</a></li>
+<li><a href="https://docs.expo.dev/eas-update/introduction/">EAS Update</a> · <a href="https://github.com/mercuretechnologies/xprem">xprem — self-hosted Expo OTA updates</a> · <a href="https://github.com/xavia-io/xavia-ota">Xavia OTA</a> · <a href="https://github.com/expo/expo-github-action">Expo GitHub Action</a></li>
+<li><a href="https://www.pkgpulse.com/guides/detox-vs-maestro-vs-appium-react-native-e2e-testing-2026">Detox vs Maestro vs Appium, 2026</a> · <a href="https://vengalath.com/blog/end-to-end-testing-react-native-with-maestro/">Moving from Detox to Maestro</a> · <a href="https://reactnativecoders.com/latest-article/end-to-end-testing-in-react-native-2026-detox-maestro-playwright-ci-cd-pipelines/">E2E testing in React Native, 2026</a></li>
+<li><a href="https://shoplogix.com/mobile-production-monitoring-apps/">Mobile production monitoring apps</a> · <a href="https://teeptrak.com/en/digital-andon-visual-factory-oee-management/">Digital andon and the visual factory</a> · <a href="https://bitsorchestra.com/idea/manufacturing-mobile-apps-development">Manufacturing mobile apps: use cases 2026</a></li>
+<li>Field-sales and collections practice: see <code>docs/RESEARCH.md</code> in the repository (SalesDiary, Bizom/FieldAssist analyses, promise-to-pay guidance, offline UX guidelines, field UI guidelines).</li>
+<li>Companion documents: <a href="https://claude.ai/code/artifact/16246890-bf32-4bb9-85e2-e8d64ec98a08">Build Plan (part four)</a> · <a href="https://claude.ai/code/artifact/6e485824-dcdb-4089-8f07-bb9f009c83f8">Integration Catalogue (part three)</a> · <a href="https://claude.ai/code/artifact/11145f31-ad5b-4bf9-80b9-f55bd00a5f17">Horizontal Catalogue</a> · <a href="https://claude.ai/code/artifact/047d89da-df3d-4428-95ad-774c3ff901f3">SaaS Roadmap</a></li>
+</ul>
+
+<footer>Repository inventory measured directly from <code>sun-sea-mobile</code> (28 + 7 screens, 14 local tables, 5 extension models, 15 routes, 7 releases). Sizes and tokens on the Integration Catalogue's scale, ±40%. Backlog IDs refer to parts three and four.</footer>
+</div>
