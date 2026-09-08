@@ -163,8 +163,11 @@ function HeaderActions({ th, back }: { th: TvTheme; back?: boolean }) {
   const nav = require('@react-navigation/native').useNavigation();
   const { source, loading } = useData();
   const live = source === 'live';
-  // Settings is not registered while the sign-in group is showing; do nothing there instead of throwing.
-  const canOpen = (nav.getState()?.routeNames ?? []).includes('Settings');
+  // Settings lives on the root stack, so walk up from the tab navigator; it is absent while the sign-in group is showing.
+  const canOpen = (() => {
+    for (let n = nav; n; n = n.getParent()) if ((n.getState()?.routeNames ?? []).includes('Settings')) return true;
+    return false;
+  })();
   const openSettings = () => {
     if (canOpen) nav.navigate('Settings');
   };
