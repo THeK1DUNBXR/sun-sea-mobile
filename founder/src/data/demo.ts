@@ -233,3 +233,23 @@ export const attention: Attention[] = [
   { id: 't10', kind: 'DISPATCH', title: '3 dispatches waiting at gate', detail: 'Oldest 35 min · TN 22 AB 4412', severity: 'warning', since: '35 min' },
   { id: 't11', kind: 'PURCHASE', title: 'PO-2026-118 paddy delivery overdue', detail: 'Thanjavur Paddy Traders · 3 days late · ₹9.2L partial', amount: 920000, severity: 'serious', since: '3 d' },
 ];
+
+import type { Dataset } from './types';
+export const demoDataset: Dataset = {
+  source: 'demo',
+  generatedAt: Date.now(),
+  days,
+  customers,
+  agents,
+  products,
+  orderFunnel,
+  production,
+  rawMaterials,
+  purchases,
+  dispatches,
+  expenses,
+  bank,
+  attention,
+  fieldAvailable: true,
+  company: 'Sun Sea Foods (demo)',
+};

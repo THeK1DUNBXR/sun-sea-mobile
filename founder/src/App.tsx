@@ -15,13 +15,17 @@ import { AgentScreen, TeamScreen } from './screens/TeamScreen';
 import { OperationsScreen } from './screens/OperationsScreen';
 import { AttentionScreen } from './screens/AttentionScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
-import { attention } from './data/demo';
+import { DataProvider, useData } from './data/DataContext';
+import { LoginScreen } from './screens/LoginScreen';
+import { ServerScreen } from './screens/ServerScreen';
+import { ActivityIndicator, View } from 'react-native';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tabs = createBottomTabNavigator<TabParamList>();
 
 function MainTabs() {
   const { T, A } = useTheme();
+  const { attention } = useData().dataset;
   const urgent = attention.filter((a) => a.severity === 'critical' || a.severity === 'serious').length;
   return (
     <Tabs.Navigator
@@ -54,16 +58,36 @@ function MainTabs() {
 
 function Root() {
   const { T, A, isDark } = useTheme();
+  const { ready, source, authenticated } = useData();
   const base = isDark ? DarkTheme : DefaultTheme;
+  if (!ready) {
+    return (
+      <View style={{ flex: 1, backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={A.accentBg} />
+      </View>
+    );
+  }
+  const showLogin = source === 'live' ? !authenticated : false;
   const theme = { ...base, colors: { ...base.colors, primary: A.accentBg, background: T.bg, card: T.panel, text: T.text, border: T.headerBorder } };
   return (
     <NavigationContainer theme={theme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: T.bg } }}>
-        <Stack.Screen name="Main" component={MainTabs} />
-        <Stack.Screen name="Agent" component={AgentScreen} />
-        <Stack.Screen name="Attention" component={AttentionScreen} />
-        <Stack.Screen name="Settings" component={SettingsScreen} />
+        {showLogin ? (
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Server" component={ServerScreen} />
+          </>
+        ) : (
+          <>
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="Agent" component={AgentScreen} />
+            <Stack.Screen name="Attention" component={AttentionScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Server" component={ServerScreen} />
+          </>
+        )}
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -74,7 +98,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <Root />
+          <DataProvider>
+            <Root />
+          </DataProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

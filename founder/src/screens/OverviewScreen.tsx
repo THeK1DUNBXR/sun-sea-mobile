@@ -1,11 +1,11 @@
+import { useData } from '../data/DataContext';
 import React, { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AttentionRow, BarChart, Board, Gauge, KpiCard, Panel, PipelineTile, Pills, Sub, TrendCard, mono } from '../tv/primitives';
 import { inrCompact, pctColor, trendColor, trendText, useTheme } from '../tv/theme';
-import { attention, bank, orderFunnel, production } from '../data/demo';
-import { kpis, last14, monthProgress, receivables, team, type Period } from '../data/metrics';
+import type { Period } from '../data/metrics';
 import { fmtDate, pct } from '../format';
 import type { RootStackParamList } from '../navigation/types';
 
@@ -15,6 +15,9 @@ const LEVEL = { critical: 'CRITICAL', serious: 'HIGH', warning: 'MEDIUM', info: 
 export function OverviewScreen() {
   const nav = useNavigation<Nav>();
   const { T, A } = useTheme();
+  const { dataset, metrics } = useData();
+  const { attention, bank, orderFunnel, production } = dataset;
+  const { kpis, last14, monthProgress, receivables, team } = metrics;
   const [period, setPeriod] = useState<Period>('mtd');
   const k = kpis(period);
   const trend = (a: number, b: number) => (b ? ((a - b) / b) * 100 : null);

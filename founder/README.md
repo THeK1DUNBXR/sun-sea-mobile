@@ -24,6 +24,27 @@ follow-ups, day sessions, handovers). Connecting it to the live ERP means adding
 one read-only aggregation endpoint per tab; the prototype ships with a seeded
 dataset (`src/data/demo.ts`) so it can be evaluated without a server.
 
+## Live data from the Railway backend (v0.3)
+
+The app ships pointed at `https://sunseaerp-production.up.railway.app/api`. On
+first launch it offers **Sign in** (an ERP user with dashboard, accounts, sales
+and inventory view rights) or **Explore demo data**. In live mode it reads:
+
+| Scene | Endpoints |
+| ----- | --------- |
+| Overview | `/dashboard/tv-summary`, `/dashboard/accounts-summary?period=month`, invoices + RECEIPT vouchers for the 14-day series |
+| Sales | `/sales-invoices` (60 days), `/sales-orders` (pipeline by status), `/products`, `/customers` |
+| Receivables | `/accounts/receivable` summaries (ledger balances), invoice ageing, RECEIPT vouchers by mode |
+| Field team | `/mobile/admin/team` — only when the mobile extension is installed; otherwise the scene explains why it is empty |
+| Plant | TV summary production lines, `/finished-goods-stocks`, `/raw-material-stocks`, `/goods-dispatches`, `/purchase-orders`, `/expenses` |
+| Attention | TV alerts + accounts alerts + orders awaiting approval, overdue POs, dispatches at gate, blocked / 90-day customers |
+
+The last live dataset is cached on the phone so the app opens instantly and
+offline; pull-to-refresh or Settings → *Refresh now* reloads. Settings also
+switches between live and demo data and changes the server (Test connection
+shows version, environment, latency and whether the mobile extension exists).
+Requests retry while a sleeping Railway service wakes.
+
 ## Build
 
 ```bash

@@ -1,11 +1,10 @@
+import { useData } from '../data/DataContext';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AttentionRow, BarRow, Board, Gauge, KpiCard, Panel, PipelineTile, Sub, TileRow, mono } from '../tv/primitives';
 import { inrCompact, pctColor, useTheme } from '../tv/theme';
-import { agents } from '../data/demo';
-import { monthProgress, team } from '../data/metrics';
 import { pct } from '../format';
 import type { RootStackParamList, ScreenProps } from '../navigation/types';
 
@@ -16,6 +15,9 @@ const syncLabel = (m: number) => (m <= 30 ? `synced ${m} min ago` : m < 1440 ? `
 export function TeamScreen() {
   const nav = useNavigation<Nav>();
   const { T, A } = useTheme();
+  const { dataset, metrics } = useData();
+  const { agents, fieldAvailable } = dataset;
+  const { monthProgress, team } = metrics;
   const sorted = [...agents].sort((a, b) => b.mtdCollected / b.target - a.mtdCollected / a.target);
   const notStarted = agents.filter((a) => !a.dayStarted);
   const stale = team.stale;
@@ -27,6 +29,11 @@ export function TeamScreen() {
       banner={notStarted.length || stale.length ? { level: 'alert', headline: `ATTENTION — ${notStarted.length ? `${notStarted[0].name.toUpperCase()} HAS NOT STARTED THE DAY` : `${stale[0].name.toUpperCase()} NOT SYNCED FOR ${Math.round(stale[0].lastSyncMinutes / 60)} H`}`, sub: `${notStarted.length + stale.length} flags` } : { level: 'ok', headline: 'ALL AGENTS ACTIVE AND SYNCED' }}
       ticker={agents.map((a) => `${a.name.split(' ')[0].toUpperCase()} ${a.visitsDone}/${a.visitsPlanned} VISITS · ${inrCompact(a.todayCollected)}`).join('   ·   ')}
     >
+      {!fieldAvailable ? (
+        <Panel title="FIELD TEAM DATA" accentBorder={A.amber}>
+          <AttentionRow level="INFO" text="Field-team figures arrive through the Sun Sea Field app once the mobile extension is installed on the ERP server. Until then this scene is empty." />
+        </Panel>
+      ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
         <KpiCard label="On duty" value={`${team.active}/${agents.length}`} sub={notStarted.length ? `${notStarted.map((a) => a.name.split(' ')[0]).join(', ')} not started` : 'everyone started'} color={notStarted.length ? A.amber : A.green} />
         <KpiCard label="Collected today" numeric={team.todayCollected} format={inrCompact} sub={`${inrCompact(team.cashInHand)} cash still with agents`} color={A.green} />
@@ -75,6 +82,7 @@ export function TeamScreen() {
 
 export function AgentScreen({ route }: ScreenProps<'Agent'>) {
   const { T, A } = useTheme();
+  const { agents } = useData().dataset;
   const a = agents.find((x) => x.id === route.params.agentId)!;
   const p = Math.round((a.mtdCollected / a.target) * 100);
   const sp = Math.round((a.mtdSales / a.salesTarget) * 100);

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Sun Sea Insights",
     "slug": "sun-sea-insights",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -31,7 +31,7 @@
       "expo-splash-screen"
     ],
     "extra": {
-      "apiUrl": "http://192.168.1.10:5000/api"
+      "apiUrl": "https://sunseaerp-production.up.railway.app/api"
     }
   }
 }

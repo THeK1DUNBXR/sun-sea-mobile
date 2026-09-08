@@ -5,6 +5,8 @@ export type RootStackParamList = {
   Agent: { agentId: string };
   Attention: undefined;
   Settings: undefined;
+  Login: undefined;
+  Server: undefined;
 };
 export type TabParamList = { Overview: undefined; Sales: undefined; Receivables: undefined; Team: undefined; Operations: undefined };
 export type ScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<RootStackParamList, T>;

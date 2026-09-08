@@ -1,8 +1,9 @@
+import { useData } from '../data/DataContext';
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { AttentionRow, Board, Panel, Pills, mono } from '../tv/primitives';
 import { inrCompact, useTheme } from '../tv/theme';
-import { attention, type Attention } from '../data/demo';
+import type { Attention } from '../data/types';
 
 type Filter = 'all' | 'money' | 'ops';
 const MONEY: Attention['kind'][] = ['APPROVAL', 'CREDIT', 'HANDOVER', 'PROMISE', 'CHEQUE'];
@@ -11,6 +12,8 @@ const GROUP: Record<Attention['kind'], string> = { APPROVAL: 'ORDERS AWAITING AP
 
 export function AttentionScreen() {
   const { T, A } = useTheme();
+  const { dataset, metrics } = useData();
+  const { attention } = dataset;
   const [filter, setFilter] = useState<Filter>('all');
   const list = attention.filter((a) => (filter === 'all' ? true : filter === 'money' ? MONEY.includes(a.kind) : !MONEY.includes(a.kind)));
   const groups = Array.from(new Set(list.map((a) => a.kind)));

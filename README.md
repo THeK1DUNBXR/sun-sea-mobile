@@ -40,6 +40,9 @@ The Field app ships pointed at the Railway deployment
 (`https://sunseaerp-production.up.railway.app/api`). It detects whether the
 mobile extension is installed there and otherwise works directly against the
 ERP's own endpoints — see `mobile/README.md` → *Connecting to the Railway backend*.
+Sun Sea Insights signs in to the same backend and reads the TV summary, accounts
+summary and list endpoints live, with the seeded dataset as a fallback — see
+`founder/README.md` → *Live data from the Railway backend*.
 
 ## Two apps
 

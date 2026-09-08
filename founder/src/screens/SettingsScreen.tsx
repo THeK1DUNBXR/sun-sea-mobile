@@ -1,27 +1,60 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 import Constants from 'expo-constants';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Board, Panel, TileRow, mono } from '../tv/primitives';
 import { useTheme } from '../tv/theme';
+import { useData } from '../data/DataContext';
+import type { RootStackParamList } from '../navigation/types';
+import { relative } from '../format';
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function SettingsScreen() {
+  const nav = useNavigation<Nav>();
   const th = useTheme();
   const { T, A } = th;
+  const { source, authenticated, user, serverHost, lastUpdated, loading, error, refresh, logout, useDemo } = useData();
   return (
-    <Board scene="About" back>
+    <Board scene="Settings" back>
+      <Panel title="DATA SOURCE" accentBorder={source === 'demo' ? A.amber : undefined}>
+        <View style={{ gap: 6 }}>
+          <TileRow title={source === 'live' ? 'Live · Sun Sea ERP' : 'Demo dataset (seeded)'} sub={source === 'live' ? `${serverHost ?? ''} · ${lastUpdated ? `updated ${relative(new Date(lastUpdated))}` : 'not loaded yet'}${error ? ` · ${error}` : ''}` : 'Illustrative figures. Sign in to see the real business.'} right={source === 'live' ? (loading ? 'LOADING' : 'LIVE') : 'DEMO'} rightColor={source === 'live' ? A.green : A.amber} />
+          {source === 'live' ? <TileRow title="Refresh now" sub="Pull the latest figures from the ERP" onPress={() => void refresh()} /> : null}
+          {source === 'live' ? <TileRow title="Signed in as" right={user?.fullName ?? ''} /> : null}
+          {source === 'live' ? (
+            <TileRow title="Switch to demo data" sub="Keeps you signed in; live figures are one tap away" onPress={() => void useDemo()} />
+          ) : (
+            <TileRow title={authenticated ? 'Back to live data' : 'Sign in for live data'} sub={authenticated ? `Signed in as ${user?.fullName ?? ''}` : 'Use your ERP account'} onPress={() => nav.navigate('Login')} />
+          )}
+          <TileRow title="Server" sub={serverHost ?? 'Not connected'} right={serverHost ? 'CHANGE' : 'CONNECT'} rightColor={A.accentBg} onPress={() => nav.navigate('Server')} />
+          {authenticated ? (
+            <TileRow
+              title="Sign out"
+              rightColor={A.red}
+              right="SIGN OUT"
+              onPress={() =>
+                Alert.alert('Sign out', 'Cached live figures are removed from this phone.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Sign out', style: 'destructive', onPress: () => void logout() },
+                ])
+              }
+            />
+          ) : null}
+        </View>
+      </Panel>
       <Panel title="SUN SEA INSIGHTS">
         <View style={{ gap: 6 }}>
-          <TileRow title="Version" right={String(Constants.expoConfig?.version ?? '0.2.0')} />
-          <TileRow title="Data" right="DEMO (SEEDED)" rightColor={A.amber} />
-          <TileRow title="ERP server" right={String((Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl ?? '—')} />
+          <TileRow title="Version" right={String(Constants.expoConfig?.version ?? '0.3.0')} />
           <Pressable onPress={th.toggle}>
             <TileRow title="Display theme" right={th.isDark ? 'DARK · TAP FOR LIGHT' : 'LIGHT · TAP FOR DARK'} rightColor={A.accentBg} />
           </Pressable>
         </View>
       </Panel>
       <Panel title="WHAT THIS APP IS FOR">
-        <Text style={mono({ fontSize: 13, color: T.text, lineHeight: 20 })}>A read-only view of the business for the founder, styled like the management TV dashboard in the ERP: sales, collections, receivables, the field team, the plant and everything that needs a decision. No data is entered here — the office works in the ERP web app and agents use the Sun Sea Field app.</Text>
-        <Text style={mono({ fontSize: 13, color: T.textDim, lineHeight: 20, marginTop: 10 })}>When connected, the figures come from the same tables as the web TV dashboard (sales orders, invoices, vouchers, production plans, stock, purchase orders, dispatches, expenses) plus the field-app sync tables.</Text>
+        <Text style={mono({ fontSize: 13, color: T.text, lineHeight: 20 })}>A read-only view of the business for the founder, styled like the management TV dashboard in the ERP: sales, collections, receivables, the field team, the plant and everything that needs a decision. No data is entered here.</Text>
+        <Text style={mono({ fontSize: 13, color: T.textDim, lineHeight: 20, marginTop: 10 })}>Live mode reads the same TV summary and accounts summary the web wall uses, plus invoices, receipts, orders, customers, stock, purchases, dispatches and expenses. The field-team scene fills in once the mobile extension is installed on the server.</Text>
       </Panel>
     </Board>
   );

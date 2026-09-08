@@ -1,14 +1,16 @@
+import { useData } from '../data/DataContext';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { BarRow, Board, Gauge, KpiCard, Panel, Sub, TileRow, mono } from '../tv/primitives';
 import { inrCompact, useTheme } from '../tv/theme';
-import { kpis, receivables } from '../data/metrics';
-import { bank } from '../data/demo';
 
 const BUCKETS = ['0–30 d', '31–60 d', '61–90 d', '90+ d'];
 
 export function ReceivablesScreen() {
   const { T, A } = useTheme();
+  const { dataset, metrics } = useData();
+  const { bank } = dataset;
+  const { kpis, receivables } = metrics;
   const k = kpis('mtd');
   const modes = Object.entries(k.byMode).sort((a, b) => b[1] - a[1]);
   const modeMax = Math.max(...modes.map((m) => m[1]));

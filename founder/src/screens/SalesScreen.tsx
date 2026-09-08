@@ -1,13 +1,16 @@
+import { useData } from '../data/DataContext';
 import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { BarChart, BarRow, Board, KpiCard, Panel, PipelineTile, Pills, Sub, TileRow, mono } from '../tv/primitives';
 import { inrCompact, trendColor, trendText, useTheme } from '../tv/theme';
-import { customers, orderFunnel, products } from '../data/demo';
-import { kpis, periodRows, type Period } from '../data/metrics';
+import type { Period } from '../data/metrics';
 import { fmtDate } from '../format';
 
 export function SalesScreen() {
   const { T, A } = useTheme();
+  const { dataset, metrics } = useData();
+  const { customers, orderFunnel, products } = dataset;
+  const { kpis, periodRows } = metrics;
   const [period, setPeriod] = useState<Period>('mtd');
   const k = kpis(period);
   const { rows } = periodRows(period);

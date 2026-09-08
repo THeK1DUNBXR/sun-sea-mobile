@@ -1,11 +1,13 @@
+import { useData } from '../data/DataContext';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { AttentionRow, BarRow, Board, Gauge, KpiCard, Panel, PipelineTile, Sub, TileRow, mono } from '../tv/primitives';
 import { inrCompact, pctColor, useTheme } from '../tv/theme';
-import { dispatches, expenses, production, products, purchases, rawMaterials } from '../data/demo';
 
 export function OperationsScreen() {
   const { T, A } = useTheme();
+  const { dataset, metrics } = useData();
+  const { dispatches, expenses, production, products, purchases, rawMaterials } = dataset;
   const lowFg = products.filter((p) => p.stock < p.minStock).sort((a, b) => a.stock / a.minStock - b.stock / b.minStock);
   const lowRm = rawMaterials.filter((r) => r.onHand < r.reorder);
   const total = products.length + rawMaterials.length;
