@@ -62,6 +62,9 @@ jobs:
           npm run typecheck
           npm test -- --ci
 
+      - name: Stamp Android versionCode from the run number
+        run: node -e "const fs=require('fs');const f='app.json';const j=JSON.parse(fs.readFileSync(f,'utf8'));j.expo.android=j.expo.android||{};j.expo.android.versionCode=${{ github.run_number }};fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n');console.log('versionCode',j.expo.android.versionCode)"
+
       - name: Generate native Android project (expo prebuild)
         run: npx expo prebuild --platform android --no-install --clean
 

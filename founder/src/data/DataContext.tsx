@@ -18,6 +18,8 @@ interface DataState {
   error: string | null;
   lastUpdated: number | null;
   authenticated: boolean;
+  /** True once the user has either signed in or explicitly chosen the demo dataset. */
+  chosen: boolean;
   user: { fullName: string; email?: string } | null;
   serverHost: string | null;
   login: (email: string, password: string) => Promise<void>;
@@ -36,6 +38,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
+  const [chosen, setChosen] = useState(false);
   const [user, setUser] = useState<DataState['user']>(null);
   const [serverHost, setServerHost] = useState<string | null>(null);
 
@@ -68,6 +71,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const live = !!token && src === 'live';
         setAuthenticated(!!token);
         setSource(live ? 'live' : 'demo');
+        setChosen(live || src === 'demo');
         if (live && cache) {
           const parsed = JSON.parse(cache) as Dataset;
           parsed.days = parsed.days.map((d) => ({ ...d, date: new Date(d.date as unknown as string) }));
@@ -99,6 +103,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     ]);
     setUser(u);
     setAuthenticated(true);
+    setChosen(true);
     setSource('live');
     const info = await getServerInfo();
     setServerHost(info?.host ?? null);
@@ -111,9 +116,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       /* fine offline */
     }
     await tokenStore.clear();
-    await AsyncStorage.multiRemove([KEYS.user, KEYS.cache, KEYS.cacheAt]);
-    await AsyncStorage.setItem(KEYS.source, 'demo');
+    await AsyncStorage.multiRemove([KEYS.user, KEYS.cache, KEYS.cacheAt, KEYS.source]);
     setAuthenticated(false);
+    setChosen(false);
     setUser(null);
     setSource('demo');
     setDataset(demoDataset);
@@ -122,12 +127,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const useDemo = useCallback(async () => {
     await AsyncStorage.setItem(KEYS.source, 'demo');
+    setChosen(true);
     setSource('demo');
     setDataset(demoDataset);
   }, []);
 
   const metrics = useMemo(() => computeMetrics(dataset), [dataset]);
-  const value = useMemo<DataState>(() => ({ ready, source, dataset, metrics, loading, error, lastUpdated, authenticated, user, serverHost, login, logout, useDemo, refresh }), [ready, source, dataset, metrics, loading, error, lastUpdated, authenticated, user, serverHost, login, logout, useDemo, refresh]);
+  const value = useMemo<DataState>(() => ({ ready, source, dataset, metrics, loading, error, lastUpdated, authenticated, chosen, user, serverHost, login, logout, useDemo, refresh }), [ready, source, dataset, metrics, loading, error, lastUpdated, authenticated, chosen, user, serverHost, login, logout, useDemo, refresh]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

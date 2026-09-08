@@ -24,6 +24,7 @@ export function LoginScreen() {
     setErr(null);
     try {
       await login(email.trim(), password);
+      if (nav.canGoBack()) nav.popToTop();
     } catch (e) {
       setErr((e as Error).message || 'Login failed');
     } finally {
@@ -56,7 +57,7 @@ export function LoginScreen() {
 
       <Panel title="PROTOTYPE">
         <Text style={mono({ fontSize: 12, color: T.textDim, lineHeight: 18 })}>No account yet? Explore the same screens with a seeded demo dataset. Nothing is sent anywhere.</Text>
-        <Pressable onPress={() => void useDemo()} style={{ marginTop: 12, minHeight: 46, borderWidth: 1, borderColor: T.panelBorder, borderRadius: 2, alignItems: 'center', justifyContent: 'center' }}>
+        <Pressable onPress={() => { void useDemo(); if (nav.canGoBack()) nav.popToTop(); }} style={{ marginTop: 12, minHeight: 46, borderWidth: 1, borderColor: T.panelBorder, borderRadius: 2, alignItems: 'center', justifyContent: 'center' }}>
           <Text style={mono({ fontSize: 12, fontWeight: '800', color: T.text, letterSpacing: 1 })}>EXPLORE DEMO DATA</Text>
         </Pressable>
       </Panel>

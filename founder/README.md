@@ -6,7 +6,8 @@ scanlines, monospace tabular numbers, a blinking LIVE badge and clock, an
 attention banner, a scrolling ticker, coloured-rail KPI cards with count-up
 numbers, glowing gauges, threshold-coloured bar rows, giant pipeline tiles and
 red-bordered attention panels. Dark by default with a light mode toggle. No data
-entry, no login in the prototype, seeded demo data.
+entry. Signs in to the Railway-hosted ERP for live figures, or runs on a seeded
+demo dataset.
 
 | Tab | What it shows |
 | --- | ------------- |
@@ -24,7 +25,12 @@ follow-ups, day sessions, handovers). Connecting it to the live ERP means adding
 one read-only aggregation endpoint per tab; the prototype ships with a seeded
 dataset (`src/data/demo.ts`) so it can be evaluated without a server.
 
-## Live data from the Railway backend (v0.3)
+## Live data from the Railway backend (v0.3, v0.4)
+
+v0.4 fixes the first-run flow: a fresh install now opens on the **Sign in**
+screen (previously it dropped straight into demo data with no way to reach
+Settings). Every scene's header carries a LIVE/DEMO badge and a gear that opens
+Settings; signing out returns to the sign-in screen.
 
 The app ships pointed at `https://sunseaerp-production.up.railway.app/api`. On
 first launch it offers **Sign in** (an ERP user with dashboard, accounts, sales

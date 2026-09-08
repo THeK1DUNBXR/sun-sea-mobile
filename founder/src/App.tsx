@@ -58,7 +58,7 @@ function MainTabs() {
 
 function Root() {
   const { T, A, isDark } = useTheme();
-  const { ready, source, authenticated } = useData();
+  const { ready, source, authenticated, chosen } = useData();
   const base = isDark ? DarkTheme : DefaultTheme;
   if (!ready) {
     return (
@@ -67,7 +67,8 @@ function Root() {
       </View>
     );
   }
-  const showLogin = source === 'live' ? !authenticated : false;
+  // First launch (nothing chosen yet) and live-but-signed-out both land on the sign-in screen.
+  const showLogin = source === 'live' ? !authenticated : !chosen;
   const theme = { ...base, colors: { ...base.colors, primary: A.accentBg, background: T.bg, card: T.panel, text: T.text, border: T.headerBorder } };
   return (
     <NavigationContainer theme={theme}>

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Defs, Line, Path, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { MONO, useTheme, type TvTheme } from './theme';
+import { useData } from '../data/DataContext';
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -126,17 +127,7 @@ export function Board({
           <Text style={mono({ fontSize: 12, fontWeight: '700', color: T.text })}>{dateStr}</Text>
           <Text style={mono({ fontSize: 11, color: T.textMute })}>{timeStr}</Text>
         </View>
-        {right ?? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <View style={[s.badge, { backgroundColor: T.badgeBg, borderColor: T.badgeBorder }]}>
-              <LiveDot color={A.red} />
-              <Text style={mono({ fontSize: 10, fontWeight: '800', color: T.text, letterSpacing: 1 })}>LIVE</Text>
-            </View>
-            <Pressable onPress={th.toggle} hitSlop={8} style={[s.badge, { backgroundColor: T.badgeBg, borderColor: T.badgeBorder, paddingHorizontal: 8 }]}>
-              <Ionicons name={th.isDark ? 'sunny-outline' : 'moon-outline'} size={14} color={T.textDim} />
-            </Pressable>
-          </View>
-        )}
+        {right ?? <HeaderActions th={th} back={back} />}
       </View>
 
       {/* BANNER */}
@@ -163,6 +154,32 @@ export function Board({
         </View>
       ) : null}
     </SafeAreaView>
+  );
+}
+
+/** Source badge (LIVE / DEMO) + settings gear. Tapping the badge also opens Settings so the data source is one tap away. */
+function HeaderActions({ th, back }: { th: TvTheme; back?: boolean }) {
+  const { A, T } = th;
+  const nav = require('@react-navigation/native').useNavigation();
+  const { source, loading } = useData();
+  const live = source === 'live';
+  // Settings is not registered while the sign-in group is showing; do nothing there instead of throwing.
+  const canOpen = (nav.getState()?.routeNames ?? []).includes('Settings');
+  const openSettings = () => {
+    if (canOpen) nav.navigate('Settings');
+  };
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <Pressable onPress={openSettings} hitSlop={8} style={[s.badge, { backgroundColor: T.badgeBg, borderColor: live ? T.badgeBorder : A.amber }]}>
+        <LiveDot color={live ? (loading ? A.amber : A.red) : A.amber} />
+        <Text style={mono({ fontSize: 10, fontWeight: '800', color: live ? T.text : A.amber, letterSpacing: 1 })}>{live ? 'LIVE' : 'DEMO'}</Text>
+      </Pressable>
+      {back ? null : (
+        <Pressable onPress={openSettings} hitSlop={8} accessibilityLabel="Settings" style={[s.badge, { backgroundColor: T.badgeBg, borderColor: T.badgeBorder, paddingHorizontal: 8 }]}>
+          <Ionicons name="settings-outline" size={15} color={T.textDim} />
+        </Pressable>
+      )}
+    </View>
   );
 }
 
