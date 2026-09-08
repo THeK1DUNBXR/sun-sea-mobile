@@ -109,3 +109,30 @@ Everything inside the arrow runs in one Prisma transaction.
 
 `npx tsc --noEmit` in the backend must stay clean after applying the module
 (it does against the current `sunsea-main` checkout).
+
+## Field GPS module (agent live location on the TV wall)
+
+Independent of the mobile module above — it applies cleanly to a plain ERP such
+as the Railway deployment, and the Field app uses it in both integration modes.
+
+```bash
+node sun-sea-mobile/backend-extension/scripts/apply-field-gps.js sunsea-main
+cd sunsea-main/backend && npx prisma migrate dev -n field_gps && npx tsc --noEmit
+cd ../frontend && npm run build
+```
+
+What it does:
+
+| Piece | Change |
+| ----- | ------ |
+| Prisma | `FieldAgentPosition` — one row per position report (lat/lng, accuracy, speed, heading, battery, source, visit/customer, `recordedAt`), `clientId` unique so retried batches never duplicate |
+| API | `POST /api/field/positions` — the phone reports its own positions (any logged-in user); `GET /api/field/positions/latest` and `GET /api/field/positions/:agent/trail?date=` for the wall / Insights (`dashboard.view` or `mobile-app.manage`) |
+| Socket | emits `field:position` after every report so the wall updates within a second |
+| Frontend | `salesforce/salesTeam.ts` gains `useLivePositions()` / `useFieldTeam()`; `SceneFieldSales` switches to it, shows **LIVE** only when the endpoint answers and **SIMULATED** otherwise |
+
+Status on the map is derived: `in_meeting` when the agent checked in at a
+customer (or has an in-progress visit when the mobile module is present),
+`transit` when moving above 5 km/h, `active` when stationary and fresh, `idle`
+when the day ended or the last report is older than 30 minutes. Today's visit
+and order counts fill in when the mobile module's tables exist.
+

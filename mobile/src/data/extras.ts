@@ -13,6 +13,7 @@ import { newId } from '../utils/ids';
 import { round2, todayYmd } from '../utils/format';
 import { endOfDayMs, startOfDayMs } from '../utils/period';
 import type { CapturedPhoto } from '../utils/photos';
+import { recordPosition } from '../location/positions';
 
 async function position(): Promise<{ latitude: number; longitude: number } | null> {
   try {
@@ -139,6 +140,7 @@ export async function startDay(note?: string | null): Promise<DaySession> {
   const existing = await tables.daySessions().query(Q.where('date', today)).fetch();
   if (existing[0]) return existing[0];
   const pos = await position();
+  void recordPosition('DAY_START', pos);
   return database.write(() =>
     tables.daySessions().create((r) => {
       r._raw.id = newId();
@@ -160,6 +162,7 @@ export async function startDay(note?: string | null): Promise<DaySession> {
 
 export async function endDay(session: DaySession, cashInHand: number, note?: string | null) {
   const pos = await position();
+  void recordPosition('DAY_END', pos);
   await database.write(async () => {
     await session.update((r) => {
       r.endedAt = Date.now();

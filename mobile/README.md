@@ -55,6 +55,28 @@ Backend prerequisites on Railway: `DATABASE_URL`, `JWT_ACCESS_SECRET`,
 agent's ERP user needs `customers.view`, `sales-invoices.view`,
 `products.view`, `vouchers.create` and `sales-orders.create`.
 
+## Live location on the web map (v1.3)
+
+While the agent's day is open the app shares the phone's position with the
+office, so the **Field Sales** scene of the ERP TV dashboard shows where each
+agent is instead of the simulated dots.
+
+- **What is sent**: a ping every 2 minutes or 120 m (foreground, balanced
+  accuracy), plus a tagged position at *Start day*, *Check in*, *Check out*
+  and *End day*. Each carries accuracy, speed, heading and battery.
+- **When**: only while signed in to a live server, the day session is open and
+  the *Share my location with the office* switch (Settings) is on. Nothing is
+  sent in demo mode. Tracking stops at *End day* and on log-out.
+- **How**: positions queue on the phone and post in batches to
+  `POST /api/field/positions`; queued positions also flush after every sync.
+  If the server answers 404 (module not installed) the app pauses, keeps the
+  newest 50 and re-checks every 6 hours. A location pin appears in the day
+  pill on the dashboard while sharing is active.
+- **Server side**: install the Field GPS module from `backend-extension/`
+  (`node backend-extension/scripts/apply-field-gps.js <path-to-sunsea-main>`,
+  then `npx prisma migrate dev -n field_gps` and redeploy to Railway). See
+  `backend-extension/README.md` → *Field GPS module*.
+
 ## What's new in v1.1
 
 Designed from the ERP's own capabilities and field-sales best practice (see

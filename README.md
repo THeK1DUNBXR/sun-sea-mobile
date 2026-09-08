@@ -44,6 +44,12 @@ Sun Sea Insights signs in to the same backend and reads the TV summary, accounts
 summary and list endpoints live, with the seeded dataset as a fallback — see
 `founder/README.md` → *Live data from the Railway backend*.
 
+Field app 1.3 adds **agent live location**: while an agent's day is open the
+phone posts its position to `/api/field/positions`, and the ERP's Field Sales
+TV scene plots the team on the map in real time. The server side is a drop-in
+module in `backend-extension/` (`scripts/apply-field-gps.js`) — see
+`backend-extension/README.md` → *Field GPS module*.
+
 ## Two apps
 
 | App | Folder | For | APK releases |

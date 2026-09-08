@@ -11,6 +11,7 @@ import { RootNavigator } from './navigation/RootNavigator';
 import { SplashGate } from './screens/SplashGate';
 import { ToastProvider } from './components/Toast';
 import { AppLockGate } from './auth/AppLock';
+import { LocationSharingProvider } from './location/LocationSharing';
 import { sweepBrokenPromises } from './data/extras';
 
 function Gate() {
@@ -29,9 +30,11 @@ function Gate() {
   if (!ready) return <SplashGate />;
   return (
     <SyncProvider>
-      <AppLockGate>
-        <RootNavigator />
-      </AppLockGate>
+      <LocationSharingProvider>
+        <AppLockGate>
+          <RootNavigator />
+        </AppLockGate>
+      </LocationSharingProvider>
     </SyncProvider>
   );
 }

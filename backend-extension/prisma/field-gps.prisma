@@ -1,0 +1,24 @@
+
+// SUN SEA ERP — Field GPS (agent live location) model
+/// One position report from a sales agent's phone. Written by the Sun Sea Field
+/// app while the agent's day is open; read by the TV dashboard's field-sales map.
+model FieldAgentPosition {
+  id          String   @id @default(uuid()) @db.Uuid
+  clientId    String   @unique @map("client_id") @db.VarChar(36)
+  agentUserId String   @map("agent_user_id") @db.VarChar(36)
+  latitude    Decimal  @db.Decimal(10, 7)
+  longitude   Decimal  @db.Decimal(10, 7)
+  accuracyM   Decimal? @map("accuracy_m") @db.Decimal(8, 1)
+  speedKmh    Decimal? @map("speed_kmh") @db.Decimal(6, 1)
+  heading     Decimal? @db.Decimal(6, 1)
+  batteryPct  Int?     @map("battery_pct")
+  source      String   @default("PING") @db.VarChar(20) // PING | DAY_START | DAY_END | CHECK_IN | CHECK_OUT
+  visitId     String?  @map("visit_id") @db.VarChar(36)
+  customerId  String?  @map("customer_id") @db.VarChar(36)
+  recordedAt  DateTime @map("recorded_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([agentUserId, recordedAt])
+  @@index([recordedAt])
+  @@map("field_agent_positions")
+}

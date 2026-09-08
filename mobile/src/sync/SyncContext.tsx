@@ -8,6 +8,7 @@ import { useObservable } from '../db/hooks';
 import { useAuth } from '../auth/AuthContext';
 import { getLastSync, runSync, SyncOutcome, SyncProgress } from './sync';
 import { demoSync } from '../demo/demoSync';
+import { flushPositions } from '../location/positions';
 
 interface SyncState {
   online: boolean;
@@ -85,6 +86,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       try {
         const outcome = await runSync(setProgress, opts);
         setLastOutcome(outcome);
+        // Piggy-back queued GPS positions on every sync so the web map catches up even if the tracker was asleep.
+        if (outcome.ok) void flushPositions();
         if (outcome.ok) {
           setLastSyncAt(outcome.finishedAt);
           setLastError(null);

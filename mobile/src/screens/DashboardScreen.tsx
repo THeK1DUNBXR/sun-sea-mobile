@@ -10,6 +10,7 @@ import { ProgressRing } from '../components/ProgressRing';
 import { Avatar } from '../components/Avatar';
 import { useAuth } from '../auth/AuthContext';
 import { useSync } from '../sync/SyncContext';
+import { useLocationSharing } from '../location/LocationSharing';
 import { tables } from '../db';
 import { useCount, useQuery } from '../db/hooks';
 import { colors, radius, shadow, spacing, type } from '../theme';
@@ -31,6 +32,7 @@ export function DashboardScreen() {
   const period = currentPeriod();
 
   const session = useQuery(() => tables.daySessions().query(Q.where('date', today)), [today])[0];
+  const { tracking } = useLocationSharing();
   const visits = useQuery(() => tables.visits().query(Q.where('planned_date', today), Q.sortBy('sequence', Q.asc)), [today]);
   const todaysCollections = useQuery(() => tables.collections().query(Q.where('collected_at', Q.gte(dayStart)), Q.where('status', Q.notEq('FAILED'))), [dayStart]);
   const monthCollections = useQuery(() => tables.collections().query(Q.where('collected_at', Q.gte(mStart)), Q.where('status', Q.notEq('FAILED'))), [mStart]);
@@ -87,6 +89,7 @@ export function DashboardScreen() {
           <Text style={{ fontSize: 13, fontWeight: '700', color: session?.status === 'OPEN' ? colors.success : session?.status === 'CLOSED' ? colors.muted : colors.warning }}>
             {session?.status === 'OPEN' ? 'Day started' : session?.status === 'CLOSED' ? 'Day closed' : 'Start day'}
           </Text>
+          {tracking ? <Ionicons name="location" size={14} color={colors.success} accessibilityLabel="Sharing location with the office" /> : null}
         </Pressable>
       </View>
 

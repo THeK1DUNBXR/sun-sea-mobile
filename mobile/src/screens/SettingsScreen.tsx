@@ -8,12 +8,15 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
 import { getApiUrl } from '../api/client';
 import { APP_VERSION } from '../config';
-import { spacing, type } from '../theme';
+import { colors, spacing, type } from '../theme';
 import { resetDatabase } from '../db';
+import { useLocationSharing } from '../location/LocationSharing';
+import { relativeTime } from '../utils/format';
 
 export function SettingsScreen() {
   const navigation = useNavigation();
   const { agent, logout, isAuthenticated, bootstrap, isDemo } = useAuth();
+  const share = useLocationSharing();
   const [url, setUrl] = useState('');
   const [lock, setLock] = useState(false);
   const [serverMode, setServerMode] = useState<string | null>(null);
@@ -71,6 +74,25 @@ export function SettingsScreen() {
             await setAppLockEnabled(v);
           }}
         />
+      </Card>
+
+      <Text style={[type.h3, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>Location sharing</Text>
+      <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <View style={{ flex: 1 }}>
+          <Text style={type.h3}>Share my location with the office</Text>
+          <Text style={type.small}>
+            {isDemo
+              ? 'Demo mode — nothing is sent. On a live server your position shows on the Field Sales map in the Sun Sea web app while your day is open.'
+              : share.tracking
+                ? `Sharing now (every 2 min or 120 m while the day is open).${share.status?.lastSentAt ? ` Last sent ${relativeTime(share.status.lastSentAt)}.` : ''}${share.status?.queued ? ` ${share.status.queued} waiting to send.` : ''}`
+                : share.enabled
+                  ? 'Starts automatically when you start your day and stops when you end it. Only while the app is open.'
+                  : 'Off — your position is not sent. Check-ins still record where the visit happened.'}
+          </Text>
+          {!isDemo && share.status?.unsupported ? <Text style={[type.small, { color: colors.warning, marginTop: 4 }]}>The server has no location module yet; positions are kept on the phone until it does.</Text> : null}
+          {!isDemo && share.status?.lastError && !share.status.unsupported ? <Text style={[type.small, { color: colors.danger, marginTop: 4 }]}>{share.status.lastError}</Text> : null}
+        </View>
+        <Switch value={share.enabled} disabled={isDemo} onValueChange={(v) => void share.setEnabled(v)} />
       </Card>
 
       <Text style={[type.h3, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>Server</Text>

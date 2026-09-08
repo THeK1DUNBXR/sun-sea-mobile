@@ -6,6 +6,7 @@ import * as Location from 'expo-location';
 import type { Allocation, AttachmentKind, OrderLine, PaymentMode } from '../api/types';
 import { database, tables, Collection, Order, Visit } from '../db';
 import { newId } from '../utils/ids';
+import { recordPosition } from '../location/positions';
 import { round2, todayYmd } from '../utils/format';
 import type { CapturedPhoto } from '../utils/photos';
 
@@ -155,6 +156,7 @@ export async function startVisit(visit: Visit) {
       v.updatedAt = Date.now();
     });
   });
+  void recordPosition('CHECK_IN', pos ? { latitude: pos.latitude, longitude: pos.longitude } : null, { visitId: visit.id, customerId: visit.customerId });
 }
 
 export async function completeVisit(visit: Visit, notes?: string | null) {
@@ -167,6 +169,7 @@ export async function completeVisit(visit: Visit, notes?: string | null) {
       v.updatedAt = Date.now();
     });
   });
+  void currentPosition().then((pos) => recordPosition('CHECK_OUT', pos, { visitId: visit.id, customerId: visit.customerId }));
 }
 
 export async function skipVisit(visit: Visit, reason?: string | null) {
