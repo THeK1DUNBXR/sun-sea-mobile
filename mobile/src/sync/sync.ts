@@ -10,7 +10,7 @@
 import { Q } from '@nozbe/watermelondb';
 import { synchronize } from '@nozbe/watermelondb/sync';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { mobileApi } from '../api/mobileApi';
+import { api, currentApi } from '../api';
 import { ApiError, toApiError } from '../api/client';
 import type { AttachmentRef, PushResults } from '../api/types';
 import { STORAGE_KEYS } from '../config';
@@ -52,7 +52,7 @@ async function doSync(onProgress: (p: SyncProgress) => void, opts: { full?: bool
   const report = (patch: Partial<SyncProgress>) => onProgress({ ...Object.assign(progress, patch) });
 
   try {
-    await uploadPendingAttachments(report);
+    if ((await currentApi()).capabilities.attachments) await uploadPendingAttachments(report);
 
     let pushResults: PushResults | undefined;
     let pulledRouteIds: Set<string> | null = null;
@@ -72,11 +72,11 @@ async function doSync(onProgress: (p: SyncProgress) => void, opts: { full?: bool
           return tc.created.length + tc.updated.length + tc.deleted.length > 0;
         });
         if (!hasChanges) return;
-        pushResults = await mobileApi.push({ changes: rest, lastPulledAt: lastPulledAt ?? null });
+        pushResults = await api.push({ changes: rest, lastPulledAt: lastPulledAt ?? null });
       },
       pullChanges: async ({ lastPulledAt }) => {
         report({ phase: 'pull' });
-        const res = await mobileApi.pull(lastPulledAt ?? null, opts.full);
+        const res = await api.pull(lastPulledAt ?? null, opts.full);
         wasFull = res.full;
         if (res.full) {
           pulledRouteIds = new Set((res.changes.routes?.updated ?? []).map((r) => String(r.id)));
@@ -117,7 +117,7 @@ async function uploadPendingAttachments(report: (p: Partial<SyncProgress>) => vo
   let done = 0;
 
   for (const att of pending) {
-    const stored = await mobileApi.uploadAttachment(
+    const stored = await api.uploadAttachment(
       { uri: att.localUri, mimeType: att.mimeType, name: `${att.kind.toLowerCase()}-${att.id}.jpg` },
       att.kind,
       `${att.parentType || 'collection'}-${att.collectionId}`

@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { mobileApi } from '../api/mobileApi';
+import { api } from '../api';
 import { ApiError, setUnauthorizedHandler, tokenStore } from '../api/client';
 import type { Bootstrap } from '../api/types';
 import { STORAGE_KEYS } from '../config';
@@ -69,12 +69,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (username: string, password: string) => {
-      const res = await mobileApi.login(username.trim(), password);
+      const res = await api.login(username.trim(), password);
       await tokenStore.set(res.accessToken);
 
       let boot: Bootstrap | null = null;
       try {
-        boot = await mobileApi.bootstrap();
+        boot = await api.bootstrap();
       } catch (err) {
         await tokenStore.clear();
         if (err instanceof ApiError && err.status === 403) {
@@ -137,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     try {
-      await mobileApi.logout();
+      await api.logout();
     } catch {
       /* offline logout is fine — the session expires server-side */
     }

@@ -34,6 +34,13 @@ Orders / Sales Orders.
                                                                     └───────────────────────────────────────┘
 ```
 
+## Live backend
+
+The Field app ships pointed at the Railway deployment
+(`https://sunseaerp-production.up.railway.app/api`). It detects whether the
+mobile extension is installed there and otherwise works directly against the
+ERP's own endpoints — see `mobile/README.md` → *Connecting to the Railway backend*.
+
 ## Two apps
 
 | App | Folder | For | APK releases |

@@ -1,8 +1,10 @@
+import { useFocusEffect } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../auth/AuthContext';
+import { getServerInfo, hostOf } from '../api/server';
 import { Button, Field, Notice } from '../components/ui';
 import { colors, radius, spacing, type } from '../theme';
 import { APP_VERSION } from '../config';
@@ -12,6 +14,12 @@ import { ApiError } from '../api/client';
 export function LoginScreen({ navigation }: ScreenProps<'Login'>) {
   const { login, enterDemo, sessionExpired, agent } = useAuth();
   const [demoBusy, setDemoBusy] = useState(false);
+  const [serverHost, setServerHost] = useState<string | null>(null);
+  useFocusEffect(
+    React.useCallback(() => {
+      getServerInfo().then((i) => setServerHost(i?.apiUrl && !/YOUR-SERVICE/.test(i.apiUrl) ? hostOf(i.apiUrl) : null));
+    }, [])
+  );
   const [username, setUsername] = useState(agent?.email ?? '');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -80,8 +88,9 @@ export function LoginScreen({ navigation }: ScreenProps<'Login'>) {
           />
           <Text style={[type.tiny, { textAlign: 'center', marginTop: 8 }]}>Loads sample customers, invoices, a route plan and products on this device. Nothing is sent anywhere.</Text>
 
-          <Pressable onPress={() => navigation.navigate('Settings' as never)} style={{ marginTop: spacing.xl, alignSelf: 'center' }}>
-            <Text style={[type.small, { color: colors.primary }]}>Server settings</Text>
+          <Pressable onPress={() => navigation.navigate('Server' as never)} style={{ marginTop: spacing.xl, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name={serverHost ? 'cloud-done-outline' : 'cloud-offline-outline'} size={16} color={colors.primary} />
+            <Text style={[type.small, { color: colors.primary, fontWeight: '700' }]}>{serverHost ? `Server: ${serverHost}` : 'Connect to server'}</Text>
           </Pressable>
           <Text style={[type.tiny, { textAlign: 'center', marginTop: spacing.xxl }]}>Version {APP_VERSION}</Text>
         </ScrollView>

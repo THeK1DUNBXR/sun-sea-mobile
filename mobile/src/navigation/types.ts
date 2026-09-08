@@ -43,6 +43,7 @@ export type RootStackParamList = {
   Performance: undefined;
   SyncStatus: undefined;
   Settings: undefined;
+  Server: undefined;
 };
 
 export type MainTabParamList = {

@@ -9,7 +9,11 @@ import type {
   StoredAttachment,
 } from './types';
 
-export const mobileApi = {
+import type { ApiSurface } from './surface';
+
+export const mobileApi: ApiSurface = {
+  mode: 'mobile',
+  capabilities: { attachments: true, chequeOcr: true, routes: true, statement: true },
   login: async (email: string, password: string) =>
     unwrap<LoginResponse>(await http.post('/auth/login', { email, password })),
 

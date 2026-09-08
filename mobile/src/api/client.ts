@@ -66,9 +66,25 @@ http.interceptors.request.use(async (config) => {
   return config;
 });
 
+/**
+ * Railway (and similar hosts) may put an idle service to sleep; the first
+ * request then fails or returns 502/503 while the container wakes. Idempotent
+ * GETs are retried twice with a short back-off before giving up.
+ */
+const RETRY_STATUSES = new Set([502, 503, 504]);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 http.interceptors.response.use(
   (r) => r,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
+    const cfg = error.config as (typeof error.config & { __retries?: number }) | undefined;
+    const method = (cfg?.method || 'get').toLowerCase();
+    const retriable = !error.response || RETRY_STATUSES.has(error.response.status);
+    if (cfg && method === 'get' && retriable && (cfg.__retries ?? 0) < 2) {
+      cfg.__retries = (cfg.__retries ?? 0) + 1;
+      await sleep(1500 * cfg.__retries);
+      return http.request(cfg);
+    }
     if (error.response?.status === 401 && !String(error.config?.url).includes('/auth/login')) {
       onUnauthorized?.();
     }

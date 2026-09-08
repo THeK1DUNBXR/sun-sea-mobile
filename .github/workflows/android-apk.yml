@@ -6,7 +6,7 @@ on:
       api_url:
         description: "Backend API base URL baked into the build (can be changed later in the app's Settings)"
         required: false
-        default: "http://192.168.1.10:5000/api"
+        default: "https://sunseaerp-production.up.railway.app/api"
   push:
     branches: ["**"]
     paths:
@@ -29,7 +29,7 @@ jobs:
       run:
         working-directory: mobile
     env:
-      EXPO_PUBLIC_API_URL: ${{ github.event.inputs.api_url || vars.MOBILE_API_URL || 'http://192.168.1.10:5000/api' }}
+      EXPO_PUBLIC_API_URL: ${{ github.event.inputs.api_url || vars.MOBILE_API_URL || 'https://sunseaerp-production.up.railway.app/api' }}
       EXPO_NO_TELEMETRY: "1"
       CI: "1"
       # Real phones only (skips the x86/x86_64 emulator ABIs) — roughly halves the native build time.

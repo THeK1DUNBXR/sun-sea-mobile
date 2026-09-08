@@ -26,6 +26,35 @@ existing Sun Sea ERP backend through the `/api/mobile` module in
 | Customers (search)            | `src/screens/CustomersScreen.tsx`      | yes |
 | Settings (server URL, logout) | `src/screens/SettingsScreen.tsx`       | yes |
 
+## Connecting to the Railway backend (v1.2)
+
+The Sun Sea ERP backend runs on Railway at
+`https://sunseaerp-production.up.railway.app/api`, and that address is baked into
+the build as the default. On the login screen tap **Connect to server** (or
+Settings → server row) to change it, then **Test connection**. The app:
+
+1. normalises whatever is pasted (`sunseaerp-production.up.railway.app`,
+   with or without `https://` and `/api`);
+2. probes the API root, retrying while a sleeping Railway service wakes up,
+   and shows the ERP version, environment and response time;
+3. detects the **integration mode**:
+
+| Mode | When | What syncs |
+| ---- | ---- | ---------- |
+| **Mobile extension** | `/api/mobile/*` exists (backend-extension applied) | Everything: routes, visits, collections with receipt/cheque photos, cheque OCR, statements |
+| **Direct ERP** | plain ERP (the Railway deployment today) | Customers, invoices and products are pulled from the ERP's own endpoints. Collections post as **RECEIPT vouchers** (Cash / Bank ledger ← customer ledger, tagged `MOBILE_COLLECTION:<id>` so a retry never double-posts). Orders post as **DRAFT sales orders** with the agent as source. Routes, follow-ups, day sessions, expenses, outlets and photos stay on the phone. |
+
+In direct mode invoice balances are reconciled to the customer's ledger balance
+(oldest invoice first), because a receipt voucher reduces the ledger but not the
+invoice's own payment list. Idle Railway services answer the first request
+slowly or with 502/503; the HTTP client retries GETs twice and the sync screen
+shows the outcome.
+
+Backend prerequisites on Railway: `DATABASE_URL`, `JWT_ACCESS_SECRET`,
+`FRONTEND_URL`, `BACKEND_URL` set; the service listens on Railway's `PORT`; the
+agent's ERP user needs `customers.view`, `sales-invoices.view`,
+`products.view`, `vouchers.create` and `sales-orders.create`.
+
 ## What's new in v1.1
 
 Designed from the ERP's own capabilities and field-sales best practice (see

@@ -9,7 +9,7 @@ import { spacing, type } from '../theme';
 import { agingBuckets } from '../utils/aging';
 import { fmtDate, money } from '../utils/format';
 import type { ScreenProps } from '../navigation/types';
-import { mobileApi } from '../api/mobileApi';
+import { api } from '../api';
 import type { CustomerStatement } from '../api/types';
 import { useSync } from '../sync/SyncContext';
 import { useAuth } from '../auth/AuthContext';
@@ -30,7 +30,7 @@ export function OutstandingScreen({ route }: ScreenProps<'Outstanding'>) {
   useEffect(() => {
     if (!online || isDemo) return;
     setLoading(true);
-    mobileApi
+    api
       .customerStatement(customerId)
       .then(setStatement)
       .catch(() => setStatement(null))

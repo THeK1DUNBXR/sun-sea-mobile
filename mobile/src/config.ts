@@ -10,7 +10,7 @@ import Constants from 'expo-constants';
 export const DEFAULT_API_URL: string =
   process.env.EXPO_PUBLIC_API_URL ||
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ||
-  'http://localhost:5000/api';
+  'https://sunseaerp-production.up.railway.app/api';
 
 export const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
@@ -29,4 +29,6 @@ export const STORAGE_KEYS = {
   lastSyncError: 'sunsea.lastSyncError',
   bootstrap: 'sunsea.bootstrap',
   demo: 'sunsea.demo',
+  serverMode: 'sunsea.serverMode',
+  serverInfo: 'sunsea.serverInfo',
 } as const;

@@ -2,31 +2,30 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Switch, Text, View } from 'react-native';
 import { deviceSupportsLock, isAppLockEnabled, setAppLockEnabled } from '../auth/AppLock';
 import { Screen } from '../components/Screen';
-import { Button, Card, Divider, Field, KeyValue, Notice } from '../components/ui';
+import { Button, Card, Divider, IconTile, KeyValue, ListItem, Notice } from '../components/ui';
+import { getServerInfo } from '../api/server';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
-import { getApiUrl, setApiUrl } from '../api/client';
-import { APP_VERSION, DEFAULT_API_URL } from '../config';
+import { getApiUrl } from '../api/client';
+import { APP_VERSION } from '../config';
 import { spacing, type } from '../theme';
 import { resetDatabase } from '../db';
 
 export function SettingsScreen() {
+  const navigation = useNavigation();
   const { agent, logout, isAuthenticated, bootstrap, isDemo } = useAuth();
   const [url, setUrl] = useState('');
-  const [saved, setSaved] = useState(false);
   const [lock, setLock] = useState(false);
+  const [serverMode, setServerMode] = useState<string | null>(null);
   const [lockSupported, setLockSupported] = useState(false);
 
   useEffect(() => {
     getApiUrl().then(setUrl);
     isAppLockEnabled().then(setLock);
+    getServerInfo().then((i) => setServerMode(i?.mode ?? null));
     deviceSupportsLock().then(setLockSupported).catch(() => setLockSupported(false));
   }, []);
 
-  const save = async () => {
-    await setApiUrl(url === DEFAULT_API_URL ? null : url);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
-  };
 
   const wipe = () =>
     Alert.alert('Clear local data', 'Deletes all downloaded data AND any unsynced collections or orders on this device. Continue?', [
@@ -75,8 +74,14 @@ export function SettingsScreen() {
       </Card>
 
       <Text style={[type.h3, { marginTop: spacing.xl, marginBottom: spacing.sm }]}>Server</Text>
-      <Field label="API base URL" value={url} onChangeText={setUrl} autoCapitalize="none" autoCorrect={false} keyboardType="url" hint={`Default: ${DEFAULT_API_URL}`} />
-      <Button title={saved ? 'Saved' : 'Save server URL'} variant="outline" onPress={save} />
+      <Card style={{ padding: 0 }}>
+        <ListItem
+          leading={<IconTile icon="cloud-outline" tone="info" size={40} />}
+          title={url && !/YOUR-SERVICE/.test(url) ? url.replace(/^https?:\/\//, '').replace(/\/api$/, '') : 'Not connected'}
+          subtitle={serverMode === 'mobile' ? 'Mobile extension · full sync' : serverMode === 'direct' ? 'Direct ERP · collections post as receipt vouchers' : 'Tap to connect to the Sun Sea backend (Railway or office server)'}
+          onPress={() => navigation.navigate('Server' as never)}
+        />
+      </Card>
 
       {isAuthenticated ? (
         <>

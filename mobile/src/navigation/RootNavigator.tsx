@@ -35,6 +35,7 @@ import { HandoverScreen } from '../screens/HandoverScreen';
 import { ExpensesScreen, ExpenseNewScreen } from '../screens/ExpensesScreen';
 import { LeadsScreen, LeadNewScreen } from '../screens/LeadsScreen';
 import { PerformanceScreen } from '../screens/PerformanceScreen';
+import { ServerScreen } from '../screens/ServerScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tabs = createBottomTabNavigator<MainTabParamList>();
@@ -84,6 +85,7 @@ export function RootNavigator() {
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Server" component={ServerScreen} />
           </>
         ) : (
           <>
@@ -110,6 +112,7 @@ export function RootNavigator() {
             <Stack.Screen name="Performance" component={PerformanceScreen} />
             <Stack.Screen name="SyncStatus" component={SyncStatusScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="Server" component={ServerScreen} />
           </>
         )}
       </Stack.Navigator>

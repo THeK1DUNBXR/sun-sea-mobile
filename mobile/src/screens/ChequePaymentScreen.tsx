@@ -8,7 +8,7 @@ import { money, todayYmd } from '../utils/format';
 import type { CapturedPhoto } from '../utils/photos';
 import type { ScreenProps } from '../navigation/types';
 import { finishCollection, rebalanceDraft } from './collectionFlow';
-import { mobileApi } from '../api/mobileApi';
+import { api } from '../api';
 import { useSync } from '../sync/SyncContext';
 import { useAuth } from '../auth/AuthContext';
 import type { ChequeFields } from '../api/types';
@@ -34,7 +34,7 @@ export function ChequePaymentScreen({ route, navigation }: ScreenProps<'ChequePa
     if (!isDemo && (!online || !ocrEnabled)) return;
     setOcr({ busy: true, result: null, error: null });
     try {
-      const r = isDemo ? await demoChequeOcr(Number(amount) || draft.total) : await mobileApi.ocrCheque({ uri: photo.uri, mimeType: photo.mimeType, name: 'cheque.jpg' });
+      const r = isDemo ? await demoChequeOcr(Number(amount) || draft.total) : await api.ocrCheque({ uri: photo.uri, mimeType: photo.mimeType, name: 'cheque.jpg' });
       if (r.bankName) setBankName(r.bankName);
       if (r.chequeNumber) setChequeNumber(r.chequeNumber);
       if (r.date) setDate(r.date);
