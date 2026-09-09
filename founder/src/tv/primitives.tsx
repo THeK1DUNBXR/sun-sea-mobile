@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, View, type TextStyle, type ViewStyle } from 'react-native';
+import { Animated, Easing, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, type TextStyle, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Circle, Defs, Line, Path, Pattern, RadialGradient, Rect, Stop } from 'react-native-svg';
@@ -145,7 +145,11 @@ export function Board({
         </View>
       ) : null}
 
-      <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 28, gap: 10 }}>{children}</ScrollView>
+      <LiveStatusStrip th={th} />
+
+      <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 28, gap: 10 }} refreshControl={<PullToRefresh th={th} />}>
+        {children}
+      </ScrollView>
 
       {/* TICKER */}
       {ticker ? (
@@ -157,11 +161,77 @@ export function Board({
   );
 }
 
+const ago = (ms: number | null) => {
+  if (!ms) return '';
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m` : `${Math.floor(s / 3600)}h`;
+};
+
+/** Pull down on any scene to re-pull live figures (no-op on the demo dataset). */
+function PullToRefresh({ th }: { th: TvTheme }) {
+  const { source, loading, refresh } = useData();
+  const [pulled, setPulled] = useState(false);
+  useEffect(() => {
+    if (!loading) setPulled(false);
+  }, [loading]);
+  return (
+    <RefreshControl
+      refreshing={pulled && loading}
+      enabled={source === 'live'}
+      tintColor={th.A.accentBg}
+      colors={[th.A.accentBg]}
+      progressBackgroundColor={th.T.panel}
+      onRefresh={() => {
+        setPulled(true);
+        void refresh();
+      }}
+    />
+  );
+}
+
+/** One line under the header, live mode only: what the app is doing with the ERP right now. */
+function LiveStatusStrip({ th }: { th: TvTheme }) {
+  const { A, T } = th;
+  const { source, loading, progress, error, lastUpdated, feeds, refresh } = useData();
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick((n) => n + 1), 5000);
+    return () => clearInterval(id);
+  }, []);
+  if (source !== 'live') return null;
+  const failed = feeds.filter((f) => !f.ok);
+  let text: string;
+  let color = T.textMute;
+  if (loading) {
+    text = progress ? `PULLING LIVE FIGURES · ${progress.done}/${progress.total} FEEDS` : lastUpdated ? 'REFRESHING…' : 'CONNECTING TO THE ERP…';
+    color = A.amber;
+  } else if (error && !lastUpdated) {
+    text = `COULD NOT LOAD · ${error.toUpperCase()} · TAP TO RETRY`;
+    color = A.red;
+  } else if (failed.length) {
+    text = `${failed.length} OF ${feeds.length} FEEDS FAILED · ${failed.some((f) => f.stale) ? 'SHOWING LAST GOOD FIGURES' : 'FIGURES MAY BE INCOMPLETE'} · UPDATED ${ago(lastUpdated).toUpperCase()} AGO`;
+    color = A.amber;
+  } else if (lastUpdated) {
+    text = `LIVE FROM THE ERP · UPDATED ${ago(lastUpdated).toUpperCase()} AGO · AUTO-REFRESH EVERY MINUTE`;
+    color = A.green;
+  } else {
+    text = 'WAITING FOR FIRST LOAD…';
+  }
+  return (
+    <Pressable onPress={() => void refresh()} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: T.headerBorder, backgroundColor: T.panel }}>
+      {loading ? <LiveDot color={A.amber} size={6} /> : <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />}
+      <Text style={mono({ fontSize: 9, fontWeight: '800', color, letterSpacing: 0.6 })} numberOfLines={1}>
+        {text}
+      </Text>
+    </Pressable>
+  );
+}
+
 /** Source badge (LIVE / DEMO) + settings gear. Tapping the badge also opens Settings so the data source is one tap away. */
 function HeaderActions({ th, back }: { th: TvTheme; back?: boolean }) {
   const { A, T } = th;
   const nav = require('@react-navigation/native').useNavigation();
-  const { source, loading } = useData();
+  const { source, loading, lastUpdated } = useData();
   const live = source === 'live';
   // Settings lives on the root stack, so walk up from the tab navigator; it is absent while the sign-in group is showing.
   const canOpen = (() => {
@@ -175,7 +245,7 @@ function HeaderActions({ th, back }: { th: TvTheme; back?: boolean }) {
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
       <Pressable onPress={openSettings} hitSlop={8} style={[s.badge, { backgroundColor: T.badgeBg, borderColor: live ? T.badgeBorder : A.amber }]}>
         <LiveDot color={live ? (loading ? A.amber : A.red) : A.amber} />
-        <Text style={mono({ fontSize: 10, fontWeight: '800', color: live ? T.text : A.amber, letterSpacing: 1 })}>{live ? 'LIVE' : 'DEMO'}</Text>
+        <Text style={mono({ fontSize: 10, fontWeight: '800', color: live ? T.text : A.amber, letterSpacing: 1 })}>{live ? (lastUpdated ? `LIVE · ${ago(lastUpdated)}` : 'LIVE') : 'DEMO'}</Text>
       </Pressable>
       {back ? null : (
         <Pressable onPress={openSettings} hitSlop={8} accessibilityLabel="Settings" style={[s.badge, { backgroundColor: T.badgeBg, borderColor: T.badgeBorder, paddingHorizontal: 8 }]}>

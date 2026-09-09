@@ -15,7 +15,7 @@ export function SettingsScreen() {
   const nav = useNavigation<Nav>();
   const th = useTheme();
   const { T, A } = th;
-  const { source, authenticated, user, serverHost, lastUpdated, loading, error, refresh, logout, useDemo } = useData();
+  const { source, authenticated, user, serverHost, lastUpdated, nextRefreshAt, loading, error, feeds, refresh, logout, useDemo } = useData();
   return (
     <Board scene="Settings" back>
       <Panel title="DATA SOURCE" accentBorder={source === 'demo' ? A.amber : undefined}>
@@ -44,9 +44,29 @@ export function SettingsScreen() {
           ) : null}
         </View>
       </Panel>
+      {source === 'live' ? (
+        <Panel title="DATA FEEDS" accentBorder={feeds.some((f) => !f.ok) ? A.amber : undefined}>
+          <Text style={mono({ fontSize: 12, color: T.textDim, lineHeight: 18, marginBottom: 8 })}>
+            {`Figures re-pull every minute while the app is open, when you return to it, and when you pull down on any scene.${nextRefreshAt && !loading ? ` Next in ${Math.max(0, Math.round((nextRefreshAt - Date.now()) / 1000))} s.` : ''} A feed that fails keeps its last good figures and is listed here with the server's reason.`}
+          </Text>
+          <View style={{ gap: 6 }}>
+            {feeds.length === 0 ? <TileRow title={loading ? 'Loading…' : 'No load yet'} sub="Pull down on any scene or tap Refresh now." /> : null}
+            {feeds.map((f) => (
+              <TileRow
+                key={f.name}
+                title={f.label}
+                sub={f.ok ? `${f.count} rows · ${f.ms} ms` : `${f.error ?? 'Failed'}${f.stale && f.at ? ` · showing figures from ${relative(new Date(f.at))}` : ''}`}
+                right={f.ok ? 'OK' : f.stale ? 'STALE' : 'FAILED'}
+                rightColor={f.ok ? A.green : f.stale ? A.amber : A.red}
+                leftColor={f.ok ? undefined : f.stale ? A.amber : A.red}
+              />
+            ))}
+          </View>
+        </Panel>
+      ) : null}
       <Panel title="SUN SEA INSIGHTS">
         <View style={{ gap: 6 }}>
-          <TileRow title="Version" right={String(Constants.expoConfig?.version ?? '0.4.1')} />
+          <TileRow title="Version" right={String(Constants.expoConfig?.version ?? '0.5.0')} />
           <Pressable onPress={th.toggle}>
             <TileRow title="Display theme" right={th.isDark ? 'DARK · TAP FOR LIGHT' : 'LIGHT · TAP FOR DARK'} rightColor={A.accentBg} />
           </Pressable>

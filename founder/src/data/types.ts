@@ -1,4 +1,5 @@
 import type { Agent, Attention, Customer, Day, Product } from './demo';
+import type { FeedStatus } from './feeds';
 
 export type { Agent, Attention, Customer, Day, Product };
 
@@ -20,4 +21,6 @@ export interface Dataset {
   /** Field team figures need the mobile extension; false when the ERP does not have it. */
   fieldAvailable: boolean;
   company?: string | null;
+  /** Per-endpoint outcome of the last live load (absent for the demo dataset). */
+  feeds?: FeedStatus[];
 }

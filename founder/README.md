@@ -25,6 +25,43 @@ follow-ups, day sessions, handovers). Connecting it to the live ERP means adding
 one read-only aggregation endpoint per tab; the prototype ships with a seeded
 dataset (`src/data/demo.ts`) so it can be evaluated without a server.
 
+## Live data: how it is fetched (v0.5)
+
+v0.5 rebuilt the live-data path after the first field test:
+
+- **Regular refresh.** Figures re-pull every 60 s while the app is on screen,
+  immediately when you come back to the app after 45 s away, and on pull-down
+  on any scene. The status line under the header shows what is happening
+  (`PULLING LIVE FIGURES · 7/14 FEEDS`, `UPDATED 12s AGO`, or which feeds
+  failed); the header badge shows the age of the figures (`LIVE · 40s`).
+- **One feed per endpoint, three at a time.** Fourteen ERP endpoints used to be
+  hit in parallel the moment you signed in, which an idle Railway service and
+  its small Postgres pool answered with timeouts. Feeds now run three at a
+  time in priority order, paged lists follow their `totalPages`, and the
+  heavy customer-master call (the ERP computes a ledger balance per customer
+  inside it) moved last with a small page. Customers now come from the
+  receivable summaries instead, which cover every customer in one call.
+- **No silent zeros.** A failing feed keeps its last good response (per-feed
+  cache on the phone) and is listed in Settings → *Data feeds* with the
+  server's reason (`No permission…`, `Endpoint not on this server`, a
+  timeout). Only when every feed fails does the app report the server as
+  unreachable. Demo figures are never shown under the LIVE badge: the first
+  live load starts from zeros.
+- **Local calendar days.** Daily buckets were keyed in UTC, so in India every
+  figure landed on the previous day (today's sales showed under yesterday).
+  Day keys now use the phone's local date; the ERP's date-only columns keep
+  their printed date.
+- **Contract fixes** found by reading the ERP source: supplier names on
+  purchase orders (`supplier.supplierName`), raw-material stock pagination
+  (the ERP defaults to 20 rows), sales-order page cap (500), voucher list
+  filters (`startDate`, `limit`).
+
+The ERP account used must hold `customers.view`, `sales-invoices.view`,
+`sales-orders.view`, `products.view`, `purchaseOrders.view`,
+`production_orders.view` (dispatches), `finished_goods_stocks.view` and
+`raw_material_stocks.view`; a feed without its permission shows as FAILED with
+"No permission" and the rest of the app keeps working.
+
 ## Live data from the Railway backend (v0.3, v0.4)
 
 v0.4 fixes the first-run flow: a fresh install now opens on the **Sign in**
@@ -46,7 +83,7 @@ and inventory view rights) or **Explore demo data**. In live mode it reads:
 | Attention | TV alerts + accounts alerts + orders awaiting approval, overdue POs, dispatches at gate, blocked / 90-day customers |
 
 The last live dataset is cached on the phone so the app opens instantly and
-offline; pull-to-refresh or Settings → *Refresh now* reloads. Settings also
+offline; pull-down on any scene, the 60 s auto-refresh or Settings → *Refresh now* reloads. Settings also
 switches between live and demo data and changes the server (Test connection
 shows version, environment, latency and whether the mobile extension exists).
 Requests retry while a sleeping Railway service wakes.
