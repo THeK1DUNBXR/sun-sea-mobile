@@ -46,7 +46,7 @@ export function SettingsScreen() {
       </Panel>
       <Panel title="SUN SEA INSIGHTS">
         <View style={{ gap: 6 }}>
-          <TileRow title="Version" right={String(Constants.expoConfig?.version ?? '0.4.0')} />
+          <TileRow title="Version" right={String(Constants.expoConfig?.version ?? '0.4.1')} />
           <Pressable onPress={th.toggle}>
             <TileRow title="Display theme" right={th.isDark ? 'DARK · TAP FOR LIGHT' : 'LIGHT · TAP FOR DARK'} rightColor={A.accentBg} />
           </Pressable>

@@ -74,20 +74,23 @@ function Root() {
     <NavigationContainer theme={theme}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: T.bg } }}>
+        {/* Login and Server exist in both groups, so the group key must change with the auth state:
+            otherwise React Navigation keeps the current Login route after a successful sign-in
+            and the app appears stuck on the login screen. */}
         {showLogin ? (
-          <>
+          <Stack.Group navigationKey="guest">
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Server" component={ServerScreen} />
-          </>
+          </Stack.Group>
         ) : (
-          <>
+          <Stack.Group navigationKey="user">
             <Stack.Screen name="Main" component={MainTabs} />
             <Stack.Screen name="Agent" component={AgentScreen} />
             <Stack.Screen name="Attention" component={AttentionScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Server" component={ServerScreen} />
-          </>
+          </Stack.Group>
         )}
       </Stack.Navigator>
     </NavigationContainer>

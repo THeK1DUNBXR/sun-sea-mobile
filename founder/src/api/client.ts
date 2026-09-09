@@ -49,7 +49,11 @@ http.interceptors.response.use(
   (r) => r,
   async (error: AxiosError<{ message?: string }>) => {
     const cfg = error.config as (typeof error.config & { __retries?: number }) | undefined;
-    if (cfg && (cfg.method || 'get').toLowerCase() === 'get' && (!error.response || RETRY.has(error.response.status)) && (cfg.__retries ?? 0) < 2) {
+    // Retry GETs, and the login POST, while an idle Railway service wakes up (no response, 502/503/504).
+    const method = (cfg?.method || 'get').toLowerCase();
+    const isLogin = method === 'post' && String(cfg?.url).includes('/auth/login');
+    const maxRetries = isLogin ? 4 : 2;
+    if (cfg && (method === 'get' || isLogin) && (!error.response || RETRY.has(error.response.status)) && (cfg.__retries ?? 0) < maxRetries) {
       cfg.__retries = (cfg.__retries ?? 0) + 1;
       await sleep(1500 * cfg.__retries);
       return http.request(cfg);
