@@ -60,6 +60,10 @@ export default function AssignmentDetailScreen() {
     queryKey: ['ledger', customer?.id],
     queryFn: () => fetchCustomerLedger(customer!.id),
     enabled: ledgerOpen && Boolean(customer?.id),
+    // The ledger sheet is opened and closed repeatedly while triaging a
+    // customer's invoices; a short stale window avoids refetching on every
+    // reopen within the same visit without risking a badly stale balance.
+    staleTime: 60_000,
   });
 
   const phone = normalizeIndianPhone(customer?.phones?.[0]);

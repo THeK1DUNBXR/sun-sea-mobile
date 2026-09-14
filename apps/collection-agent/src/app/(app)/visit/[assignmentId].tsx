@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -151,7 +152,15 @@ export default function VisitScreen() {
           fullWidth={false}
           icon={<Ionicons name={photoUri ? 'checkmark-circle' : 'camera-outline'} size={18} color={colors.primary} />}
         />
-        {photoUri ? <Image source={{ uri: photoUri }} style={styles.preview} accessibilityLabel="Visit photo preview" /> : null}
+        {photoUri ? (
+          <Image
+            source={{ uri: photoUri }}
+            style={styles.preview}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            accessibilityLabel="Visit photo preview"
+          />
+        ) : null}
       </Card>
 
       <Card style={styles.locationCard}>

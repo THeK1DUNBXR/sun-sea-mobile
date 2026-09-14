@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -286,7 +287,15 @@ export default function CollectScreen() {
                 icon={<Ionicons name="images-outline" size={18} color={colors.primary} />}
               />
             </View>
-            {proofUri ? <Image source={{ uri: proofUri }} style={styles.preview} accessibilityLabel="Proof photo preview" /> : null}
+            {proofUri ? (
+              <Image
+                source={{ uri: proofUri }}
+                style={styles.preview}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                accessibilityLabel="Proof photo preview"
+              />
+            ) : null}
           </Step>
         </Animated.View>
       )}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
@@ -130,7 +131,18 @@ export default function DepositsScreen() {
             variant="secondary"
             icon={<Ionicons name={proofUri ? 'checkmark-circle' : 'camera-outline'} size={18} color={colors.primary} />}
           />
-          {proofUri ? <Image source={{ uri: proofUri }} style={styles.preview} accessibilityLabel="Deposit proof preview" /> : null}
+          {proofUri ? (
+            // expo-image: decodes off the JS thread and caches the local
+            // file so re-showing this preview (e.g. after a re-render from
+            // typing in the notes field) never re-decodes the original.
+            <Image
+              source={{ uri: proofUri }}
+              style={styles.preview}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              accessibilityLabel="Deposit proof preview"
+            />
+          ) : null}
         </Card>
         </Animated.View>
       )}
@@ -174,7 +186,7 @@ export default function DepositsScreen() {
   );
 }
 
-function DepositRow({ deposit, index }: { deposit: AgentCashDeposit; index: number }) {
+const DepositRow = React.memo(function DepositRow({ deposit, index }: { deposit: AgentCashDeposit; index: number }) {
   const meta = DEPOSIT_STATUS_META[deposit.status];
   const reduceMotion = useReducedMotion();
   return (
@@ -194,7 +206,7 @@ function DepositRow({ deposit, index }: { deposit: AgentCashDeposit; index: numb
       </Card>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

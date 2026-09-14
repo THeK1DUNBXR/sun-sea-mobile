@@ -1,5 +1,5 @@
-import React from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -30,6 +30,14 @@ export default function HistoryScreen() {
   const router = useRouter();
   const query = useQuery({ queryKey: ['history'], queryFn: () => fetchHistory() });
 
+  const keyExtractor = useCallback((item: HistoryEntry) => `${item.kind}-${item.id}`, []);
+  const renderItem = useCallback(
+    ({ item, index }: { item: HistoryEntry; index: number }) => (
+      <HistoryRow entry={item} index={index} onPress={() => router.push(`/(app)/receipt/${item.id}`)} />
+    ),
+    [router],
+  );
+
   return (
     <Screen scroll={false} padded={false}>
       {query.isLoading ? (
@@ -52,21 +60,34 @@ export default function HistoryScreen() {
         <FlatList
           style={styles.flex}
           data={query.data ?? []}
-          keyExtractor={(item) => `${item.kind}-${item.id}`}
+          keyExtractor={keyExtractor}
           contentContainerStyle={[styles.listContent, (query.data ?? []).length === 0 && styles.listContentEmpty]}
           refreshing={query.isFetching}
           onRefresh={() => query.refetch()}
           ListEmptyComponent={
             <EmptyState icon="time-outline" title="No activity yet" subtitle="Collections, visits and deposits will show up here." />
           }
-          renderItem={({ item, index }) => <HistoryRow entry={item} index={index} onPress={() => router.push(`/(app)/receipt/${item.id}`)} />}
+          renderItem={renderItem}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          updateCellsBatchingPeriod={50}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
         />
       )}
     </Screen>
   );
 }
 
-function HistoryRow({ entry, index, onPress }: { entry: HistoryEntry; index: number; onPress: () => void }) {
+const HistoryRow = React.memo(function HistoryRow({
+  entry,
+  index,
+  onPress,
+}: {
+  entry: HistoryEntry;
+  index: number;
+  onPress: () => void;
+}) {
   const meta = KIND_META[entry.kind];
   const reduceMotion = useReducedMotion();
   return (
@@ -98,7 +119,7 @@ function HistoryRow({ entry, index, onPress }: { entry: HistoryEntry; index: num
       </Pressable>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },

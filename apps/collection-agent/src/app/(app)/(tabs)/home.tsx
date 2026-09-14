@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, StyleSheet, Switch, Text, View, useWindowDimensions, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
@@ -39,7 +39,12 @@ export default function HomeScreen() {
   // window — a split-screen/tablet-width surface) so the tiles don't stretch
   // into oversized cards on a screen with room for a full row.
   const isWideOrLandscape = width > height || width >= 700;
-  const kpiBasis: ViewStyle = { flexBasis: isWideOrLandscape ? '22%' : '47%' };
+  // Stable object identity across renders unless the basis actually flips —
+  // this is passed straight into each memoized Kpi's style array below.
+  const kpiBasis: ViewStyle = useMemo(
+    () => ({ flexBasis: isWideOrLandscape ? '22%' : '47%' }),
+    [isWideOrLandscape],
+  );
 
   const summary = useQuery({
     queryKey: ['agent-summary'],
@@ -53,7 +58,7 @@ export default function HomeScreen() {
     }, []),
   );
 
-  const onToggleTracking = async (value: boolean) => {
+  const onToggleTracking = useCallback(async (value: boolean) => {
     setTrackingBusy(true);
     try {
       if (value) {
@@ -71,7 +76,7 @@ export default function HomeScreen() {
     } finally {
       setTrackingBusy(false);
     }
-  };
+  }, []);
 
   const s = summary.data;
   const ptpDue = s?.ptpDueToday ?? 0;
@@ -190,7 +195,7 @@ export default function HomeScreen() {
   );
 }
 
-function TrackingPill({ on }: { on: boolean }) {
+const TrackingPill = React.memo(function TrackingPill({ on }: { on: boolean }) {
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(1);
   const wasOn = useRef(on);
@@ -218,9 +223,9 @@ function TrackingPill({ on }: { on: boolean }) {
       </Text>
     </Animated.View>
   );
-}
+});
 
-function SyncCard({
+const SyncCard = React.memo(function SyncCard({
   pendingCount,
   syncing,
   lastError,
@@ -293,9 +298,9 @@ function SyncCard({
       </View>
     </Animated.View>
   );
-}
+});
 
-function Kpi({
+const Kpi = React.memo(function Kpi({
   index,
   label,
   value,
@@ -329,9 +334,9 @@ function Kpi({
       <Text style={styles.kpiLabel}>{label}</Text>
     </Animated.View>
   );
-}
+});
 
-function KpiSkeleton({ basis }: { basis: ViewStyle }) {
+const KpiSkeleton = React.memo(function KpiSkeleton({ basis }: { basis: ViewStyle }) {
   return (
     <View style={[styles.kpi, basis]}>
       <SkeletonBlock width={18} height={18} radius={9} />
@@ -339,7 +344,7 @@ function KpiSkeleton({ basis }: { basis: ViewStyle }) {
       <SkeletonBlock width="70%" height={12} />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },

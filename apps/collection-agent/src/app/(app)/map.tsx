@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -55,10 +55,20 @@ export default function MapScreen() {
     };
   }, []);
 
-  const pins = (assignments.data ?? []).filter((a) => {
-    const addr = a.customer?.addresses?.[0];
-    return addr?.latitude != null && addr?.longitude != null;
-  });
+  // Recomputed only when the fetched list itself changes, not on every
+  // position/locating state update this screen re-renders for.
+  const pins = useMemo(
+    () =>
+      (assignments.data ?? []).filter((a) => {
+        const addr = a.customer?.addresses?.[0];
+        return addr?.latitude != null && addr?.longitude != null;
+      }),
+    [assignments.data],
+  );
+
+  // Stable across re-renders (position updates, refetches) so it isn't a
+  // "new" prop on every memoized AssignmentMarker on every render.
+  const onMarkerPress = useCallback((id: string) => router.push(`/(app)/assignment/${id}`), [router]);
 
   if (locating) {
     return (
@@ -87,40 +97,70 @@ export default function MapScreen() {
         }
         showsUserLocation={Boolean(position)}
       >
-        {pins.map((a, index) => {
-          const addr = a.customer!.addresses![0];
-          const overdue = isOverdue(a.invoice?.dueDate);
-          const statusMeta = assignmentStatusMeta(a.status);
-          // The pin's fill carries the status at a glance, but the callout's
-          // text carries the same meaning in words — color is never the
-          // only signal here.
-          const flags = [statusMeta.label, overdue && 'Overdue', a.promise?.promisedDate && 'Promise to pay'].filter(Boolean);
-          const description = [a.invoice?.invoiceNo, flags.join(' · ')].filter(Boolean).join(' — ');
-          return (
-            <Marker
-              key={a.id}
-              coordinate={{ latitude: addr.latitude!, longitude: addr.longitude! }}
-              title={a.customer?.displayName ?? a.customer?.firmName}
-              description={description}
-              onCalloutPress={() => router.push(`/(app)/assignment/${a.id}`)}
-            >
-              <Animated.View
-                entering={
-                  reduceMotion ? undefined : ZoomIn.delay(Math.min(index, STAGGER_CAP) * 30).duration(260).springify().damping(12)
-                }
-                style={styles.markerDot}
-              >
-                <View style={styles.markerDotVisible}>
-                  <View style={[styles.markerDotInner, { backgroundColor: pinColorFor(a) }]} />
-                </View>
-              </Animated.View>
-            </Marker>
-          );
-        })}
+        {pins.map((a, index) => (
+          <AssignmentMarker key={a.id} assignment={a} index={index} reduceMotion={reduceMotion} onPress={onMarkerPress} />
+        ))}
       </MapView>
     </View>
   );
 }
+
+/** One map pin. Memoized so a sibling marker's press, or the map's own pan/
+ * zoom, never re-renders every other marker. `tracksViewChanges` stays true
+ * only for the brief window the entrance animation is actually running —
+ * react-native-maps re-snapshots the marker's native view every frame while
+ * it's true, which is the single most expensive thing a custom-view Marker
+ * can do with more than a handful of pins on screen. */
+const AssignmentMarker = React.memo(function AssignmentMarker({
+  assignment,
+  index,
+  reduceMotion,
+  onPress,
+}: {
+  assignment: Assignment;
+  index: number;
+  reduceMotion: boolean;
+  onPress: (id: string) => void;
+}) {
+  const addr = assignment.customer!.addresses![0];
+  const overdue = isOverdue(assignment.invoice?.dueDate);
+  const statusMeta = assignmentStatusMeta(assignment.status);
+  // The pin's fill carries the status at a glance, but the callout's text
+  // carries the same meaning in words — color is never the only signal here.
+  const flags = [statusMeta.label, overdue && 'Overdue', assignment.promise?.promisedDate && 'Promise to pay'].filter(Boolean);
+  const description = [assignment.invoice?.invoiceNo, flags.join(' · ')].filter(Boolean).join(' — ');
+
+  const [tracksViewChanges, setTracksViewChanges] = useState(!reduceMotion);
+  useEffect(() => {
+    if (!tracksViewChanges) return;
+    // Entrance animation duration below is 260ms plus a staggered delay
+    // capped at STAGGER_CAP steps; settle a little past the slowest one,
+    // then freeze the marker's native snapshot for the rest of its life.
+    const delay = reduceMotion ? 0 : Math.min(index, STAGGER_CAP) * 30 + 320;
+    const timer = setTimeout(() => setTracksViewChanges(false), delay);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <Marker
+      coordinate={{ latitude: addr.latitude!, longitude: addr.longitude! }}
+      title={assignment.customer?.displayName ?? assignment.customer?.firmName}
+      description={description}
+      tracksViewChanges={tracksViewChanges}
+      onCalloutPress={() => onPress(assignment.id)}
+    >
+      <Animated.View
+        entering={reduceMotion ? undefined : ZoomIn.delay(Math.min(index, STAGGER_CAP) * 30).duration(260).springify().damping(12)}
+        style={styles.markerDot}
+      >
+        <View style={styles.markerDotVisible}>
+          <View style={[styles.markerDotInner, { backgroundColor: pinColorFor(assignment) }]} />
+        </View>
+      </Animated.View>
+    </Marker>
+  );
+});
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },

@@ -35,6 +35,11 @@ export default function ReceiptScreen() {
     queryKey: ['receipt', recordId],
     queryFn: () => fetchReceipt(recordId!),
     enabled: Boolean(recordId),
+    // A receipt is a record of a completed, immutable collection — once
+    // fetched it never changes server-side, so there's no reason to ever
+    // treat it as stale (or evict it while the app session is still open).
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
   });
   const receipt = query.data;
 

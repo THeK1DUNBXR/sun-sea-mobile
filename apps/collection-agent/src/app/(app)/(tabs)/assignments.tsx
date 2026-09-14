@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { FlatList, Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
@@ -59,13 +59,27 @@ export default function AssignmentsScreen() {
     queryFn: () => fetchAssignments(params),
   });
 
-  const onSelectSort = async (value: AssignmentSort) => {
-    setSort(value);
-    if (value === 'nearby' && !coords) {
-      const pos = await getCurrentPosition();
-      if (pos) setCoords({ lat: pos.latitude, lng: pos.longitude });
-    }
-  };
+  // Stable across renders so the FlatList prop identity check (and the
+  // memoized AssignmentRow it renders) doesn't see a "new" callback on every
+  // keystroke in the search box or every chip toggle.
+  const onSelectSort = useCallback(
+    async (value: AssignmentSort) => {
+      setSort(value);
+      if (value === 'nearby' && !coords) {
+        const pos = await getCurrentPosition();
+        if (pos) setCoords({ lat: pos.latitude, lng: pos.longitude });
+      }
+    },
+    [coords],
+  );
+
+  const keyExtractor = useCallback((item: Assignment) => item.id, []);
+  const renderItem = useCallback(
+    ({ item, index }: { item: Assignment; index: number }) => (
+      <AssignmentRow assignment={item} index={index} onPress={() => router.push(`/(app)/assignment/${item.id}`)} />
+    ),
+    [router],
+  );
 
   return (
     <Screen scroll={false} padded={false}>
@@ -102,7 +116,7 @@ export default function AssignmentsScreen() {
         <FlatList
           style={styles.flex}
           data={query.data ?? []}
-          keyExtractor={(item) => item.id}
+          keyExtractor={keyExtractor}
           contentContainerStyle={[styles.listContent, (query.data ?? []).length === 0 && styles.listContentEmpty]}
           refreshing={query.isFetching}
           onRefresh={() => query.refetch()}
@@ -114,20 +128,25 @@ export default function AssignmentsScreen() {
               subtitle={copy.assignments.emptySubtitle}
             />
           }
-          renderItem={({ item, index }) => (
-            <AssignmentRow
-              assignment={item}
-              index={index}
-              onPress={() => router.push(`/(app)/assignment/${item.id}`)}
-            />
-          )}
+          renderItem={renderItem}
+          // Field lists run 20-200 rows on a mid-range Android phone: keep the
+          // first paint cheap and cap how much off-screen work FlatList does
+          // per batch/window so scrolling a long "All" list stays smooth.
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          updateCellsBatchingPeriod={50}
+          windowSize={7}
+          removeClippedSubviews={Platform.OS === 'android'}
         />
       )}
     </Screen>
   );
 }
 
-function AssignmentRow({
+// Memoized: the parent re-renders on every keystroke in the search box and
+// every sort/filter chip toggle, but a given row's props (assignment/index)
+// only actually change when the fetched list itself changes.
+const AssignmentRow = React.memo(function AssignmentRow({
   assignment,
   index,
   onPress,
@@ -186,7 +205,7 @@ function AssignmentRow({
       </PressableScale>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
