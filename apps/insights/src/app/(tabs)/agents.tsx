@@ -1,5 +1,5 @@
 import { useIsFocused } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Reanimated, {
@@ -88,7 +88,18 @@ function useSettlesAfter(ms: number, disabled: boolean): boolean {
 let MapView: any = null;
 let Marker: any = null;
 let Callout: any = null;
-if (Platform.OS !== 'web') {
+let mapsLoadAttempted = false;
+
+/** Defers requiring the native react-native-maps module until this screen
+ * actually renders, instead of at module scope. Expo Router's tab navigator
+ * imports every tab's route module up front to register the tab bar, so a
+ * top-level `require` here would pay react-native-maps' native init cost on
+ * every app boot even for a session that never opens the Agents tab.
+ * Idempotent and synchronous, so it's safe to call unconditionally from
+ * render — no extra re-render needed once it resolves. */
+function ensureMapsLoaded() {
+  if (mapsLoadAttempted || Platform.OS === 'web') return;
+  mapsLoadAttempted = true;
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const maps = require('react-native-maps');
@@ -100,7 +111,11 @@ if (Platform.OS !== 'web') {
   }
 }
 
-function AgentMarker({ agent, markerColor, palette }: {
+// Memoized so a live-agents refetch that changes one agent's fix doesn't
+// re-render every marker on the map — react-query's structural sharing keeps
+// an unchanged agent's object reference stable across refetches, so this
+// actually skips re-rendering markers whose data hasn't moved.
+const AgentMarker = React.memo(function AgentMarker({ agent, markerColor, palette }: {
   agent: LiveAgent & { lastLocation: NonNullable<LiveAgent['lastLocation']> };
   markerColor: string;
   palette: ReturnType<typeof usePalette>;
@@ -149,7 +164,85 @@ function AgentMarker({ agent, markerColor, palette }: {
       </Callout>
     </Marker>
   );
-}
+});
+
+/** Guards against a bad GPS fix (missing/null, NaN, or the classic 0,0 "null
+ * island" sentinel some devices report before a real lock). */
+type LeaderboardEntry = NonNullable<ReturnType<typeof useOverview>['data']>['agents']['leaderboard'][number];
+
+/** One leaderboard row, memoized so a 60s overview refetch — which usually
+ * changes only a couple of agents' figures — doesn't re-render every row.
+ * React-query's structural sharing keeps an unchanged `agent` entry's object
+ * reference stable across refetches, so this actually skips re-rendering
+ * rows whose numbers didn't move. */
+const LeaderboardRow = React.memo(function LeaderboardRow({
+  agent,
+  index,
+  isFirst,
+  rankColor,
+  rankSoft,
+  maxCollected,
+  palette,
+}: {
+  agent: LeaderboardEntry;
+  index: number;
+  isFirst: boolean;
+  rankColor: string;
+  rankSoft: string;
+  maxCollected: number;
+  palette: ReturnType<typeof usePalette>;
+}) {
+  return (
+    <Reveal index={index} staggerMs={40}>
+      <View
+        style={[
+          styles.leaderRow,
+          { borderTopColor: palette.border, borderTopWidth: isFirst ? 0 : StyleSheet.hairlineWidth },
+        ]}
+        accessibilityLabel={`Rank ${index + 1}, ${agent.name ?? copy.leaderboard.unknownAgent}, ${formatMoneyCompactSpoken(agent.collectedMtd)} collected this month`}
+      >
+        <RankBadgePop index={index}>
+          <View
+            style={[
+              styles.rankBadge,
+              index < 3
+                ? { backgroundColor: rankSoft, borderColor: rankColor }
+                : { backgroundColor: palette.overlay, borderColor: 'transparent' },
+            ]}
+          >
+            <Text style={[typography.label, { color: rankColor }]} maxFontSizeMultiplier={1.3}>
+              {index + 1}
+            </Text>
+          </View>
+        </RankBadgePop>
+        <View style={[styles.avatar, { backgroundColor: palette.accentSoft }]}>
+          <Text style={[typography.label, { color: palette.accent }]} maxFontSizeMultiplier={1.3}>
+            {initials(agent.name)}
+          </Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
+            {agent.name ?? copy.leaderboard.unknownAgent}
+          </Text>
+          <View style={styles.leaderMetaRow}>
+            <InlineBar fraction={(agent.collectedMtd ?? 0) / maxCollected} color={index < 3 ? rankColor : undefined} />
+            <Text style={[typography.caption, { color: palette.textFaint }]}>
+              {copy.leaderboard.visitsAndPending(agent.visitsToday ?? 0, agent.pendingAssignments ?? 0)}
+            </Text>
+          </View>
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={[typography.mono, { color: palette.text }]}>
+            {formatMoneyCompact(agent.collectedMtd)}
+          </Text>
+          <Text style={[typography.caption, { color: palette.textFaint, marginTop: 2 }]}>
+            {copy.leaderboard.collectedTodayCaption(formatMoneyCompact(agent.collectedToday))}
+          </Text>
+        </View>
+      </View>
+    </Reveal>
+  );
+});
 
 /** Guards against a bad GPS fix (missing/null, NaN, or the classic 0,0 "null
  * island" sentinel some devices report before a real lock). */
@@ -164,21 +257,32 @@ function hasValidLocation(agent: LiveAgent): agent is LiveAgent & { lastLocation
 }
 
 export default function AgentsScreen() {
+  ensureMapsLoaded();
   const palette = usePalette();
   // Rank 1-3 accents (gold/silver/bronze) — theme-aware so dark mode gets its
   // own lifted, desaturated set rather than the light values pasted in as-is.
-  const RANK_TIER_COLORS = [palette.rankGold, palette.rankSilver, palette.rankBronze];
-  const RANK_TIER_SOFT = [palette.rankGoldSoft, palette.rankSilverSoft, palette.rankBronzeSoft];
+  // Memoized so the tuple identity only changes when the palette itself does
+  // (a theme flip), not on every render — it's read by every leaderboard row.
+  const RANK_TIER_COLORS = useMemo(
+    () => [palette.rankGold, palette.rankSilver, palette.rankBronze],
+    [palette]
+  );
+  const RANK_TIER_SOFT = useMemo(
+    () => [palette.rankGoldSoft, palette.rankSilverSoft, palette.rankBronzeSoft],
+    [palette]
+  );
   const focused = useIsFocused();
   const mapHeight = useMapHeight();
   const overview = useOverview(focused);
   const agentsLive = useAgentsLive(focused);
 
   const isRefreshing = overview.isRefetching || agentsLive.isRefetching;
-  const onRefresh = () => {
+  // Stable identity: onRefresh only feeds a RefreshControl prop, but keeping it
+  // referentially stable avoids a needless prop diff on every render.
+  const onRefresh = useCallback(() => {
     overview.refetch();
     agentsLive.refetch();
-  };
+  }, [overview, agentsLive]);
 
   const leaderboard = overview.data?.agents?.leaderboard ?? [];
   const maxCollected = useMemo(
@@ -187,22 +291,31 @@ export default function AgentsScreen() {
   );
 
   const allLiveAgents = agentsLive.data ?? [];
-  const liveAgents = allLiveAgents.filter(hasValidLocation);
-  const onlineCount = liveAgents.filter((a) => a.online).length;
+  // Memoized on the query's own data reference: react-query's structural
+  // sharing keeps `agentsLive.data` referentially stable when a refetch
+  // returns unchanged content, so this (and the marker list built from it)
+  // skips recomputing on renders triggered by anything else — theme change,
+  // overview refetch, mapHeight recalculation, etc.
+  const liveAgents = useMemo(() => allLiveAgents.filter(hasValidLocation), [allLiveAgents]);
+  const onlineCount = useMemo(() => liveAgents.filter((a) => a.online).length, [liveAgents]);
   // A wide fallback region (roughly all of India) when no agent has reported a
   // fix yet, and a tighter one when exactly one agent anchors the map — many
   // markers still get a sane region from react-native-maps' own fit-to-markers
   // default, but a single marker needs an explicit delta or it zooms to the
-  // whole world.
-  const initialRegion =
-    liveAgents.length > 0
-      ? {
-          latitude: liveAgents[0].lastLocation.latitude,
-          longitude: liveAgents[0].lastLocation.longitude,
-          latitudeDelta: 0.4,
-          longitudeDelta: 0.4,
-        }
-      : { latitude: 20.5937, longitude: 78.9629, latitudeDelta: 12, longitudeDelta: 12 };
+  // whole world. react-native-maps only reads `initialRegion` on first mount,
+  // but memoizing still avoids reallocating this object on every render.
+  const initialRegion = useMemo(
+    () =>
+      liveAgents.length > 0
+        ? {
+            latitude: liveAgents[0].lastLocation.latitude,
+            longitude: liveAgents[0].lastLocation.longitude,
+            latitudeDelta: 0.4,
+            longitudeDelta: 0.4,
+          }
+        : { latitude: 20.5937, longitude: 78.9629, latitudeDelta: 12, longitudeDelta: 12 },
+    [liveAgents]
+  );
 
   const firstError = overview.error ?? agentsLive.error;
   const agentsMissingLocation = allLiveAgents.length - liveAgents.length;
@@ -286,60 +399,18 @@ export default function AgentsScreen() {
           ) : leaderboard.length === 0 ? (
             <EmptyState title={copy.leaderboard.emptyTitle} message={copy.leaderboard.emptyMessage} />
           ) : (
-            leaderboard.map((agent, i) => {
-              const rankColor = i < 3 ? RANK_TIER_COLORS[i] : palette.textFaint;
-              const rankSoft = i < 3 ? RANK_TIER_SOFT[i] : palette.overlay;
-              return (
-                <Reveal key={agent.agentUserId ?? i} index={i} staggerMs={40}>
-                  <View
-                    style={[
-                      styles.leaderRow,
-                      { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
-                    ]}
-                    accessibilityLabel={`Rank ${i + 1}, ${agent.name ?? copy.leaderboard.unknownAgent}, ${formatMoneyCompactSpoken(agent.collectedMtd)} collected this month`}
-                  >
-                    <RankBadgePop index={i}>
-                      <View
-                        style={[
-                          styles.rankBadge,
-                          i < 3
-                            ? { backgroundColor: rankSoft, borderColor: rankColor }
-                            : { backgroundColor: palette.overlay, borderColor: 'transparent' },
-                        ]}
-                      >
-                        <Text style={[typography.label, { color: rankColor }]} maxFontSizeMultiplier={1.3}>
-                          {i + 1}
-                        </Text>
-                      </View>
-                    </RankBadgePop>
-                    <View style={[styles.avatar, { backgroundColor: palette.accentSoft }]}>
-                      <Text style={[typography.label, { color: palette.accent }]} maxFontSizeMultiplier={1.3}>
-                        {initials(agent.name)}
-                      </Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
-                        {agent.name ?? copy.leaderboard.unknownAgent}
-                      </Text>
-                      <View style={styles.leaderMetaRow}>
-                        <InlineBar fraction={(agent.collectedMtd ?? 0) / maxCollected} color={i < 3 ? rankColor : undefined} />
-                        <Text style={[typography.caption, { color: palette.textFaint }]}>
-                          {copy.leaderboard.visitsAndPending(agent.visitsToday ?? 0, agent.pendingAssignments ?? 0)}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={[typography.mono, { color: palette.text }]}>
-                        {formatMoneyCompact(agent.collectedMtd)}
-                      </Text>
-                      <Text style={[typography.caption, { color: palette.textFaint, marginTop: 2 }]}>
-                        {copy.leaderboard.collectedTodayCaption(formatMoneyCompact(agent.collectedToday))}
-                      </Text>
-                    </View>
-                  </View>
-                </Reveal>
-              );
-            })
+            leaderboard.map((agent, i) => (
+              <LeaderboardRow
+                key={agent.agentUserId ?? i}
+                agent={agent}
+                index={i}
+                isFirst={i === 0}
+                rankColor={i < 3 ? RANK_TIER_COLORS[i] : palette.textFaint}
+                rankSoft={i < 3 ? RANK_TIER_SOFT[i] : palette.overlay}
+                maxCollected={maxCollected}
+                palette={palette}
+              />
+            ))
           )}
         </Card>
 

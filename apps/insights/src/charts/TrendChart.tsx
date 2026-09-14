@@ -122,6 +122,21 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
     return { salesPath, collectionsPath, areaPath, salesPoints, collectionsPoints, innerH, maxValue };
   }, [data, width, height]);
 
+  // The area-fill gradient def only depends on the theme's sales color, not on
+  // touch state or data — memoized so it isn't rebuilt on every activeIndex
+  // change (pan) or refetch.
+  const salesGradientDefs = useMemo(
+    () => (
+      <Defs>
+        <LinearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={palette.chartSales} stopOpacity={0.25} />
+          <Stop offset="1" stopColor={palette.chartSales} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+    ),
+    [palette.chartSales]
+  );
+
   const active = activeIndex !== null ? data[activeIndex] : null;
   const latestIndex = data.length - 1;
   const latest = data[latestIndex];
@@ -149,7 +164,12 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
             ? (chart.salesPoints[chart.salesPoints.length - 1].x - chart.salesPoints[0].x) / (chart.salesPoints.length - 1)
             : 1;
           const idx = Math.round((x - padding.left) / (stepX || 1));
-          setActiveIndex(Math.max(0, Math.min(data.length - 1, idx)));
+          const clamped = Math.max(0, Math.min(data.length - 1, idx));
+          // Touch-move fires far more often than the plotted index actually
+          // changes (many events land within the same x-bucket) — skip the
+          // re-render entirely when the index is unchanged instead of
+          // re-rendering the whole chart tree on every pointer-move frame.
+          setActiveIndex((prev) => (prev === clamped ? prev : clamped));
         }}
         onResponderRelease={() => setActiveIndex(null)}
         accessibilityRole="image"
@@ -162,12 +182,7 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
             </Text>
             <Text style={[typography.caption, tabularNums, styles.axisLabel, styles.axisLabelBottom, { color: palette.textFaint }]}>₹0</Text>
             <Svg width={width} height={height}>
-              <Defs>
-                <LinearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={palette.chartSales} stopOpacity={0.25} />
-                  <Stop offset="1" stopColor={palette.chartSales} stopOpacity={0} />
-                </LinearGradient>
-              </Defs>
+              {salesGradientDefs}
               {/* Whisper-quiet gridlines: baseline + one midline */}
               <Line
                 x1={0}

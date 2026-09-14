@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import Reanimated, {
@@ -67,20 +67,30 @@ export function AgingBar({ aging, height = 36 }: AgingBarProps) {
   const palette = usePalette();
   const reducedMotion = useReducedMotion();
   const [width, setWidth] = useState(0);
-  // The app's one 4-step aging ramp (theme.ts), kept visually distinct from the accent.
-  const colors = [palette.agingLow, palette.agingMedium, palette.agingHigh, palette.agingCritical];
+  // The app's one 4-step aging ramp (theme.ts), kept visually distinct from the
+  // accent. Memoized so it's a stable dependency for the segments calc below
+  // (otherwise a fresh array every render would defeat that memo).
+  const colors = useMemo(
+    () => [palette.agingLow, palette.agingMedium, palette.agingHigh, palette.agingCritical],
+    [palette]
+  );
 
-  const values = BUCKET_KEYS.map((k) => aging?.[k] ?? 0);
+  // Chart geometry recomputed only when the underlying buckets, palette or
+  // measured width actually change, not on every render (e.g. a sibling
+  // re-render from the overview screen's other queries/animations).
+  const values = useMemo(() => BUCKET_KEYS.map((k) => aging?.[k] ?? 0), [aging]);
   const total = values.reduce((a, b) => a + b, 0) || 1;
   const worstIdx = values.reduce((best, v, i) => (v > values[best] && i > best ? i : best), 0);
 
-  let cursor = 0;
-  const segments = values.map((value, i) => {
-    const segWidth = (value / total) * width;
-    const seg = { x: cursor, width: segWidth, color: colors[i] };
-    cursor += segWidth;
-    return seg;
-  });
+  const segments = useMemo(() => {
+    let cursor = 0;
+    return values.map((value, i) => {
+      const segWidth = (value / total) * width;
+      const seg = { x: cursor, width: segWidth, color: colors[i] };
+      cursor += segWidth;
+      return seg;
+    });
+  }, [values, total, width, colors]);
 
   const a11yLabel = BUCKET_KEYS.map(
     (k, i) => `${BUCKET_LABELS[k]}: ${formatMoneyCompactSpoken(values[i])}`

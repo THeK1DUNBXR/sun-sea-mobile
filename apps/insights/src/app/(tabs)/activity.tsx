@@ -1,5 +1,5 @@
 import { useIsFocused } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -58,12 +58,67 @@ function groupByDay(items: ActivityItem[]): { day: string; items: ActivityItem[]
   return Array.from(groups.entries()).map(([day, groupItems]) => ({ day, items: groupItems }));
 }
 
+/** One activity-feed row, memoized so a 60s poll that appends/reorders a
+ * couple of items doesn't re-render the whole feed — react-query's
+ * structural sharing keeps an unchanged item's object reference stable
+ * across refetches, so unaffected rows skip re-render. */
+const ActivityRow = React.memo(function ActivityRow({
+  item,
+  isFirst,
+  delay,
+  palette,
+}: {
+  item: ActivityItem;
+  isFirst: boolean;
+  delay: number;
+  palette: Palette;
+}) {
+  const tint = colorFor(item.type, palette);
+  const hasAmount = typeof item.amount === 'number' && !Number.isNaN(item.amount);
+  return (
+    <Reveal delay={delay} axis="x" distance={12}>
+      <View
+        style={[
+          styles.row,
+          { borderTopColor: palette.border, borderTopWidth: isFirst ? 0 : StyleSheet.hairlineWidth },
+        ]}
+        accessibilityLabel={`${item.title || item.type}${hasAmount ? `, ${formatMoneyCompactSpoken(item.amount)}` : ''}, ${formatRelativeTime(item.at)}`}
+      >
+        <View style={[styles.iconBadge, { backgroundColor: softFor(item.type, palette) }]}>
+          <Icon name={iconFor(item.type)} color={tint} size={18} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
+            {item.title || item.type}
+          </Text>
+          {item.subtitle ? (
+            <Text style={[typography.caption, { color: palette.textFaint, marginTop: 2 }]} numberOfLines={1}>
+              {item.subtitle}
+            </Text>
+          ) : null}
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          {hasAmount ? (
+            <Text style={[typography.mono, { color: palette.text }]} maxFontSizeMultiplier={1.6}>
+              {formatMoneyCompact(item.amount)}
+            </Text>
+          ) : null}
+          <Text style={[typography.caption, { color: palette.textFaint, marginTop: 2 }]}>
+            {formatRelativeTime(item.at)}
+          </Text>
+        </View>
+      </View>
+    </Reveal>
+  );
+});
+
 export default function ActivityScreen() {
   const palette = usePalette();
   const focused = useIsFocused();
   const activity = useRecentActivity(30, focused);
 
   const grouped = useMemo(() => groupByDay(activity.data ?? []), [activity.data]);
+  const onRefresh = useCallback(() => activity.refetch(), [activity]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg }]} edges={['top']}>
@@ -72,7 +127,7 @@ export default function ActivityScreen() {
         refreshControl={
           <RefreshControl
             refreshing={activity.isRefetching}
-            onRefresh={() => activity.refetch()}
+            onRefresh={onRefresh}
             tintColor={palette.accent}
           />
         }
@@ -87,7 +142,7 @@ export default function ActivityScreen() {
                 ? `${copy.stalePrefix}${getErrorMessage(activity.error, copy.refreshFailedFallback)}`
                 : getErrorMessage(activity.error, copy.loadFailedFallback)
             }
-            onRetry={() => activity.refetch()}
+            onRetry={onRefresh}
             tone={activity.data ? 'stale' : 'error'}
           />
         ) : null}
@@ -106,45 +161,17 @@ export default function ActivityScreen() {
               <Text style={[typography.titleSm, { color: palette.text, marginBottom: spacing.sm }]}>{group.day}</Text>
               <Card style={{ padding: 0 }}>
                 {group.items.map((item, i) => {
-                  const tint = colorFor(item.type, palette);
                   // Groups queue in first, then rows within a group cascade quickly —
                   // capped so a long feed doesn't keep the last rows waiting.
                   const delay = Math.min(gi, 3) * 70 + Math.min(i, 6) * 35;
-                  const hasAmount = typeof item.amount === 'number' && !Number.isNaN(item.amount);
                   return (
-                    <Reveal key={keyFor(item, i)} delay={delay} axis="x" distance={12}>
-                      <View
-                        style={[
-                          styles.row,
-                          { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
-                        ]}
-                        accessibilityLabel={`${item.title || item.type}${hasAmount ? `, ${formatMoneyCompactSpoken(item.amount)}` : ''}, ${formatRelativeTime(item.at)}`}
-                      >
-                        <View style={[styles.iconBadge, { backgroundColor: softFor(item.type, palette) }]}>
-                          <Icon name={iconFor(item.type)} color={tint} size={18} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
-                            {item.title || item.type}
-                          </Text>
-                          {item.subtitle ? (
-                            <Text style={[typography.caption, { color: palette.textFaint, marginTop: 2 }]} numberOfLines={1}>
-                              {item.subtitle}
-                            </Text>
-                          ) : null}
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                          {hasAmount ? (
-                            <Text style={[typography.mono, { color: palette.text }]} maxFontSizeMultiplier={1.6}>
-                              {formatMoneyCompact(item.amount)}
-                            </Text>
-                          ) : null}
-                          <Text style={[typography.caption, { color: palette.textFaint, marginTop: 2 }]}>
-                            {formatRelativeTime(item.at)}
-                          </Text>
-                        </View>
-                      </View>
-                    </Reveal>
+                    <ActivityRow
+                      key={keyFor(item, i)}
+                      item={item}
+                      isFirst={i === 0}
+                      delay={delay}
+                      palette={palette}
+                    />
                   );
                 })}
               </Card>

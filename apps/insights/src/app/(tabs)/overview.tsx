@@ -1,5 +1,5 @@
 import { useIsFocused } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Reanimated, {
@@ -36,6 +36,67 @@ const RANGE_OPTIONS = [7, 30, 90] as const;
 // 150dp minWidth) plus 2 gaps so 3-up never violates that minimum.
 const KPI_GRID_WIDE_BREAKPOINT = 480;
 
+type TopDebtor = NonNullable<ReturnType<typeof useOverview>['data']>['receivables']['topDebtors'][number];
+
+/** One top-debtor row, memoized so a 60s overview refetch doesn't re-render
+ * every row — react-query's structural sharing keeps an unchanged debtor's
+ * object reference stable across refetches, so unaffected rows skip re-render. */
+const DebtorRow = React.memo(function DebtorRow({
+  debtor,
+  index,
+  palette,
+}: {
+  debtor: TopDebtor;
+  index: number;
+  palette: ReturnType<typeof usePalette>;
+}) {
+  // The single largest balance gets a deliberate warning-toned badge — a
+  // liability, so it borrows the aging/warn vocabulary rather than the
+  // leaderboard's gold (an achievement color would send the wrong signal for
+  // "owes us the most"). Every other rank stays neutral.
+  const isTopDebtor = index === 0;
+  return (
+    <View
+      style={[
+        styles.debtorRow,
+        { borderTopColor: palette.border, borderTopWidth: index === 0 ? 0 : StyleSheet.hairlineWidth },
+      ]}
+      accessibilityLabel={`${copy.debtorRow.rankA11y(index + 1)}${isTopDebtor ? copy.debtorRow.largestBalanceA11y : ''}, ${debtor.firmName || copy.debtorRow.unknownCustomer}, ${formatMoneyCompactSpoken(debtor.netBalance)} outstanding${
+        debtor.dueDays > 0 ? copy.debtorRow.overdueDaysA11y(debtor.dueDays) : ''
+      }`}
+    >
+      <View
+        style={[
+          styles.debtorRank,
+          isTopDebtor
+            ? { backgroundColor: palette.warnSoft, borderColor: palette.warn, borderWidth: 1.5 }
+            : { backgroundColor: palette.overlay },
+        ]}
+      >
+        <Text
+          style={[typography.label, { color: isTopDebtor ? palette.warn : palette.textMuted }]}
+          maxFontSizeMultiplier={1.3}
+        >
+          {index + 1}
+        </Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
+          {debtor.firmName?.trim() || copy.debtorRow.unknownCustomer}
+        </Text>
+        {debtor.dueDays > 0 ? (
+          <Text style={[typography.bodySm, { color: palette.warn, marginTop: 2 }]}>
+            {copy.debtorRow.overdueDaysVisible(debtor.dueDays)}
+          </Text>
+        ) : null}
+      </View>
+      <Text style={[typography.mono, { color: palette.text }]} maxFontSizeMultiplier={1.5}>
+        {formatMoneyCompact(debtor.netBalance)}
+      </Text>
+    </View>
+  );
+});
+
 function greeting(): string {
   const hour = new Date().getHours();
   if (hour < 12) return copy.greetingMorning;
@@ -66,10 +127,11 @@ export default function OverviewScreen() {
   const trends = useTrends(range, focused);
 
   const isRefreshing = overview.isRefetching || trends.isRefetching;
-  const onRefresh = () => {
+  // Stable identity so RefreshControl doesn't get a new function prop every render.
+  const onRefresh = useCallback(() => {
     overview.refetch();
     trends.refetch();
-  };
+  }, [overview, trends]);
 
   // A one-shot pulse on the "updated x ago" chip whenever a refresh actually lands
   // a new snapshot — skipped on first load, and skipped entirely under reduced motion.
@@ -306,54 +368,9 @@ export default function OverviewScreen() {
             {topDebtors.length === 0 ? (
               <EmptyState title={copy.empty.noDebtorsTitle} icon="check" />
             ) : (
-              topDebtors.map((debtor, i) => {
-                // The single largest balance gets a deliberate warning-toned badge —
-                // a liability, so it borrows the aging/warn vocabulary rather than the
-                // leaderboard's gold (an achievement color would send the wrong signal
-                // for "owes us the most"). Every other rank stays neutral.
-                const isTopDebtor = i === 0;
-                return (
-                <View
-                  key={debtor.customerId ?? i}
-                  style={[
-                    styles.debtorRow,
-                    { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
-                  ]}
-                  accessibilityLabel={`${copy.debtorRow.rankA11y(i + 1)}${isTopDebtor ? copy.debtorRow.largestBalanceA11y : ''}, ${debtor.firmName || copy.debtorRow.unknownCustomer}, ${formatMoneyCompactSpoken(debtor.netBalance)} outstanding${
-                    debtor.dueDays > 0 ? copy.debtorRow.overdueDaysA11y(debtor.dueDays) : ''
-                  }`}
-                >
-                  <View
-                    style={[
-                      styles.debtorRank,
-                      isTopDebtor
-                        ? { backgroundColor: palette.warnSoft, borderColor: palette.warn, borderWidth: 1.5 }
-                        : { backgroundColor: palette.overlay },
-                    ]}
-                  >
-                    <Text
-                      style={[typography.label, { color: isTopDebtor ? palette.warn : palette.textMuted }]}
-                      maxFontSizeMultiplier={1.3}
-                    >
-                      {i + 1}
-                    </Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
-                      {debtor.firmName?.trim() || copy.debtorRow.unknownCustomer}
-                    </Text>
-                    {debtor.dueDays > 0 ? (
-                      <Text style={[typography.bodySm, { color: palette.warn, marginTop: 2 }]}>
-                        {copy.debtorRow.overdueDaysVisible(debtor.dueDays)}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <Text style={[typography.mono, { color: palette.text }]} maxFontSizeMultiplier={1.5}>
-                    {formatMoneyCompact(debtor.netBalance)}
-                  </Text>
-                </View>
-                );
-              })
+              topDebtors.map((debtor, i) => (
+                <DebtorRow key={debtor.customerId ?? i} debtor={debtor} index={i} palette={palette} />
+              ))
             )}
           </Card>
         </Reveal>
