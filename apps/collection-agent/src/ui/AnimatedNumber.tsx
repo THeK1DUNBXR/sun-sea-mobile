@@ -15,6 +15,11 @@ interface AnimatedNumberProps {
   style?: StyleProp<TextStyle>;
   numberOfLines?: number;
   adjustsFontSizeToFit?: boolean;
+  /** Caps Dynamic Type scaling on these figures (default 1.6x) — the hero
+   * KPI numbers already shrink-to-fit within a fixed card; letting the
+   * system font setting scale them further would blow past the card at the
+   * largest accessibility sizes even with adjustsFontSizeToFit. */
+  maxFontSizeMultiplier?: number;
 }
 
 /** A tabular-figures count-up: rolls from the previous value to the next
@@ -27,6 +32,7 @@ export function AnimatedNumber({
   style,
   numberOfLines,
   adjustsFontSizeToFit,
+  maxFontSizeMultiplier = 1.6,
 }: AnimatedNumberProps) {
   const reduceMotion = useReducedMotion();
   const progress = useSharedValue(value);
@@ -61,7 +67,12 @@ export function AnimatedNumber({
   );
 
   return (
-    <Text style={style} numberOfLines={numberOfLines} adjustsFontSizeToFit={adjustsFontSizeToFit}>
+    <Text
+      style={style}
+      numberOfLines={numberOfLines}
+      adjustsFontSizeToFit={adjustsFontSizeToFit}
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
+    >
       {formatter(display)}
     </Text>
   );

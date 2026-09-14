@@ -7,20 +7,38 @@ import Animated, { ZoomIn } from 'react-native-reanimated';
 
 import { fetchAssignments } from '@/api/agentApi';
 import { getCurrentPosition, type CurrentPosition } from '@/location/tracking';
+import { Button } from '@/ui/Button';
+import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, fontSize, spacing } from '@/ui/theme';
 
 const STAGGER_CAP = 10;
 
+// Falls back to roughly the middle of India if the device's own location
+// never resolves (permission denied, GPS off indoors) — better than
+// blocking the whole map screen on a fix that may never arrive.
+const FALLBACK_REGION = { latitude: 22.9734, longitude: 78.6569, latitudeDelta: 8, longitudeDelta: 8 };
+
 export default function MapScreen() {
   const router = useRouter();
   const [position, setPosition] = useState<CurrentPosition | null>(null);
+  const [locating, setLocating] = useState(true);
   const assignments = useQuery({ queryKey: ['assignments', {}], queryFn: () => fetchAssignments() });
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    getCurrentPosition().then(setPosition);
+    let cancelled = false;
+    getCurrentPosition()
+      .then((pos) => {
+        if (!cancelled) setPosition(pos);
+      })
+      .finally(() => {
+        if (!cancelled) setLocating(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const pins = (assignments.data ?? []).filter((a) => {
@@ -28,10 +46,19 @@ export default function MapScreen() {
     return addr?.latitude != null && addr?.longitude != null;
   });
 
-  if (!position) {
+  if (locating) {
     return (
       <Screen>
         <Text style={styles.muted}>Locating you…</Text>
+      </Screen>
+    );
+  }
+
+  if (assignments.isError) {
+    return (
+      <Screen>
+        <EmptyState icon="cloud-offline-outline" tone="offline" title="Couldn't load assignments" subtitle="The map needs your assignment list to plot pins." />
+        <Button title="Retry" onPress={() => assignments.refetch()} variant="secondary" />
       </Screen>
     );
   }
@@ -41,13 +68,10 @@ export default function MapScreen() {
       <MapView
         provider={PROVIDER_DEFAULT}
         style={styles.flex}
-        initialRegion={{
-          latitude: position.latitude,
-          longitude: position.longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        }}
-        showsUserLocation
+        initialRegion={
+          position ? { latitude: position.latitude, longitude: position.longitude, latitudeDelta: 0.05, longitudeDelta: 0.05 } : FALLBACK_REGION
+        }
+        showsUserLocation={Boolean(position)}
       >
         {pins.map((a, index) => {
           const addr = a.customer!.addresses![0];

@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import { assertImageSizeOk } from '@/utils/imageGuard';
 import Animated, { FadeInDown, FadeInUp, Layout } from 'react-native-reanimated';
 
 import { fetchDeposits } from '@/api/agentApi';
@@ -40,18 +41,22 @@ export default function DepositsScreen() {
     const result = permission.granted
       ? await ImagePicker.launchCameraAsync({ quality: 0.6 })
       : await ImagePicker.launchImageLibraryAsync({ quality: 0.6 });
-    if (!result.canceled && result.assets?.[0]) {
+    if (!result.canceled && result.assets?.[0] && assertImageSizeOk(result.assets[0])) {
       setProofUri(result.assets[0].uri);
     }
   };
 
+  const submittingRef = React.useRef(false);
+
   const onSubmit = async () => {
-    const numericAmount = Number(amount);
-    if (!numericAmount || numericAmount <= 0) {
+    if (submittingRef.current) return;
+    const numericAmount = Math.round(Number(amount) * 100) / 100;
+    if (!numericAmount || numericAmount < 0.01) {
       setAmountError('Enter a valid amount.');
       return;
     }
     setAmountError(null);
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       await enqueue('deposit', {
@@ -70,6 +75,7 @@ export default function DepositsScreen() {
       queryClient.invalidateQueries({ queryKey: ['deposits'] });
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   };
 
@@ -119,6 +125,16 @@ export default function DepositsScreen() {
           <SkeletonRow />
           <SkeletonRow />
         </>
+      ) : query.isError ? (
+        <View style={{ gap: spacing.sm }}>
+          <EmptyState
+            icon="cloud-offline-outline"
+            tone="offline"
+            title="Couldn't load deposits"
+            subtitle="Check your connection and try again."
+          />
+          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" />
+        </View>
       ) : (query.data ?? []).length === 0 ? (
         <EmptyState
           icon="wallet-outline"

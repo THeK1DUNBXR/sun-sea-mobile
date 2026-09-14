@@ -9,6 +9,7 @@ import { queryClient, setupOnlineManager } from '@/api/queryClient';
 import { AuthProvider, useAuth } from '@/store/auth';
 import { resumeTrackingIfEnabled } from '@/location/tracking';
 import { registerForPushNotifications, subscribeNotificationTaps } from '@/notifications/push';
+import { ErrorBoundary } from '@/ui/ErrorBoundary';
 
 setupOnlineManager();
 
@@ -47,13 +48,15 @@ function RootNavigation() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <StatusBar style="dark" />
-          <RootNavigation />
-        </AuthProvider>
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <StatusBar style="dark" />
+            <RootNavigation />
+          </AuthProvider>
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

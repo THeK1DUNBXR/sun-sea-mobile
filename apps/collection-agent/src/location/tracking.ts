@@ -12,6 +12,10 @@ const BUFFER_KEY = 'sunsea.collection.locationBuffer.v1';
 const PREF_KEY = 'sunsea.collection.trackingEnabled';
 const FLUSH_INTERVAL_MS = 30_000;
 const FLUSH_POINT_COUNT = 20;
+// If a flush keeps failing (offline, background task starved), don't let the
+// in-memory buffer grow forever before the next flush attempt — keep only
+// the most recent points so the eventual sync isn't itself huge.
+const MAX_BUFFERED_POINTS = 500;
 
 let lastFlushAt = 0;
 
@@ -33,46 +37,62 @@ async function writeBuffer(points: LocationPing[]) {
 }
 
 async function flushBufferIfDue(force = false) {
-  const points = await readBuffer();
-  if (points.length === 0) return;
-  const dueByTime = Date.now() - lastFlushAt >= FLUSH_INTERVAL_MS;
-  const dueByCount = points.length >= FLUSH_POINT_COUNT;
-  if (!force && !dueByTime && !dueByCount) return;
+  try {
+    const points = await readBuffer();
+    if (points.length === 0) return;
+    const dueByTime = Date.now() - lastFlushAt >= FLUSH_INTERVAL_MS;
+    const dueByCount = points.length >= FLUSH_POINT_COUNT;
+    if (!force && !dueByTime && !dueByCount) return;
 
-  lastFlushAt = Date.now();
-  await writeBuffer([]);
-  // Locations go through the offline queue too, so a lost connection during
-  // a drive doesn't drop breadcrumbs — they replay in order once online.
-  await enqueue('locations', points);
+    lastFlushAt = Date.now();
+    await writeBuffer([]);
+    // Locations go through the offline queue too, so a lost connection during
+    // a drive doesn't drop breadcrumbs — they replay in order once online.
+    await enqueue('locations', points);
+  } catch {
+    // A failure here (AsyncStorage hiccup, enqueue error) must never crash
+    // the background task — the points stay/return to the buffer either way
+    // via readBuffer's own try/catch, and the next tick tries again.
+  }
 }
 
 TaskManager.defineTask(SUNSEA_AGENT_LOCATION_TASK, async ({ data, error }) => {
-  if (error) return;
-  const locations = (data as { locations?: Location.LocationObject[] } | undefined)?.locations ?? [];
-  if (locations.length === 0) return;
-
-  let batteryLevel: number | null = null;
+  // A thrown error from this task can get it unregistered by the OS on some
+  // Android versions, silently ending tracking — never let anything escape.
   try {
-    batteryLevel = await Battery.getBatteryLevelAsync();
-  } catch {
-    batteryLevel = null;
-  }
+    if (error) return;
+    const locations = (data as { locations?: Location.LocationObject[] } | undefined)?.locations ?? [];
+    if (locations.length === 0) return;
 
-  const points = await readBuffer();
-  const newPoints: LocationPing[] = locations.map((loc) => ({
-    latitude: loc.coords.latitude,
-    longitude: loc.coords.longitude,
-    accuracy: loc.coords.accuracy ?? null,
-    altitude: loc.coords.altitude ?? null,
-    speed: loc.coords.speed ?? null,
-    heading: loc.coords.heading ?? null,
-    batteryLevel: batteryLevel != null ? Math.round(batteryLevel * 100) : null,
-    isMoving: (loc.coords.speed ?? 0) > 0.5,
-    source: 'background',
-    recordedAt: new Date(loc.timestamp).toISOString(),
-  }));
-  await writeBuffer([...points, ...newPoints]);
-  await flushBufferIfDue();
+    let batteryLevel: number | null = null;
+    try {
+      batteryLevel = await Battery.getBatteryLevelAsync();
+    } catch {
+      batteryLevel = null;
+    }
+
+    const points = await readBuffer();
+    const newPoints: LocationPing[] = locations.map((loc) => ({
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+      accuracy: loc.coords.accuracy ?? null,
+      altitude: loc.coords.altitude ?? null,
+      speed: loc.coords.speed ?? null,
+      heading: loc.coords.heading ?? null,
+      batteryLevel: batteryLevel != null ? Math.round(batteryLevel * 100) : null,
+      isMoving: (loc.coords.speed ?? 0) > 0.5,
+      source: 'background',
+      recordedAt: new Date(loc.timestamp).toISOString(),
+    }));
+    const merged = [...points, ...newPoints];
+    // Bound the buffer: keep only the most recent points if flushes have
+    // been failing for a while (offline, task throttled in the background).
+    const bounded = merged.length > MAX_BUFFERED_POINTS ? merged.slice(merged.length - MAX_BUFFERED_POINTS) : merged;
+    await writeBuffer(bounded);
+    await flushBufferIfDue();
+  } catch {
+    // Swallow — see comment above.
+  }
 });
 
 export async function setTrackingPreference(enabled: boolean): Promise<void> {
@@ -117,18 +137,29 @@ export async function startTracking(): Promise<{ started: boolean; backgroundGra
     return { started: true, backgroundGranted: background };
   }
 
-  await Location.startLocationUpdatesAsync(SUNSEA_AGENT_LOCATION_TASK, {
-    accuracy: Location.Accuracy.High,
-    timeInterval: 15000,
-    distanceInterval: 15,
-    pausesUpdatesAutomatically: false,
-    showsBackgroundLocationIndicator: true,
-    foregroundService: {
-      notificationTitle: 'SunSea Collect is tracking your route',
-      notificationBody: 'Location is shared with the office while you are on collection duty.',
-      notificationColor: '#0F6E4F',
-    },
-  });
+  try {
+    await Location.startLocationUpdatesAsync(SUNSEA_AGENT_LOCATION_TASK, {
+      // Without "Allow all the time" the OS silently caps this to
+      // foreground-only updates — still useful, so don't treat it as failure.
+      accuracy: background ? Location.Accuracy.High : Location.Accuracy.Balanced,
+      timeInterval: 15000,
+      distanceInterval: 15,
+      pausesUpdatesAutomatically: false,
+      showsBackgroundLocationIndicator: true,
+      foregroundService: {
+        notificationTitle: 'SunSea Collect is tracking your route',
+        notificationBody: 'Location is shared with the office while you are on collection duty.',
+        notificationColor: '#0F6E4F',
+      },
+    });
+  } catch {
+    // Android 14+ can refuse to start a location foreground service if the
+    // manifest's foreground service type isn't declared, or the OS revoked
+    // the permission between the check above and this call — fail closed
+    // rather than leaving the preference on with no task actually running.
+    await setTrackingPreference(false);
+    return { started: false, backgroundGranted: false };
+  }
   await setTrackingPreference(true);
   return { started: true, backgroundGranted: background };
 }

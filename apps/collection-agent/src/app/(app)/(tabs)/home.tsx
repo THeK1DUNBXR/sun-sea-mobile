@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -51,6 +51,14 @@ export default function HomeScreen() {
       if (value) {
         const result = await startTracking();
         setTracking(result.started);
+        if (!result.started) {
+          Alert.alert('Location permission required', 'Enable location access in Settings to start tracking.');
+        } else if (!result.backgroundGranted) {
+          Alert.alert(
+            'Tracking while app is open only',
+            'Background location wasn’t granted, so your route only shares while SunSea Collect is open. Choose "Allow all the time" in Settings to keep sharing when the app is in the background.',
+          );
+        }
       } else {
         await stopTracking();
         setTracking(false);
@@ -75,11 +83,23 @@ export default function HomeScreen() {
     <Screen refreshing={summary.isFetching} onRefresh={() => summary.refetch()}>
       <View style={styles.headerRow}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.greeting}>Hi{user?.name ? `, ${user.name.split(' ')[0]}` : ''}</Text>
+          <Text style={styles.greeting}>Hi{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}</Text>
           <Text style={styles.nextUp}>{nextUpCopy}</Text>
         </View>
         <TrackingPill on={tracking} />
       </View>
+
+      {summary.isError && (
+        <Card style={styles.errorCard}>
+          <View style={styles.trackingRow}>
+            <Ionicons name="cloud-offline-outline" size={20} color={colors.danger} />
+            <Text style={[styles.cardSubtitle, { flex: 1, color: colors.danger }]}>
+              Couldn't load today's numbers. Showing the last known values.
+            </Text>
+            <Button title="Retry" onPress={() => summary.refetch()} variant="ghost" fullWidth={false} />
+          </View>
+        </Card>
+      )}
 
       <View style={styles.heroRow}>
         <Card style={styles.heroCard} elevation="raised">
@@ -359,6 +379,13 @@ const styles = StyleSheet.create({
   kpiValueWarn: { color: colors.warning },
   kpiLabel: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '600' },
 
+  errorCard: {
+    backgroundColor: colors.dangerTint,
+    borderColor: colors.danger,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Linking, Modal, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Modal, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -8,9 +8,36 @@ import { fetchAssignment, fetchCustomerLedger } from '@/api/agentApi';
 import { Badge } from '@/ui/Badge';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
+import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
 import { assignmentStatusMeta, formatDate, formatMoney, isOverdue } from '@/ui/format';
+
+/** Normalizes an Indian mobile number for tel:/wa.me links: strips
+ * formatting, drops a leading "0" trunk prefix or "+", and adds the 91
+ * country code when the number is 10 raw digits. Returns null for anything
+ * that clearly isn't enough digits to be a real number. */
+function normalizeIndianPhone(raw?: string | null): string | null {
+  if (!raw) return null;
+  let digits = raw.replace(/[^\d]/g, '');
+  if (!digits) return null;
+  if (digits.startsWith('0') && digits.length === 11) digits = digits.slice(1);
+  if (digits.length === 10) digits = `91${digits}`;
+  return digits.length >= 11 ? digits : null;
+}
+
+async function openUrlSafely(url: string, unavailableMessage: string) {
+  try {
+    const supported = await Linking.canOpenURL(url);
+    if (!supported) {
+      Alert.alert('Can’t open this', unavailableMessage);
+      return;
+    }
+    await Linking.openURL(url);
+  } catch {
+    Alert.alert('Can’t open this', unavailableMessage);
+  }
+}
 
 export default function AssignmentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,26 +61,34 @@ export default function AssignmentDetailScreen() {
     enabled: ledgerOpen && Boolean(customer?.id),
   });
 
-  const phone = customer?.phones?.[0];
+  const phone = normalizeIndianPhone(customer?.phones?.[0]);
   const address = customer?.addresses?.[0];
+  const addressLine = address
+    ? [address.address?.addressLine1, address.address?.addressLine2, address.address?.city, address.address?.pincode]
+        .filter(Boolean)
+        .join(', ')
+    : '';
+  const hasAddress = Boolean(addressLine || (address?.latitude != null && address?.longitude != null));
 
-  const onCall = () => phone && Linking.openURL(`tel:${phone}`);
-  const onWhatsApp = () => {
-    if (!phone) return;
-    const digits = phone.replace(/\D/g, '');
-    const withCountry = digits.startsWith('91') ? digits : `91${digits}`;
-    Linking.openURL(`https://wa.me/${withCountry}`);
-  };
+  const onCall = () => phone && openUrlSafely(`tel:${phone}`, 'No phone app is available to place this call.');
+  const onWhatsApp = () =>
+    phone && openUrlSafely(`https://wa.me/${phone}`, 'WhatsApp isn’t installed on this device.');
   const onNavigate = () => {
-    if (address?.latitude != null && address?.longitude != null) {
-      Linking.openURL(`geo:${address.latitude},${address.longitude}?q=${address.latitude},${address.longitude}`);
-    } else {
-      const addressQuery = encodeURIComponent(
-        [address?.line1, address?.line2, address?.city, address?.pincode].filter(Boolean).join(', '),
-      );
-      Linking.openURL(`geo:0,0?q=${addressQuery}`);
-    }
+    const geoQuery =
+      address?.latitude != null && address?.longitude != null
+        ? `${address.latitude},${address.longitude}`
+        : encodeURIComponent(addressLine);
+    openUrlSafely(`geo:0,0?q=${geoQuery}`, 'No maps app is available to navigate there.');
   };
+
+  if (query.isError) {
+    return (
+      <Screen>
+        <EmptyState icon="cloud-offline-outline" tone="offline" title="Couldn't load this assignment" subtitle="Check your connection and try again." />
+        <Button title="Retry" onPress={() => query.refetch()} variant="secondary" />
+      </Screen>
+    );
+  }
 
   if (query.isLoading || !assignment) {
     return (
@@ -89,35 +124,41 @@ export default function AssignmentDetailScreen() {
       <Card>
         <Text style={styles.sectionTitle}>{customer?.displayName ?? customer?.firmName}</Text>
         {customer?.gstin ? <Text style={styles.muted}>GSTIN {customer.gstin}</Text> : null}
-        {address ? (
-          <Text style={styles.muted}>
-            {[address.line1, address.line2, address.city, address.pincode].filter(Boolean).join(', ')}
-          </Text>
-        ) : null}
+        {addressLine ? (
+          <Text style={styles.muted}>{addressLine}</Text>
+        ) : (
+          <Text style={styles.mutedFaint}>No address on file</Text>
+        )}
         <View style={styles.contactRow}>
           <Button
             title="Call"
             onPress={onCall}
+            disabled={!phone}
             variant="secondary"
             fullWidth={false}
             style={styles.contactBtn}
-            icon={<Ionicons name="call-outline" size={18} color={colors.primary} />}
+            accessibilityLabel={phone ? 'Call customer' : 'Call — no phone number on file'}
+            icon={<Ionicons name="call-outline" size={18} color={phone ? colors.primary : colors.textFaint} />}
           />
           <Button
             title="WhatsApp"
             onPress={onWhatsApp}
+            disabled={!phone}
             variant="secondary"
             fullWidth={false}
             style={styles.contactBtn}
-            icon={<Ionicons name="logo-whatsapp" size={18} color={colors.primary} />}
+            accessibilityLabel={phone ? 'Message customer on WhatsApp' : 'WhatsApp — no phone number on file'}
+            icon={<Ionicons name="logo-whatsapp" size={18} color={phone ? colors.primary : colors.textFaint} />}
           />
           <Button
             title="Navigate"
             onPress={onNavigate}
+            disabled={!hasAddress}
             variant="secondary"
             fullWidth={false}
             style={styles.contactBtn}
-            icon={<Ionicons name="navigate-outline" size={18} color={colors.primary} />}
+            accessibilityLabel={hasAddress ? 'Navigate to customer' : 'Navigate — no address on file'}
+            icon={<Ionicons name="navigate-outline" size={18} color={hasAddress ? colors.primary : colors.textFaint} />}
           />
         </View>
         <Button title="Customer ledger" onPress={() => setLedgerOpen(true)} variant="ghost" />
@@ -135,8 +176,17 @@ export default function AssignmentDetailScreen() {
           <Text style={styles.sectionTitle}>Items</Text>
           {invoice!.items!.map((item, idx) => (
             <View key={item.id ?? idx} style={styles.itemRow}>
-              <Text style={styles.itemDesc}>{item.description}</Text>
-              <Text style={styles.muted}>{formatMoney(item.amount)}</Text>
+              <View style={{ flex: 1, marginRight: spacing.sm }}>
+                <Text style={styles.itemDesc} numberOfLines={2}>
+                  {item.productName ?? 'Item'}
+                </Text>
+                {item.quantity != null && item.unitPrice != null ? (
+                  <Text style={styles.itemMeta}>
+                    {item.quantity} × {formatMoney(item.unitPrice)}
+                  </Text>
+                ) : null}
+              </View>
+              <Text style={styles.muted}>{formatMoney(item.lineTotal)}</Text>
             </View>
           ))}
         </Card>
@@ -172,25 +222,38 @@ export default function AssignmentDetailScreen() {
         <Screen>
           <Text style={styles.sectionTitle}>Customer ledger</Text>
           {ledger.isLoading ? (
-            <Text>Loading…</Text>
+            <Text style={styles.muted}>Loading…</Text>
+          ) : ledger.isError ? (
+            <EmptyState icon="cloud-offline-outline" tone="offline" title="Couldn't load the ledger" subtitle="Check your connection and try again." />
           ) : (
             <>
-              <Text style={styles.subsectionTitle}>Outstanding invoices</Text>
-              {(ledger.data?.outstandingInvoices ?? []).map((inv) => (
-                <View key={inv.id} style={styles.itemRow}>
-                  <Text style={styles.itemDesc}>{inv.invoiceNo}</Text>
-                  <Text style={styles.muted}>{formatMoney(inv.outstanding)}</Text>
-                </View>
-              ))}
+              <Text style={styles.subsectionTitle}>Invoices</Text>
+              {(ledger.data?.outstandingInvoices ?? []).length === 0 ? (
+                <Text style={styles.mutedFaint}>No invoices for this customer.</Text>
+              ) : (
+                (ledger.data?.outstandingInvoices ?? []).map((inv) => (
+                  <View key={inv.id} style={styles.itemRow}>
+                    <Text style={styles.itemDesc}>{inv.invoiceNo}</Text>
+                    <Text style={styles.muted}>{formatMoney(inv.outstanding)}</Text>
+                  </View>
+                ))
+              )}
               <Text style={styles.subsectionTitle}>Recent receipts</Text>
-              {(ledger.data?.recentReceipts ?? []).map((r) => (
-                <View key={r.id} style={styles.itemRow}>
-                  <Text style={styles.itemDesc}>{r.receiptNo}</Text>
-                  <Text style={styles.muted}>{formatMoney(r.amount)}</Text>
-                </View>
-              ))}
+              {(ledger.data?.recentReceipts ?? []).length === 0 ? (
+                <Text style={styles.mutedFaint}>No receipts yet.</Text>
+              ) : (
+                (ledger.data?.recentReceipts ?? []).map((r) => (
+                  <View key={r.id} style={styles.itemRow}>
+                    <Text style={styles.itemDesc}>{r.receiptNo}</Text>
+                    <Text style={styles.muted}>{formatMoney(r.amount)}</Text>
+                  </View>
+                ))
+              )}
             </>
           )}
+          {ledger.isError ? (
+            <Button title="Retry" onPress={() => ledger.refetch()} variant="secondary" />
+          ) : null}
           <Button title="Close" onPress={() => setLedgerOpen(false)} variant="secondary" />
         </Screen>
       </Modal>
@@ -211,6 +274,8 @@ const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   invoiceNo: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
   muted: { color: colors.textMuted, fontSize: fontSize.sm, marginTop: 2 },
+  mutedFaint: { color: colors.textFaint, fontSize: fontSize.sm, marginTop: 2, fontStyle: 'italic' },
+  itemMeta: { color: colors.textFaint, fontSize: fontSize.xs, marginTop: 1 },
   badgeRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
   amountRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.lg },
   amountBlock: { alignItems: 'flex-start' },

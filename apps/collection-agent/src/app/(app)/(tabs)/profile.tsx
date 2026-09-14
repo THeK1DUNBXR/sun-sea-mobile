@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
@@ -13,13 +13,16 @@ import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
 import { formatDateTime, initials } from '@/ui/format';
 import { useAuth } from '@/store/auth';
 import { useSyncStatus } from '@/offline/useSyncStatus';
-import { retryItem, removeItem } from '@/offline/queue';
+import { retryItem, removeItem, subscribeSyncNotes, dismissSyncNote, type SyncNote } from '@/offline/queue';
 import { startTracking, stopTracking, getTrackingPreference } from '@/location/tracking';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const sync = useSyncStatus();
   const [tracking, setTracking] = useState(false);
+  const [notes, setNotes] = useState<SyncNote[]>([]);
+
+  useEffect(() => subscribeSyncNotes(setNotes), []);
 
   useFocusEffect(
     useCallback(() => {
@@ -31,7 +34,14 @@ export default function ProfileScreen() {
     if (value) {
       const result = await startTracking();
       setTracking(result.started);
-      if (!result.started) Alert.alert('Location permission required', 'Enable location access to start tracking.');
+      if (!result.started) {
+        Alert.alert('Location permission required', 'Enable location access in Settings to start tracking.');
+      } else if (!result.backgroundGranted) {
+        Alert.alert(
+          'Tracking while app is open only',
+          'Background location wasn’t granted, so your route only shares while SunSea Collect is open. Choose "Allow all the time" in Settings to keep sharing when the app is in the background.',
+        );
+      }
     } else {
       await stopTracking();
       setTracking(false);
@@ -41,10 +51,10 @@ export default function ProfileScreen() {
   return (
     <Screen>
       <Card elevation="raised" style={styles.identityRow}>
-        <Avatar label={initials(user?.name)} color={colors.primary} size={56} />
+        <Avatar label={initials(user?.fullName)} color={colors.primary} size={56} />
         <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{user?.name ?? 'Agent'}</Text>
-          <Text style={styles.subtitle}>{user?.email ?? user?.phone ?? ''}</Text>
+          <Text style={styles.name}>{user?.fullName ?? 'Agent'}</Text>
+          <Text style={styles.subtitle}>{user?.email ?? user?.username ?? ''}</Text>
         </View>
       </Card>
 
@@ -79,11 +89,45 @@ export default function ProfileScreen() {
                   <Text style={styles.subtitle}>{formatDateTime(item.createdAt)}</Text>
                   {item.lastError ? <Text style={styles.errorText}>{item.lastError}</Text> : null}
                 </View>
-                {item.lastError ? <Badge label="Failed" tone="danger" dot /> : <Badge label="Pending" dot />}
-                {item.lastError ? (
-                  <Button title="Retry" onPress={() => retryItem(item.id)} fullWidth={false} variant="ghost" />
+                {item.needsAttention ? (
+                  <Badge label="Needs attention" tone="danger" dot />
+                ) : item.lastError ? (
+                  <Badge label="Retrying" tone="warning" dot />
+                ) : (
+                  <Badge label="Pending" dot />
+                )}
+                {item.needsAttention || item.lastError ? (
+                  <Button
+                    title="Retry"
+                    onPress={() => retryItem(item.id)}
+                    fullWidth={false}
+                    variant="ghost"
+                    accessibilityLabel={`Retry ${item.kind} from ${formatDateTime(item.createdAt)}`}
+                  />
                 ) : null}
-                <Button title="Remove" onPress={() => removeItem(item.id)} fullWidth={false} variant="ghost" />
+                <Button
+                  title="Remove"
+                  onPress={() =>
+                    Alert.alert('Remove from sync queue?', 'This record has not synced yet and will be discarded permanently.', [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Remove', style: 'destructive', onPress: () => removeItem(item.id) },
+                    ])
+                  }
+                  fullWidth={false}
+                  variant="ghost"
+                  accessibilityLabel={`Remove ${item.kind} from sync queue`}
+                />
+              </View>
+            ))}
+          </View>
+        )}
+        {notes.length > 0 && (
+          <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
+            {notes.map((note) => (
+              <View key={note.id} style={styles.noteRow}>
+                <Ionicons name="information-circle-outline" size={16} color={colors.warning} />
+                <Text style={styles.noteText}>{note.message}</Text>
+                <Button title="Dismiss" onPress={() => dismissSyncNote(note.id)} fullWidth={false} variant="ghost" />
               </View>
             ))}
           </View>
@@ -92,7 +136,12 @@ export default function ProfileScreen() {
 
       <Button
         title="Log out"
-        onPress={logout}
+        onPress={() =>
+          Alert.alert('Log out?', 'Location sharing will stop and any unsynced items will remain queued until you log back in.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Log out', style: 'destructive', onPress: logout },
+          ])
+        }
         variant="danger"
         icon={<Ionicons name="log-out-outline" size={20} color={colors.onPrimary} />}
       />
@@ -117,4 +166,13 @@ const styles = StyleSheet.create({
   },
   queueKind: { fontWeight: '800', color: colors.text, textTransform: 'capitalize' },
   errorText: { color: colors.danger, fontSize: fontSize.sm },
+  noteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.warningTint,
+    borderRadius: 8,
+    padding: spacing.sm,
+  },
+  noteText: { flex: 1, color: colors.text, fontSize: fontSize.sm },
 });

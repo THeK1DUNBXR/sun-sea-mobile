@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { fetchMe, login as loginRequest } from '@/api/agentApi';
 import { setStoredToken, setUnauthorizedHandler } from '@/api/client';
+import { stopTracking } from '@/location/tracking';
 import type { User } from '@/types/models';
 
 const AGENT_PERMISSION = 'collection-agent-app.access';
@@ -34,6 +35,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const signOut = useCallback(async () => {
+    // Stop background GPS before clearing the token: once the token is gone,
+    // any location pings still queued would just fail with 401 forever (the
+    // backend has no way to accept locations for a logged-out session), and
+    // continuing to track after logout is also a privacy leak the agent
+    // didn't ask for. Best-effort — a stop failure must never block sign-out.
+    await stopTracking().catch(() => {});
     await setStoredToken(null);
     await AsyncStorage.removeItem(CACHED_USER_KEY).catch(() => {});
     setState({ status: 'signedOut', user: null, permissions: [], isSuperAdmin: false, error: null });

@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { fetchHistory } from '@/api/agentApi';
+import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { Badge } from '@/ui/Badge';
 import { EmptyState } from '@/ui/EmptyState';
@@ -35,6 +36,16 @@ export default function HistoryScreen() {
           {Array.from({ length: 5 }).map((_, i) => (
             <SkeletonRow key={i} />
           ))}
+        </View>
+      ) : query.isError ? (
+        <View style={styles.listContent}>
+          <EmptyState
+            icon="cloud-offline-outline"
+            tone="offline"
+            title="Couldn't load history"
+            subtitle="Check your connection and try again."
+          />
+          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" />
         </View>
       ) : (
         <FlatList

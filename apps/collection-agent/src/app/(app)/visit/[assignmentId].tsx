@@ -7,6 +7,7 @@ import * as Crypto from 'expo-crypto';
 
 import { enqueue } from '@/offline/queue';
 import { getCurrentPosition, type CurrentPosition } from '@/location/tracking';
+import { assertImageSizeOk } from '@/utils/imageGuard';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { Chip } from '@/ui/Chip';
@@ -21,8 +22,11 @@ const OUTCOMES = [
   { value: 'PROMISED_TO_PAY', label: 'Promised to pay' },
   { value: 'REFUSED', label: 'Refused' },
   { value: 'DISPUTE', label: 'Dispute' },
+  { value: 'WRONG_ADDRESS', label: 'Wrong address' },
   { value: 'OTHER', label: 'Other' },
 ] as const;
+
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
 export default function VisitScreen() {
   const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
@@ -39,7 +43,13 @@ export default function VisitScreen() {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    getCurrentPosition().then(setPosition);
+    let cancelled = false;
+    getCurrentPosition().then((pos) => {
+      if (!cancelled) setPosition(pos);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const pickPhoto = async () => {
@@ -47,15 +57,27 @@ export default function VisitScreen() {
     const result = permission.granted
       ? await ImagePicker.launchCameraAsync({ quality: 0.5 })
       : await ImagePicker.launchImageLibraryAsync({ quality: 0.5 });
-    if (!result.canceled && result.assets?.[0]) setPhotoUri(result.assets[0].uri);
+    if (!result.canceled && result.assets?.[0] && assertImageSizeOk(result.assets[0])) {
+      setPhotoUri(result.assets[0].uri);
+    }
   };
 
+  const submittingRef = React.useRef(false);
+
   const onSubmit = async () => {
+    if (submittingRef.current) return;
     setDateError(null);
-    if (outcome === 'PROMISED_TO_PAY' && !promisedDate) {
-      setDateError('Enter the promised date.');
-      return;
+    if (outcome === 'PROMISED_TO_PAY') {
+      if (!promisedDate) {
+        setDateError('Enter the promised date.');
+        return;
+      }
+      if (!DATE_ONLY.test(promisedDate) || Number.isNaN(new Date(promisedDate).getTime())) {
+        setDateError('Use the format YYYY-MM-DD.');
+        return;
+      }
     }
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       await enqueue('visit', {
@@ -64,7 +86,10 @@ export default function VisitScreen() {
         visitedAt: new Date().toISOString(),
         outcome,
         promisedDate: outcome === 'PROMISED_TO_PAY' ? promisedDate : undefined,
-        promisedAmount: outcome === 'PROMISED_TO_PAY' && promisedAmount ? Number(promisedAmount) : undefined,
+        promisedAmount:
+          outcome === 'PROMISED_TO_PAY' && promisedAmount && !Number.isNaN(Number(promisedAmount))
+            ? Math.round(Number(promisedAmount) * 100) / 100
+            : undefined,
         notes: notes || undefined,
         latitude: position?.latitude,
         longitude: position?.longitude,
@@ -73,6 +98,7 @@ export default function VisitScreen() {
       setSubmitted(true);
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   };
 

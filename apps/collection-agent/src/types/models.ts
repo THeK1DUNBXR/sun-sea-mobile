@@ -21,16 +21,20 @@ export type VisitOutcome =
   | 'PROMISED_TO_PAY'
   | 'REFUSED'
   | 'DISPUTE'
+  | 'WRONG_ADDRESS'
   | 'OTHER';
 
 export type DepositStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 
+// Matches the shape the real backend returns for a sales invoice line
+// (agent-app.service.ts serializeRecordForAgent / getMyAssignments): the
+// product name plus quantity/unitPrice/lineTotal, not a generic description.
 export interface InvoiceItem {
   id?: string;
-  description?: string;
+  productName?: string;
   quantity?: number;
-  rate?: number;
-  amount?: number;
+  unitPrice?: number;
+  lineTotal?: number;
 }
 
 export interface Invoice {
@@ -44,14 +48,25 @@ export interface Invoice {
   items?: InvoiceItem[];
 }
 
-export interface CustomerAddress {
-  id?: string;
-  label?: string;
-  line1?: string;
-  line2?: string;
+// The backend stores each CustomerAddress as { id, label, isDefault, address:
+// <freeform JSON>, latitude?, longitude? } — lat/lng are hoisted to the top
+// level only when they can be parsed out of the JSON blob (extractLatLng),
+// while the postal fields (addressLine1/addressLine2/city/state/pincode) stay
+// nested under `address` exactly as the web ERP customer form writes them.
+export interface CustomerAddressDetail {
+  addressLine1?: string;
+  addressLine2?: string;
   city?: string;
   state?: string;
   pincode?: string;
+  country?: string;
+}
+
+export interface CustomerAddress {
+  id?: string;
+  label?: string;
+  isDefault?: boolean;
+  address?: CustomerAddressDetail;
   latitude?: number | null;
   longitude?: number | null;
 }
@@ -121,6 +136,7 @@ export interface CollectionRecord {
   latitude?: number;
   longitude?: number;
   locationAccuracy?: number;
+  // Normalized in api/agentApi.ts from the backend's proofImageUrl/signatureImageUrl.
   proofUrl?: string;
   signatureUrl?: string;
 }
@@ -148,9 +164,14 @@ export interface AgentCashDeposit {
   referenceNumber?: string;
   notes?: string;
   status: DepositStatus;
+  rejectionReason?: string;
+  // Normalized in api/agentApi.ts from the backend's proofImageUrl.
   proofUrl?: string;
 }
 
+// Field names here match what api/agentApi.ts's fetchMySummary adapter
+// produces from GET /agent/me/summary — the raw response instead uses
+// assignedOutstanding / collectedTodayAmount (see agent-app.service.ts).
 export interface AgentSummary {
   assignedCount?: number;
   outstanding?: number;
@@ -162,6 +183,9 @@ export interface AgentSummary {
   ptpDueToday?: number;
 }
 
+// Field names here match what api/agentApi.ts's fetchHistory adapter produces
+// from GET /agent/history — the raw timeline entries use `type`/`at` and have
+// no ready-made title/subtitle (see agent-app.service.ts getHistory).
 export interface HistoryEntry {
   id: string;
   kind: 'collection' | 'visit' | 'deposit';
@@ -172,6 +196,10 @@ export interface HistoryEntry {
   status?: string;
 }
 
+// `invoices` on the wire (agent-app.service.ts getCustomerLedger); renamed to
+// outstandingInvoices by the fetchCustomerLedger adapter for a clearer name
+// in the UI (every invoice returned there already has outstanding > 0... in
+// practice some may be fully paid historical rows, so treat as "invoices").
 export interface CustomerLedger {
   customer: Customer;
   outstandingInvoices?: Invoice[];
@@ -190,10 +218,15 @@ export interface Receipt {
   agentName?: string;
 }
 
+// Matches auth.service.ts formatUserResponse exactly (POST /auth/login →
+// data.user, GET /auth/me → data.user): userId/fullName, no `phone` field —
+// the agent's phone isn't part of the auth payload.
 export interface User {
-  id: string;
-  name?: string;
+  userId: string;
+  fullName?: string;
   email?: string;
-  phone?: string;
+  username?: string;
+  status?: string;
+  avatarUrl?: string | null;
   isSuperAdmin?: boolean;
 }

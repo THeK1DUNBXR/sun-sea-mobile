@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -19,6 +19,7 @@ import Animated, {
 import { fetchReceipt } from '@/api/agentApi';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
+import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, spacing, fontSize, radius, letterSpacing } from '@/ui/theme';
@@ -42,20 +43,49 @@ export default function ReceiptScreen() {
     setSharing(true);
     try {
       const { uri } = await Print.printToFileAsync({ html });
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'application/pdf' });
+      const canShare = await Sharing.isAvailableAsync().catch(() => false);
+      if (!canShare) {
+        Alert.alert('Sharing unavailable', 'This device can’t share files. The receipt is still saved on the app.');
+        return;
       }
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf' });
+    } catch {
+      Alert.alert('Couldn’t create the PDF', 'Something went wrong generating the receipt. Please try again.');
     } finally {
       setSharing(false);
     }
   };
 
-  const onShareWhatsApp = () => {
+  const onShareWhatsApp = async () => {
     const text = `Receipt ${receipt?.receiptNo ?? ''} for ${formatMoney(receipt?.amount)} received from ${
       receipt?.customer?.displayName ?? receipt?.customer?.firmName ?? ''
     }. Thank you!`;
-    Linking.openURL(`https://wa.me/?text=${encodeURIComponent(text)}`);
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        Alert.alert('WhatsApp unavailable', 'WhatsApp isn’t installed on this device.');
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('WhatsApp unavailable', 'WhatsApp isn’t installed on this device.');
+    }
   };
+
+  if (query.isError) {
+    return (
+      <Screen>
+        <EmptyState
+          icon="cloud-offline-outline"
+          tone="offline"
+          title="Couldn't load this receipt"
+          subtitle="If this collection hasn't synced yet, it will be available once it does."
+        />
+        <Button title="Retry" onPress={() => query.refetch()} variant="secondary" />
+      </Screen>
+    );
+  }
 
   if (query.isLoading || !receipt) {
     return (

@@ -12,9 +12,11 @@ import { fetchAssignment } from '@/api/agentApi';
 import { enqueue } from '@/offline/queue';
 import { getCurrentPosition, type CurrentPosition } from '@/location/tracking';
 import { dataUrlToFile } from '@/utils/dataUrl';
+import { assertImageSizeOk } from '@/utils/imageGuard';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { Chip } from '@/ui/Chip';
+import { EmptyState } from '@/ui/EmptyState';
 import { Input } from '@/ui/Input';
 import { Screen } from '@/ui/Screen';
 import { SuccessOverlay } from '@/ui/SuccessOverlay';
@@ -26,6 +28,10 @@ import { formatMoney } from '@/ui/format';
 const METHODS = ['CASH', 'UPI', 'CHEQUE', 'BANK_TRANSFER', 'CARD', 'OTHER'] as const;
 type Method = (typeof METHODS)[number];
 
+// Beyond this radius a GPS fix is too coarse to trust for a collection
+// proof — still allowed (GPS is optional per DESIGN.md), but flagged.
+const GPS_ACCURACY_WARNING_M = 100;
+
 export default function CollectScreen() {
   const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
   const router = useRouter();
@@ -36,6 +42,11 @@ export default function CollectScreen() {
     queryFn: () => fetchAssignment(assignmentId!),
     enabled: Boolean(assignmentId),
   });
+  // The outstanding cap can only be trusted once we've actually seen the
+  // invoice — offline with nothing cached yet, we let the agent record the
+  // collection anyway (it queues and the backend re-validates on sync)
+  // rather than blocking the whole flow on a number we don't have.
+  const outstandingKnown = assignmentQuery.data != null;
   const outstanding = assignmentQuery.data?.invoice?.outstanding ?? 0;
   const customerName =
     assignmentQuery.data?.customer?.displayName ?? assignmentQuery.data?.customer?.firmName ?? 'this customer';
@@ -51,6 +62,7 @@ export default function CollectScreen() {
   const [proofUri, setProofUri] = useState<string | null>(null);
   const [signatureUri, setSignatureUri] = useState<string | null>(null);
   const [position, setPosition] = useState<CurrentPosition | null>(null);
+  const [gpsSettled, setGpsSettled] = useState(false);
   const [amountError, setAmountError] = useState<string | null>(null);
   const [chequeError, setChequeError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -59,28 +71,48 @@ export default function CollectScreen() {
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    getCurrentPosition().then(setPosition);
+    let cancelled = false;
+    getCurrentPosition()
+      .then((pos) => {
+        if (cancelled) return;
+        setPosition(pos);
+      })
+      .finally(() => {
+        if (!cancelled) setGpsSettled(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const amountValue = Number(amount);
-  const step1Valid = Boolean(amountValue) && amountValue > 0 && amountValue <= outstanding + 0.01;
+  // Round to paise — free-typed decimals (e.g. "100.005") shouldn't reach
+  // the backend or the multipart body with float noise.
+  const amountValue = Math.round(Number(amount) * 100) / 100;
+  const step1Valid =
+    Boolean(amountValue) && amountValue >= 0.01 && (!outstandingKnown || amountValue <= outstanding + 0.01);
   const step2Valid = step1Valid && (method !== 'CHEQUE' || Boolean(chequeNumber));
+  const gpsAccuracyPoor = position?.accuracy != null && position.accuracy > GPS_ACCURACY_WARNING_M;
 
   const pickProof = async (fromCamera: boolean) => {
     const result = fromCamera
       ? await ImagePicker.launchCameraAsync({ quality: 0.5 })
       : await ImagePicker.launchImageLibraryAsync({ quality: 0.5, mediaTypes: ImagePicker.MediaTypeOptions.Images });
-    if (!result.canceled && result.assets?.[0]) setProofUri(result.assets[0].uri);
+    if (!result.canceled && result.assets?.[0] && assertImageSizeOk(result.assets[0])) {
+      setProofUri(result.assets[0].uri);
+    }
   };
 
+  const submittingRef = React.useRef(false);
+
   const onSubmit = async () => {
+    if (submittingRef.current) return; // guards a double-tap landing in the same frame
     setAmountError(null);
     setChequeError(null);
     let hasError = false;
-    if (!amountValue || amountValue <= 0) {
+    if (!amountValue || amountValue < 0.01) {
       setAmountError('Enter a valid amount.');
       hasError = true;
-    } else if (amountValue > outstanding + 0.01) {
+    } else if (outstandingKnown && amountValue > outstanding + 0.01) {
       setAmountError(`Cannot exceed the outstanding balance of ${formatMoney(outstanding)}.`);
       hasError = true;
     }
@@ -90,6 +122,7 @@ export default function CollectScreen() {
     }
     if (hasError) return;
 
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       await enqueue('collection', {
@@ -113,6 +146,7 @@ export default function CollectScreen() {
       setSubmittedAmount(amountValue);
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   };
 
@@ -120,10 +154,30 @@ export default function CollectScreen() {
     <Screen avoidKeyboard>
       <Card elevation="raised" style={styles.outstandingCard}>
         <Text style={styles.outstandingLabel}>Outstanding · {customerName}</Text>
-        <Text style={styles.outstandingValue} numberOfLines={1} adjustsFontSizeToFit>
-          {formatMoney(outstanding)}
-        </Text>
+        {outstandingKnown ? (
+          <Text style={styles.outstandingValue} numberOfLines={1} adjustsFontSizeToFit>
+            {formatMoney(outstanding)}
+          </Text>
+        ) : (
+          <Text style={styles.outstandingUnknown} numberOfLines={2}>
+            {assignmentQuery.isFetching
+              ? 'Loading…'
+              : 'Not available offline — the amount will be checked when this syncs.'}
+          </Text>
+        )}
       </Card>
+
+      {assignmentQuery.isError && !outstandingKnown && (
+        <Card style={styles.warnCard}>
+          <View style={styles.warnRow}>
+            <Ionicons name="cloud-offline-outline" size={18} color={colors.warning} />
+            <Text style={styles.warnText}>
+              Couldn't load the invoice. You can still record the collection — it will sync and be validated once you're
+              back online.
+            </Text>
+          </View>
+        </Card>
+      )}
 
       <Step number={1} title="Amount">
         <Input
@@ -138,6 +192,7 @@ export default function CollectScreen() {
           error={amountError}
           highlightSignal={amountHighlight}
         />
+        {outstandingKnown && (
         <Button
           title="Full outstanding"
           onPress={() => {
@@ -149,6 +204,7 @@ export default function CollectScreen() {
           fullWidth={false}
           icon={<Ionicons name="checkmark-circle-outline" size={18} color={colors.primary} />}
         />
+        )}
       </Step>
 
       {step1Valid && (
@@ -239,10 +295,23 @@ export default function CollectScreen() {
           label={
             position
               ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)} (±${Math.round(position.accuracy ?? 0)}m)`
-              : 'Capturing GPS…'
+              : gpsSettled
+                ? 'Location unavailable — continuing without GPS'
+                : 'Capturing GPS…'
           }
         />
       </Card>
+      {gpsAccuracyPoor && (
+        <Card style={styles.warnCard}>
+          <View style={styles.warnRow}>
+            <Ionicons name="warning-outline" size={18} color={colors.warning} />
+            <Text style={styles.warnText}>
+              GPS accuracy is low (±{Math.round(position?.accuracy ?? 0)}m). The location on this receipt may be
+              approximate.
+            </Text>
+          </View>
+        </Card>
+      )}
 
       <Button title="Submit collection" onPress={onSubmit} loading={submitting} />
 
@@ -292,6 +361,10 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     letterSpacing: letterSpacing.tightDisplay,
   },
+  outstandingUnknown: { color: colors.onPrimary, fontSize: fontSize.md, fontWeight: '700', marginTop: 4 },
+  warnCard: { backgroundColor: colors.warningTint, borderColor: colors.warning },
+  warnRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  warnText: { flex: 1, color: colors.text, fontSize: fontSize.sm },
   stepCard: {},
   stepHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   stepBadge: {
