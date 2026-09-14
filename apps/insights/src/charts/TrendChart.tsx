@@ -14,7 +14,7 @@ import Reanimated, {
 
 import type { TrendPoint } from '@/types';
 import { formatMoneyCompact, formatShortDate } from '@/utils/format';
-import { radius, sizes, spacing, useReducedMotion, usePalette } from '@/ui/theme';
+import { radius, sizes, spacing, tabularNums, typography, useReducedMotion, usePalette } from '@/ui/theme';
 
 interface TrendChartProps {
   data: TrendPoint[];
@@ -151,10 +151,10 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
       >
         {width > 0 && chart ? (
           <>
-            <Text style={[styles.axisLabel, styles.axisLabelTop, { color: palette.textFaint }]}>
+            <Text style={[typography.caption, tabularNums, styles.axisLabel, styles.axisLabelTop, { color: palette.textFaint }]}>
               {formatMoneyCompact(chart.maxValue)}
             </Text>
-            <Text style={[styles.axisLabel, styles.axisLabelBottom, { color: palette.textFaint }]}>₹0</Text>
+            <Text style={[typography.caption, tabularNums, styles.axisLabel, styles.axisLabelBottom, { color: palette.textFaint }]}>₹0</Text>
             <Svg width={width} height={height}>
               <Defs>
                 <LinearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
@@ -262,18 +262,18 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
         <LegendChip color={palette.good} label="Collections" value={formatMoneyCompact(latest?.collections)} />
       </View>
       {data.length > 0 ? (
-        <Text style={[styles.rangeLabel, { color: palette.textFaint }]}>
+        <Text style={[typography.caption, { color: palette.textFaint, marginTop: spacing.xs }]}>
           {formatShortDate(data[0].date)} – {formatShortDate(data[latestIndex].date)}
         </Text>
       ) : null}
 
       {active ? (
         <View style={[styles.tooltip, { borderColor: palette.border, backgroundColor: palette.bgElevated }]}>
-          <Text style={[styles.tooltipDate, { color: palette.text }]}>{formatShortDate(active.date)}</Text>
-          <Text style={[styles.tooltipLine, { color: palette.accent }]}>
+          <Text style={[typography.caption, { color: palette.text, marginBottom: 2 }]}>{formatShortDate(active.date)}</Text>
+          <Text style={[typography.monoSm, { color: palette.accent }]}>
             Sales {formatMoneyCompact(active.sales)}
           </Text>
-          <Text style={[styles.tooltipLine, { color: palette.good }]}>
+          <Text style={[typography.monoSm, { color: palette.good }]}>
             Collections {formatMoneyCompact(active.collections)}
           </Text>
         </View>
@@ -287,8 +287,8 @@ function LegendChip({ color, label, value }: { color: string; label: string; val
   return (
     <View style={[styles.chip, { backgroundColor: palette.overlay }]}>
       <View style={[styles.dot, { backgroundColor: color }]} />
-      <Text style={[styles.legendLabel, { color: palette.textMuted }]}>{label}</Text>
-      <Text style={[styles.legendValue, { color: palette.text }]}>{value}</Text>
+      <Text style={[typography.caption, { color: palette.textMuted }]}>{label}</Text>
+      <Text style={[typography.monoSm, { color: palette.text }]}>{value}</Text>
     </View>
   );
 }
@@ -297,8 +297,6 @@ const styles = StyleSheet.create({
   axisLabel: {
     position: 'absolute',
     left: 0,
-    fontSize: 10.5,
-    fontWeight: '700',
   },
   axisLabelTop: { top: 0 },
   axisLabelBottom: { bottom: 6 },
@@ -317,9 +315,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 11.5, fontWeight: '700' },
-  legendValue: { fontSize: 11.5, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  rangeLabel: { fontSize: 11, marginTop: spacing.xs },
   tooltip: {
     position: 'absolute',
     top: 4,
@@ -329,6 +324,4 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     gap: 2,
   },
-  tooltipDate: { fontSize: 11, fontWeight: '700', marginBottom: 2 },
-  tooltipLine: { fontSize: 11, fontWeight: '600' },
 });

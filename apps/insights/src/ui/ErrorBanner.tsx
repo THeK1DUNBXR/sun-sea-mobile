@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PressableScale } from './PressableScale';
-import { MIN_TOUCH, radius, spacing, usePalette } from './theme';
+import { MEASURE, MIN_TOUCH, radius, spacing, typography, usePalette } from './theme';
 
 interface ErrorBannerProps {
   message: string;
@@ -45,9 +45,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   text: {
+    ...typography.body,
     flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
+    maxWidth: MEASURE,
   },
   retryHit: {
     minHeight: MIN_TOUCH,
@@ -56,7 +56,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   retry: {
-    fontSize: 13,
-    fontWeight: '800',
+    ...typography.bodySm,
   },
 });

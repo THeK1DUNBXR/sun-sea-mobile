@@ -4,7 +4,7 @@ import type { ColorValue } from 'react-native';
 
 import { useAuth } from '@/store/auth';
 import { Icon, type IconName } from '@/ui/Icon';
-import { usePalette } from '@/ui/theme';
+import { typography, usePalette } from '@/ui/theme';
 
 function TabIcon({ name, color }: { name: IconName; color: ColorValue }) {
   return <Icon name={name} color={String(color)} size={22} strokeWidth={1.9} />;
@@ -28,7 +28,7 @@ export default function TabsLayout() {
           backgroundColor: palette.bgElevated,
           borderTopColor: palette.border,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
+        tabBarLabelStyle: { fontSize: typography.caption.fontSize, fontWeight: typography.bodySm.fontWeight },
       }}
     >
       <Tabs.Screen

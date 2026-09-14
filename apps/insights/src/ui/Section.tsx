@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { spacing, usePalette } from './theme';
+import { spacing, typography, usePalette } from './theme';
 
 interface SectionHeaderProps {
   title: string;
@@ -33,13 +33,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   title: {
-    fontSize: 19,
-    fontWeight: '800',
-    letterSpacing: -0.3,
+    ...typography.title,
   },
   subtitle: {
-    fontSize: 13,
-    fontWeight: '500',
+    ...typography.body,
     marginTop: 2,
   },
 });

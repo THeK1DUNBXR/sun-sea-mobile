@@ -11,7 +11,7 @@ import Reanimated, {
 
 import type { AgingBuckets } from '@/types';
 import { formatMoneyCompact } from '@/utils/format';
-import { spacing, useIsDark, useReducedMotion, usePalette } from '@/ui/theme';
+import { spacing, typography, useIsDark, useReducedMotion, usePalette } from '@/ui/theme';
 
 const AnimatedRect = Reanimated.createAnimatedComponent(Rect);
 
@@ -124,13 +124,13 @@ export function AgingBar({ aging, height = 36 }: AgingBarProps) {
             <View>
               <Text
                 style={[
-                  styles.legendAmount,
+                  typography.mono,
                   { color: i === worstIdx && values[i] > 0 ? colors[i] : palette.text },
                 ]}
               >
                 {formatMoneyCompact(values[i])}
               </Text>
-              <Text style={[styles.legendLabel, { color: palette.textFaint }]}>{BUCKET_LABELS[key]}</Text>
+              <Text style={[typography.caption, { color: palette.textFaint, marginTop: 1 }]}>{BUCKET_LABELS[key]}</Text>
             </View>
           </View>
         ))}
@@ -149,6 +149,4 @@ const styles = StyleSheet.create({
   },
   legendItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, minWidth: '42%' },
   dot: { width: 9, height: 9, borderRadius: 5, marginTop: 4 },
-  legendAmount: { fontSize: 14, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  legendLabel: { fontSize: 11.5, fontWeight: '600', marginTop: 1 },
 });

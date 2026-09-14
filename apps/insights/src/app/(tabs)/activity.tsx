@@ -12,6 +12,7 @@ import { Icon, type IconName } from '@/ui/Icon';
 import { Reveal } from '@/ui/Reveal';
 import { Skeleton } from '@/ui/Skeleton';
 import { layout, sizes, spacing, typography, usePalette, type Palette } from '@/ui/theme';
+
 import type { ActivityItem, ActivityType } from '@/types';
 import { formatDayLabel, formatMoneyCompact, formatRelativeTime } from '@/utils/format';
 
@@ -90,7 +91,7 @@ export default function ActivityScreen() {
         ) : (
           grouped.map((group, gi) => (
             <View key={group.day} style={styles.group}>
-              <Text style={[styles.groupLabel, { color: palette.text }]}>{group.day}</Text>
+              <Text style={[typography.titleSm, { color: palette.text, marginBottom: spacing.sm }]}>{group.day}</Text>
               <Card style={{ padding: 0 }}>
                 {group.items.map((item, i) => {
                   const tint = colorFor(item.type, palette);
@@ -111,22 +112,22 @@ export default function ActivityScreen() {
                           <Icon name={iconFor(item.type)} color={tint} size={18} />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={[styles.title, { color: palette.text }]} numberOfLines={1}>
+                          <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
                             {item.title || item.type}
                           </Text>
                           {item.subtitle ? (
-                            <Text style={[styles.subtitle, { color: palette.textFaint }]} numberOfLines={1}>
+                            <Text style={[typography.caption, { color: palette.textFaint, marginTop: 2 }]} numberOfLines={1}>
                               {item.subtitle}
                             </Text>
                           ) : null}
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
                           {hasAmount ? (
-                            <Text style={[styles.amount, { color: palette.text }]} maxFontSizeMultiplier={1.6}>
+                            <Text style={[typography.mono, { color: palette.text }]} maxFontSizeMultiplier={1.6}>
                               {formatMoneyCompact(item.amount)}
                             </Text>
                           ) : null}
-                          <Text style={[styles.time, { color: palette.textFaint }]}>
+                          <Text style={[typography.caption, { color: palette.textFaint, marginTop: 2 }]}>
                             {formatRelativeTime(item.at)}
                           </Text>
                         </View>
@@ -149,7 +150,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: layout.screenGutter },
   group: { marginBottom: spacing.lg },
-  groupLabel: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2, marginBottom: spacing.sm },
   // Same row padding and column gap as the overview/agents list rows, so the
   // icon / text / number columns land on the same grid across every screen
   // that renders a row-style list.
@@ -167,8 +167,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontSize: 14, fontWeight: '700' },
-  subtitle: { fontSize: 12, marginTop: 2 },
-  amount: { fontSize: 14, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  time: { fontSize: 11, marginTop: 2 },
 });

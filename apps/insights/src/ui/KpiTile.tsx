@@ -5,7 +5,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { formatMoneyCompact, formatPercent } from '@/utils/format';
 import { AnimatedNumber } from './AnimatedNumber';
 import { Card } from './Card';
-import { radius, spacing, typography, useReducedMotion, usePalette } from './theme';
+import { radius, spacing, tabularNums, typography, useReducedMotion, usePalette } from './theme';
 
 interface KpiTileProps {
   label: string;
@@ -65,14 +65,14 @@ export function KpiTile({
             entering={reducedMotion ? FadeIn.duration(180) : FadeInDown.duration(220).springify().damping(18)}
             style={[styles.deltaPill, { backgroundColor: deltaSoft }]}
           >
-            <Text style={[styles.delta, { color: deltaColor }]} maxFontSizeMultiplier={1.6}>
+            <Text style={[typography.monoSm, { color: deltaColor }]} maxFontSizeMultiplier={1.6}>
               {arrow} {formatPercent(Math.abs(deltaPct!)).replace('+', '')}
             </Text>
           </Animated.View>
         ) : null}
         {hasDelta && deltaLabel ? (
           <Text
-            style={[styles.deltaLabel, { color: palette.textFaint }]}
+            style={[typography.caption, { color: palette.textFaint }]}
             numberOfLines={1}
             maxFontSizeMultiplier={1.6}
           >
@@ -81,7 +81,7 @@ export function KpiTile({
         ) : null}
         {caption ? (
           <Text
-            style={[styles.caption, isWide && styles.wideCaption, { color: palette.textFaint }]}
+            style={[typography.caption, isWide && styles.wideCaption, { color: palette.textFaint }]}
             numberOfLines={isWide ? 2 : 1}
             maxFontSizeMultiplier={1.6}
           >
@@ -94,7 +94,7 @@ export function KpiTile({
   const heading = (
     <>
       <Text
-        style={[styles.label, typography.label, { color: palette.textMuted }]}
+        style={[typography.label, { color: palette.textMuted }]}
         numberOfLines={1}
         maxFontSizeMultiplier={1.8}
       >
@@ -105,8 +105,8 @@ export function KpiTile({
         format={(v) => formatMoneyCompact(v)}
         fallback={value}
         style={[
-          isHero ? typography.hero : isWide ? typography.stat : typography.statLg,
-          styles.tabular,
+          isHero ? typography.display : isWide ? typography.statCompact : typography.stat,
+          tabularNums,
           { color: palette.text, marginTop: isWide ? 4 : 6 },
         ]}
         numberOfLines={1}
@@ -164,12 +164,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
   },
-  label: {
-    textTransform: 'uppercase',
-  },
-  tabular: {
-    fontVariant: ['tabular-nums'],
-  },
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -191,18 +185,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
-  },
-  delta: {
-    fontSize: 12.5,
-    fontWeight: '800',
-    fontVariant: ['tabular-nums'],
-  },
-  deltaLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  caption: {
-    fontSize: 12,
-    fontWeight: '600',
   },
 });

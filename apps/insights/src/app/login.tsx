@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getErrorMessage } from '@/api/client';
 import { useAuth } from '@/store/auth';
 import { PressableScale } from '@/ui/PressableScale';
-import { MIN_TOUCH, radius, spacing, usePalette } from '@/ui/theme';
+import { MEASURE, MIN_TOUCH, radius, spacing, typography, usePalette } from '@/ui/theme';
 
 export default function LoginScreen() {
   const { login, isAuthenticated, isHydrating, sessionMessage, dismissSessionMessage } = useAuth();
@@ -65,8 +65,8 @@ export default function LoginScreen() {
         >
           <View style={styles.brandWrap}>
             <View style={[styles.logoDot, { backgroundColor: palette.accent }]} />
-            <Text style={[styles.brand, { color: palette.text }]}>SunSea Insights</Text>
-            <Text style={[styles.tagline, { color: palette.textMuted }]}>
+            <Text style={[typography.headline, { color: palette.text }]}>SunSea Insights</Text>
+            <Text style={[typography.body, styles.tagline, { color: palette.textMuted }]}>
               A founder's snapshot of sales, collections and field agents.
             </Text>
           </View>
@@ -74,11 +74,11 @@ export default function LoginScreen() {
           <View style={styles.form}>
             {sessionMessage ? (
               <View style={[styles.sessionBanner, { backgroundColor: palette.warnSoft, borderColor: palette.warn + '40' }]}>
-                <Text style={[styles.sessionBannerText, { color: palette.warn }]}>{sessionMessage}</Text>
+                <Text style={[typography.bodySm, { color: palette.warn }]}>{sessionMessage}</Text>
               </View>
             ) : null}
 
-            <Text style={[styles.fieldLabel, { color: palette.textMuted }]}>Email</Text>
+            <Text style={[typography.label, { color: palette.textMuted }]}>Email</Text>
             <TextInput
               value={email}
               onChangeText={(t) => {
@@ -103,7 +103,7 @@ export default function LoginScreen() {
               ]}
             />
 
-            <Text style={[styles.fieldLabel, { color: palette.textMuted, marginTop: spacing.md }]}>
+            <Text style={[typography.label, { color: palette.textMuted, marginTop: spacing.md }]}>
               Password
             </Text>
             <View style={styles.passwordRow}>
@@ -139,14 +139,14 @@ export default function LoginScreen() {
                 accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
                 style={styles.showPasswordButton}
               >
-                <Text style={[styles.showPasswordText, { color: palette.textMuted }]}>
+                <Text style={[typography.label, { color: palette.textMuted }]}>
                   {showPassword ? 'Hide' : 'Show'}
                 </Text>
               </PressableScale>
             </View>
 
             {error ? (
-              <Text style={[styles.error, { color: palette.bad }]} accessibilityRole="alert">
+              <Text style={[typography.bodySm, { color: palette.bad, marginTop: spacing.sm }]} accessibilityRole="alert">
                 {error}
               </Text>
             ) : null}
@@ -165,11 +165,11 @@ export default function LoginScreen() {
               {submitting ? (
                 <ActivityIndicator color={palette.accentInk} />
               ) : (
-                <Text style={[styles.buttonText, { color: palette.accentInk }]}>Sign in</Text>
+                <Text style={[typography.control, { color: palette.accentInk }]}>Sign in</Text>
               )}
             </PressableScale>
 
-            <Text style={[styles.hint, { color: palette.textFaint }]} maxFontSizeMultiplier={1.6}>
+            <Text style={[typography.caption, styles.hint, { color: palette.textFaint }]} maxFontSizeMultiplier={1.6}>
               Requires the &quot;insights-app.access&quot; permission or super admin.
             </Text>
           </View>
@@ -184,16 +184,14 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.xxl },
   brandWrap: { alignItems: 'center', gap: spacing.xs },
   logoDot: { width: 44, height: 44, borderRadius: 14, marginBottom: spacing.sm },
-  brand: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
-  tagline: { fontSize: 14, textAlign: 'center', maxWidth: 280 },
+  tagline: { textAlign: 'center', maxWidth: MEASURE * 0.85 },
   form: { gap: spacing.xs },
-  fieldLabel: { fontSize: 12.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
   input: {
+    ...typography.body,
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: 12,
-    fontSize: 16,
   },
   passwordRow: { position: 'relative', justifyContent: 'center' },
   passwordInput: { paddingRight: 64 },
@@ -205,21 +203,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  showPasswordText: { fontSize: 12.5, fontWeight: '800', textTransform: 'uppercase' },
   sessionBanner: {
     borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing.md,
     marginBottom: spacing.sm,
   },
-  sessionBannerText: { fontSize: 13, fontWeight: '700' },
-  error: { fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
   button: {
     marginTop: spacing.lg,
     borderRadius: radius.md,
     paddingVertical: 14,
     alignItems: 'center',
   },
-  buttonText: { fontSize: 16, fontWeight: '700' },
-  hint: { fontSize: 12, textAlign: 'center', marginTop: spacing.md },
+  hint: { textAlign: 'center', marginTop: spacing.md },
 });

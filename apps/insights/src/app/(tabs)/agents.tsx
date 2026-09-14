@@ -21,6 +21,7 @@ import { Reveal } from '@/ui/Reveal';
 import { SectionHeader } from '@/ui/Section';
 import { Skeleton } from '@/ui/Skeleton';
 import { contrastText, layout, radius, sizes, spacing, typography, useReducedMotion, usePalette } from '@/ui/theme';
+
 import type { LiveAgent } from '@/types';
 import { formatMoneyCompact, formatRelativeTime, initials } from '@/utils/format';
 
@@ -110,7 +111,7 @@ function AgentMarker({ agent, markerColor, palette }: {
       <MarkerPin>
         <View style={[styles.markerRing, { borderColor: markerColor, backgroundColor: palette.bgElevated }]}>
           <View style={[styles.markerBubble, { backgroundColor: markerColor }]}>
-            <Text style={[styles.markerText, { color: contrastText(markerColor) }]}>{initials(agent.fullName)}</Text>
+            <Text style={[typography.label, { color: contrastText(markerColor) }]}>{initials(agent.fullName)}</Text>
           </View>
         </View>
       </MarkerPin>
@@ -121,16 +122,16 @@ function AgentMarker({ agent, markerColor, palette }: {
         >
           <View style={styles.calloutHeader}>
             <View style={[styles.calloutDot, { backgroundColor: online ? palette.good : palette.neutralDot }]} />
-            <Text style={[styles.calloutName, { color: palette.text }]}>{agent.fullName || 'Agent'}</Text>
+            <Text style={[typography.bodySm, { color: palette.text }]}>{agent.fullName || 'Agent'}</Text>
           </View>
-          <Text style={[styles.calloutLine, { color: palette.textMuted }]}>
+          <Text style={[typography.caption, { color: palette.textMuted }]}>
             {online ? 'Online now' : `Last seen ${formatRelativeTime(agent.lastLocation.recordedAt)}`}
           </Text>
-          <Text style={[styles.calloutLine, { color: palette.text, fontWeight: '800' }]}>
+          <Text style={[typography.monoSm, { color: palette.text }]}>
             {formatMoneyCompact(agent.today.collectedAmount)} collected today
           </Text>
           {agent.currentTask?.customerName ? (
-            <Text style={[styles.calloutLine, { color: palette.textFaint }]} numberOfLines={1}>
+            <Text style={[typography.caption, { color: palette.textFaint }]} numberOfLines={1}>
               Visiting {agent.currentTask.customerName}
             </Text>
           ) : null}
@@ -292,28 +293,28 @@ export default function AgentsScreen() {
                             : { backgroundColor: palette.overlay, borderColor: 'transparent' },
                         ]}
                       >
-                        <Text style={[styles.rankText, { color: rankColor }]}>{i + 1}</Text>
+                        <Text style={[typography.label, { color: rankColor }]}>{i + 1}</Text>
                       </View>
                     </RankBadgePop>
                     <View style={[styles.avatar, { backgroundColor: palette.accentSoft }]}>
-                      <Text style={[styles.avatarText, { color: palette.accent }]}>{initials(agent.name)}</Text>
+                      <Text style={[typography.label, { color: palette.accent }]}>{initials(agent.name)}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.leaderName, { color: palette.text }]} numberOfLines={1}>
+                      <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
                         {agent.name ?? 'Unknown agent'}
                       </Text>
                       <View style={styles.leaderMetaRow}>
                         <InlineBar fraction={(agent.collectedMtd ?? 0) / maxCollected} color={i < 3 ? rankColor : undefined} />
-                        <Text style={[styles.leaderMeta, { color: palette.textFaint }]}>
+                        <Text style={[typography.caption, { color: palette.textFaint }]}>
                           {agent.visitsToday ?? 0} visits · {agent.pendingAssignments ?? 0} pending
                         </Text>
                       </View>
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
-                      <Text style={[styles.leaderAmount, { color: palette.text }]}>
+                      <Text style={[typography.mono, { color: palette.text }]}>
                         {formatMoneyCompact(agent.collectedMtd)}
                       </Text>
-                      <Text style={[styles.leaderSub, { color: palette.textFaint }]}>
+                      <Text style={[typography.caption, { color: palette.textFaint, marginTop: 2 }]}>
                         {formatMoneyCompact(agent.collectedToday)} today
                       </Text>
                     </View>
@@ -350,7 +351,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  markerText: { fontSize: 11, fontWeight: '800' },
   callout: {
     minWidth: 190,
     maxWidth: 240,
@@ -361,8 +361,6 @@ const styles = StyleSheet.create({
   },
   calloutHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
   calloutDot: { width: 8, height: 8, borderRadius: 4 },
-  calloutName: { fontWeight: '800', fontSize: 13.5 },
-  calloutLine: { fontSize: 12 },
   // Same rank-column width, row padding and column gap as the overview
   // screen's debtor rows, so "rank / avatar / text / number" reads as one
   // grid discipline across both list-style screens, not a per-row guess.
@@ -381,7 +379,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rankText: { fontSize: 12, fontWeight: '800' },
   avatar: {
     width: sizes.avatarSm,
     height: sizes.avatarSm,
@@ -389,10 +386,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 11.5, fontWeight: '800' },
-  leaderName: { fontSize: 14.5, fontWeight: '700' },
   leaderMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 5 },
-  leaderMeta: { fontSize: 11, fontWeight: '600' },
-  leaderAmount: { fontSize: 15.5, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  leaderSub: { fontSize: 11, marginTop: 2, fontWeight: '600' },
 });

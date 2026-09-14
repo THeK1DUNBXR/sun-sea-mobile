@@ -22,7 +22,7 @@ import { PressableScale } from '@/ui/PressableScale';
 import { Reveal } from '@/ui/Reveal';
 import { SectionHeader } from '@/ui/Section';
 import { SkeletonKpiGrid, SkeletonChart } from '@/ui/Skeleton';
-import { MIN_TOUCH, layout, radius, sizes, spacing, typography, useReducedMotion, usePalette } from '@/ui/theme';
+import { MIN_TOUCH, layout, radius, sizes, spacing, tabularNums, typography, useReducedMotion, usePalette } from '@/ui/theme';
 import { useAuth } from '@/store/auth';
 import { formatMoneyCompact, formatRelativeTime } from '@/utils/format';
 
@@ -115,7 +115,7 @@ export default function OverviewScreen() {
       >
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.greeting, { color: palette.textMuted }]} maxFontSizeMultiplier={1.6}>
+            <Text style={[typography.bodySm, { color: palette.textMuted }]} maxFontSizeMultiplier={1.6}>
               {greeting()}{user?.fullName ? `, ${user.fullName.trim().split(/\s+/)[0]}` : ''}
             </Text>
             <Text style={[typography.headline, { color: palette.text, marginTop: 2 }]}>Business overview</Text>
@@ -125,7 +125,7 @@ export default function OverviewScreen() {
               style={[styles.updatedChip, { backgroundColor: palette.overlay }, chipAnimatedStyle]}
             >
               <View style={[styles.liveDot, { backgroundColor: palette.good }]} />
-              <Text style={[styles.updatedText, { color: palette.textMuted }]}>
+              <Text style={[typography.caption, { color: palette.textMuted }]}>
                 {formatRelativeTime(data.generatedAt)}
               </Text>
             </Reanimated.View>
@@ -254,7 +254,7 @@ export default function OverviewScreen() {
                       },
                     ]}
                   >
-                    <Text style={[styles.rangeOptionText, { color: isActive ? palette.accentInk : palette.textMuted }]}>
+                    <Text style={[typography.caption, { color: isActive ? palette.accentInk : palette.textMuted }]}>
                       {opt}d
                     </Text>
                   </PressableScale>
@@ -300,19 +300,19 @@ export default function OverviewScreen() {
                   }`}
                 >
                   <View style={[styles.debtorRank, { backgroundColor: palette.overlay }]}>
-                    <Text style={[styles.debtorRankText, { color: palette.textMuted }]}>{i + 1}</Text>
+                    <Text style={[typography.label, { color: palette.textMuted }]}>{i + 1}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.debtorName, { color: palette.text }]} numberOfLines={1}>
+                    <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
                       {debtor.firmName?.trim() || 'Unknown customer'}
                     </Text>
                     {debtor.dueDays > 0 ? (
-                      <Text style={[styles.debtorMeta, { color: palette.warn }]}>
+                      <Text style={[typography.bodySm, { color: palette.warn, marginTop: 2 }]}>
                         {debtor.dueDays}d overdue
                       </Text>
                     ) : null}
                   </View>
-                  <Text style={[styles.debtorAmount, { color: palette.text }]} maxFontSizeMultiplier={1.5}>
+                  <Text style={[typography.mono, { color: palette.text }]} maxFontSizeMultiplier={1.5}>
                     {formatMoneyCompact(debtor.netBalance)}
                   </Text>
                 </View>
@@ -349,10 +349,15 @@ export default function OverviewScreen() {
               <View style={styles.productionGrid}>
                 {productionEntries.map(([key, value]) => (
                   <View key={key} style={styles.productionItem}>
-                    <Text style={[styles.productionLabel, { color: palette.textMuted }]}>
+                    <Text style={[typography.label, { color: palette.textMuted }]}>
                       {humanizeKey(key)}
                     </Text>
-                    <Text style={[typography.stat, { color: palette.text, marginTop: 2 }]}>
+                    <Text
+                      style={[typography.statCompact, tabularNums, { color: palette.text, marginTop: 2 }]}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      maxFontSizeMultiplier={1.6}
+                    >
                       {typeof value === 'number' ? value.toLocaleString('en-IN') : String(value)}
                     </Text>
                   </View>
@@ -384,7 +389,6 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: layout.screenGutter },
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
-  greeting: { fontSize: 14, fontWeight: '700' },
   updatedChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -395,7 +399,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   liveDot: { width: 6, height: 6, borderRadius: 3 },
-  updatedText: { fontSize: 11.5, fontWeight: '700' },
   kpiWrap: { marginTop: spacing.lg, gap: spacing.md },
   heroWrap: {
     // Caps the hero's width on tablets and landscape phones so a single
@@ -422,7 +425,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.pill,
   },
-  rangeOptionText: { fontSize: 12, fontWeight: '800' },
   debtorRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -437,12 +439,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  debtorRankText: { fontSize: 11.5, fontWeight: '800' },
-  debtorName: { fontSize: 14.5, fontWeight: '700' },
-  debtorMeta: { fontSize: 12, fontWeight: '700', marginTop: 2 },
-  debtorAmount: { fontSize: 15.5, fontWeight: '800', fontVariant: ['tabular-nums'] },
   ptpRow: { flexDirection: 'row', gap: spacing.md },
   productionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg },
   productionItem: { minWidth: '40%' },
-  productionLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
 });

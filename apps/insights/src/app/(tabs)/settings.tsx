@@ -8,15 +8,18 @@ import { Card } from '@/ui/Card';
 import { Icon } from '@/ui/Icon';
 import { PressableScale } from '@/ui/PressableScale';
 import { SectionHeader } from '@/ui/Section';
-import { MIN_TOUCH, layout, radius, sizes, spacing, typography, usePalette } from '@/ui/theme';
+import { MIN_TOUCH, layout, radius, sizes, spacing, tabularNums, typography, usePalette } from '@/ui/theme';
 import { initials } from '@/utils/format';
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, numeric }: { label: string; value: string; numeric?: boolean }) {
   const palette = usePalette();
   return (
     <View style={styles.row}>
-      <Text style={[styles.rowLabel, { color: palette.textMuted }]}>{label}</Text>
-      <Text style={[styles.rowValue, { color: palette.text }]} numberOfLines={1}>
+      <Text style={[typography.bodySm, { color: palette.textMuted }]}>{label}</Text>
+      <Text
+        style={[typography.body, numeric && tabularNums, { color: palette.text, flexShrink: 1, textAlign: 'right' }]}
+        numberOfLines={1}
+      >
         {value}
       </Text>
     </View>
@@ -34,20 +37,20 @@ export default function SettingsScreen() {
 
         <Card style={styles.profileCard} elevation="raised">
           <View style={[styles.avatar, { backgroundColor: palette.accent }]}>
-            <Text style={[styles.avatarText, { color: palette.accentInk }]} maxFontSizeMultiplier={1.4}>
+            <Text style={[typography.title, { color: palette.accentInk }]} maxFontSizeMultiplier={1.4}>
               {initials(user?.fullName ?? user?.email)}
             </Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.profileName, { color: palette.text }]} numberOfLines={1} maxFontSizeMultiplier={1.6}>
+            <Text style={[typography.title, { color: palette.text }]} numberOfLines={1} maxFontSizeMultiplier={1.6}>
               {user?.fullName?.trim() || 'Founder'}
             </Text>
-            <Text style={[styles.profileEmail, { color: palette.textMuted }]} numberOfLines={1}>
+            <Text style={[typography.bodySm, { color: palette.textMuted, marginTop: 2 }]} numberOfLines={1}>
               {user?.email ?? '—'}
             </Text>
             {isSuperAdmin ? (
               <View style={[styles.badge, { backgroundColor: palette.goodSoft }]}>
-                <Text style={[styles.badgeText, { color: palette.good }]}>Super admin</Text>
+                <Text style={[typography.label, { color: palette.good }]}>Super admin</Text>
               </View>
             ) : null}
           </View>
@@ -63,14 +66,14 @@ export default function SettingsScreen() {
         <SectionHeader title="Access" />
         <Card>
           {permissions.length === 0 && !isSuperAdmin ? (
-            <Text style={{ color: palette.textFaint, fontSize: 13 }}>No permissions listed.</Text>
+            <Text style={[typography.body, { color: palette.textFaint }]}>No permissions listed.</Text>
           ) : isSuperAdmin ? (
-            <Text style={{ color: palette.textMuted, fontSize: 13, fontWeight: '600' }}>
+            <Text style={[typography.bodySm, { color: palette.textMuted }]}>
               Full access via super admin role.
             </Text>
           ) : (
             permissions.map((perm) => (
-              <Text key={perm} style={{ color: palette.textMuted, fontSize: 13, fontWeight: '600', marginBottom: 4 }}>
+              <Text key={perm} style={[typography.bodySm, { color: palette.textMuted, marginBottom: 4 }]}>
                 • {perm}
               </Text>
             ))
@@ -87,10 +90,10 @@ export default function SettingsScreen() {
           ]}
         >
           <Icon name="logout" color={palette.bad} size={18} />
-          <Text style={[styles.logoutText, { color: palette.bad }]}>Log out</Text>
+          <Text style={[typography.control, { color: palette.bad }]}>Log out</Text>
         </PressableScale>
 
-        <Text style={[styles.footerNote, { color: palette.textFaint }]}>
+        <Text style={[typography.caption, styles.footerNote, { color: palette.textFaint }]}>
           SunSea Insights · read-only founder dashboard
         </Text>
 
@@ -111,9 +114,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { fontSize: 18, fontWeight: '800' },
-  profileName: { fontSize: 17.5, fontWeight: '800', letterSpacing: -0.2 },
-  profileEmail: { fontSize: 13, marginTop: 2, fontWeight: '600' },
   badge: {
     alignSelf: 'flex-start',
     borderRadius: radius.pill,
@@ -121,10 +121,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     marginTop: spacing.xs,
   },
-  badgeText: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
-  rowLabel: { fontSize: 13, fontWeight: '700' },
-  rowValue: { fontSize: 13, fontWeight: '600', flexShrink: 1, textAlign: 'right' },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -136,6 +133,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.md,
   },
-  logoutText: { fontSize: 15.5, fontWeight: '800' },
-  footerNote: { textAlign: 'center', fontSize: 11, fontWeight: '600', marginTop: spacing.xl },
+  footerNote: { textAlign: 'center', marginTop: spacing.xl },
 });

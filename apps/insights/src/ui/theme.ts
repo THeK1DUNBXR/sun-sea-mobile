@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Platform, useColorScheme, type ViewStyle } from 'react-native';
+import { AccessibilityInfo, Platform, useColorScheme, type TextStyle, type ViewStyle } from 'react-native';
 
 export interface Palette {
   bg: string;
@@ -127,14 +127,139 @@ export const sizes = {
   chipPaddingV: 6,
 };
 
-/** Type scale: a decisive editorial hierarchy with tight tracking on large sizes. */
+/**
+ * Platform-aware weight ceiling. SF Pro on iOS renders true 800/900
+ * instances, but the system Roboto family on Android ships only discrete
+ * Regular(400)/Medium(500)/Bold(700) font files — asking the OS for 600,
+ * 800 or 900 without a bundled variable font gets silently clamped (or
+ * faux-bolded) in an OEM-inconsistent way. Every weight in the scale below
+ * is chosen through this so iOS keeps its heavier editorial voice while
+ * Android always lands on one of its three real weights.
+ */
+type FontWeight = '900' | '800' | '700' | '600' | '500' | '400';
+function platformWeight(ios: FontWeight, android: FontWeight): FontWeight {
+  return Platform.OS === 'android' ? android : ios;
+}
+const heavy = () => platformWeight('800', '700'); // hero/stat figures, headline
+const bold = () => platformWeight('700', '700'); // titles, primary row text, labels
+const mediumWeight = () => platformWeight('600', '500'); // captions, secondary meta
+
+/** fontVariant: tabular-nums — mix into any role rendering a number so digits
+ * never shift width mid count-up/refresh. Applied directly inside every
+ * numeric role below; exported standalone for the few ad hoc numeric spots
+ * (badge counts, rank digits) that borrow a non-numeric role's size. */
+export const tabularNums: { fontVariant: TextStyle['fontVariant'] } = { fontVariant: ['tabular-nums'] };
+
+/** Comfortable reading width for wrapped multi-line copy (empty states, error
+ * banners, settings descriptions) — independent of screen width so a tablet
+ * doesn't stretch a sentence into a single unreadable line. */
+export const MEASURE = 320;
+
+/**
+ * The app's one explicit type scale. Every role carries size, weight,
+ * line-height and letter-spacing together so hierarchy is a single decision
+ * made here, not a fresh (and inconsistently legible) choice at every call
+ * site. Two rules hold for every role: nothing below a 12sp caption floor,
+ * and every numeric role ships tabular-nums baked in.
+ */
 export const typography = {
-  label: { fontSize: 12.5, fontWeight: '700' as const, letterSpacing: 0.3 },
-  body: { fontSize: 14.5, fontWeight: '600' as const, letterSpacing: -0.1 },
-  headline: { fontSize: 27, fontWeight: '800' as const, letterSpacing: -0.7 },
-  hero: { fontSize: 38, fontWeight: '800' as const, letterSpacing: -1.1 },
-  statLg: { fontSize: 28, fontWeight: '800' as const, letterSpacing: -0.7 },
-  stat: { fontSize: 20, fontWeight: '800' as const, letterSpacing: -0.4 },
+  /** Display/hero: the one dominant figure per screen (the MTD sales hero tile). */
+  display: {
+    fontSize: 38,
+    lineHeight: 44,
+    fontWeight: heavy(),
+    letterSpacing: -1.1,
+    ...tabularNums,
+  },
+  /** Stat: primary KPI-tile figures (the default grid) and other tile-bound headline numbers. */
+  stat: {
+    fontSize: 28,
+    lineHeight: 33,
+    fontWeight: heavy(),
+    letterSpacing: -0.7,
+    ...tabularNums,
+  },
+  /** Stat, compact: a KPI figure sharing its row with other content (the wide tile). */
+  statCompact: {
+    fontSize: 20,
+    lineHeight: 24,
+    fontWeight: heavy(),
+    letterSpacing: -0.4,
+    ...tabularNums,
+  },
+  /** Headline: a screen's own H1 ("Overview", "Agents", "Activity", "Settings"). */
+  headline: {
+    fontSize: 27,
+    lineHeight: 32,
+    fontWeight: heavy(),
+    letterSpacing: -0.6,
+  },
+  /** Title: card/section headers and a list row's primary line. */
+  title: {
+    fontSize: 17,
+    lineHeight: 22,
+    fontWeight: bold(),
+    letterSpacing: -0.2,
+  },
+  /** Title, small: secondary titles — day-group labels, empty-state titles, badges of prominence below a section header. */
+  titleSm: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: bold(),
+    letterSpacing: -0.1,
+  },
+  /** Body: the ordinary reading size — settings rows, descriptions, empty-state and error-banner copy. */
+  body: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: mediumWeight(),
+    letterSpacing: 0,
+  },
+  /** Body, small: a bold secondary line under a title (row meta, greeting) — small but still confident, matching the app's editorial weight. */
+  bodySm: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: bold(),
+    letterSpacing: 0,
+  },
+  /** Label: the app's one uppercase-micro-label convention (case + tracking live here, nowhere else). */
+  label: {
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: heavy(),
+    letterSpacing: 0.6,
+    textTransform: 'uppercase' as const,
+  },
+  /** Caption: the smallest legible role — timestamps, chart axis/legend text, footnotes. Never sized below 12sp. */
+  caption: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: mediumWeight(),
+    letterSpacing: 0.1,
+  },
+  /** Mono-numeric: tabular figures inside list rows, chart legends and map callouts — a size step below `stat`. */
+  mono: {
+    fontSize: 15,
+    lineHeight: 19,
+    fontWeight: heavy(),
+    letterSpacing: 0,
+    ...tabularNums,
+  },
+  /** Mono-numeric, small: the same tabular treatment at caption size (deltas, legend values, callout amounts). */
+  monoSm: {
+    fontSize: 12,
+    lineHeight: 15,
+    fontWeight: bold(),
+    letterSpacing: 0,
+    ...tabularNums,
+  },
+  /** Control: interactive control text — primary button labels. */
+  control: {
+    fontSize: 16,
+    lineHeight: 21,
+    fontWeight: bold(),
+    letterSpacing: -0.1,
+  },
 };
 
 /** Elevation that reads in both themes: a real shadow in light mode, a border-led lift in dark mode. */

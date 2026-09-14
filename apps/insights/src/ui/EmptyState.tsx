@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon, type IconName } from './Icon';
-import { radius, sizes, spacing, usePalette } from './theme';
+import { MEASURE, radius, sizes, spacing, typography, usePalette } from './theme';
 
 interface EmptyStateProps {
   title: string;
@@ -39,11 +39,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   title: {
-    fontSize: 15,
-    fontWeight: '700',
+    ...typography.titleSm,
   },
   message: {
-    fontSize: 13,
+    ...typography.body,
     textAlign: 'center',
+    maxWidth: MEASURE,
   },
 });
