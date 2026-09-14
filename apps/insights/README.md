@@ -80,7 +80,7 @@ src/
   store/      auth context (login/logout/hydrate + permission gate)
   ui/         design-system primitives (Card, KpiTile, Section, Skeleton, EmptyState,
               ErrorBanner, theme tokens for light/dark)
-  utils/      formatters (₹ compact/full, percent, relative time, initials)
+  utils/      formatters (₹ compact, percent, relative time, initials)
   types.ts    shared response/domain types
 ```
 

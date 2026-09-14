@@ -26,6 +26,12 @@ import { contrastText, layout, radius, sizes, spacing, typography, useReducedMot
 import type { LiveAgent } from '@/types';
 import { formatMoneyCompact, formatMoneyCompactSpoken, formatRelativeTime, initials } from '@/utils/format';
 
+// Type-only import: erased at compile time, so it carries none of
+// react-native-maps' native init cost — only the shapes needed to type the
+// lazily `require`'d values below without resorting to `any`.
+import type RNMapView from 'react-native-maps';
+import type { Marker as RNMarker, Callout as RNCallout } from 'react-native-maps';
+
 const MAX_LEADER_STAGGER = 8;
 // The live map's height is a share of the viewport's *height*, not a fixed
 // constant — so a small phone doesn't dedicate the same fixed 260dp as a
@@ -85,9 +91,9 @@ function useSettlesAfter(ms: number, disabled: boolean): boolean {
   return settled;
 }
 
-let MapView: any = null;
-let Marker: any = null;
-let Callout: any = null;
+let MapView: typeof RNMapView | null = null;
+let Marker: typeof RNMarker | null = null;
+let Callout: typeof RNCallout | null = null;
 let mapsLoadAttempted = false;
 
 /** Defers requiring the native react-native-maps module until this screen
@@ -124,9 +130,16 @@ const AgentMarker = React.memo(function AgentMarker({ agent, markerColor, palett
   // Marker only needs to keep re-measuring itself while the pin is still animating.
   const settled = useSettlesAfter(400, reducedMotion);
   const { online } = agent;
+  // AgentMarker only ever mounts once the caller's `!MapView` guard (below,
+  // in AgentsScreen) has already confirmed react-native-maps loaded — Marker
+  // and Callout are set alongside MapView in ensureMapsLoaded, so they're
+  // non-null here too. The assertion just tells TS what that render guard
+  // already guarantees at runtime.
+  const MarkerView = Marker!;
+  const CalloutView = Callout!;
 
   return (
-    <Marker
+    <MarkerView
       coordinate={{ latitude: agent.lastLocation.latitude, longitude: agent.lastLocation.longitude }}
       accessibilityLabel={`${agent.fullName || copy.liveMap.unnamedAgent}, ${online ? 'online' : 'offline'}`}
       tracksViewChanges={!settled}
@@ -140,7 +153,7 @@ const AgentMarker = React.memo(function AgentMarker({ agent, markerColor, palett
           </View>
         </View>
       </MarkerPin>
-      <Callout tooltip>
+      <CalloutView tooltip>
         <Reanimated.View
           entering={reducedMotion ? FadeIn.duration(140) : FadeIn.duration(180).easing(Easing.out(Easing.cubic))}
           style={[styles.callout, { backgroundColor: palette.bgElevated, borderColor: palette.border }]}
@@ -161,8 +174,8 @@ const AgentMarker = React.memo(function AgentMarker({ agent, markerColor, palett
             </Text>
           ) : null}
         </Reanimated.View>
-      </Callout>
-    </Marker>
+      </CalloutView>
+    </MarkerView>
   );
 });
 

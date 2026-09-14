@@ -14,7 +14,6 @@ interface AuthState {
   user: User | null;
   permissions: string[];
   isSuperAdmin: boolean;
-  error: string | null;
   /** Set right after the server forcibly ends the session (expired/invalid token,
    * account deactivated mid-session). Cleared once shown or on the next login. */
   sessionMessage: string | null;
@@ -39,7 +38,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [sessionMessage, setSessionMessage] = useState<string | null>(null);
 
   // Guards against setState after unmount from the boot-time fetchMe() probe,
@@ -99,7 +97,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    setError(null);
     try {
       const loginResult = await loginRequest(email, password);
       if (!loginResult?.accessToken) {
@@ -128,7 +125,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSessionMessage(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : getErrorMessage(err, loginCopy.signInFailed);
-      if (mountedRef.current) setError(message);
       throw err instanceof Error ? err : new Error(message);
     }
   }, []);
@@ -142,13 +138,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       permissions,
       isSuperAdmin,
-      error,
       sessionMessage,
       dismissSessionMessage,
       login,
       logout,
     }),
-    [isHydrating, isAuthenticated, user, permissions, isSuperAdmin, error, sessionMessage, dismissSessionMessage, login, logout]
+    [isHydrating, isAuthenticated, user, permissions, isSuperAdmin, sessionMessage, dismissSessionMessage, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

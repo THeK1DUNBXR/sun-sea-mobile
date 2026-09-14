@@ -12,12 +12,14 @@
       "icon": "./assets/expo.icon",
       "supportsTablet": true,
       "bundleIdentifier": "com.sunsea.insights",
+      "buildNumber": "1",
       "infoPlist": {
         "UIUserInterfaceStyle": "Automatic"
       }
     },
     "android": {
       "package": "com.sunsea.insights",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0B0E14",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

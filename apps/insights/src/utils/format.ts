@@ -34,25 +34,10 @@ export function formatPromiseCount(value: number | null | undefined): string {
   return overviewCopy.kpi.ptpCount(Math.round(value));
 }
 
-/** Full en-IN grouped currency, e.g. ₹4,82,391 */
-export function formatMoneyFull(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
 export function formatPercent(value: number | null | undefined, digits = 1): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
   const sign = value > 0 ? '+' : '';
   return `${sign}${value.toFixed(digits)}%`;
-}
-
-export function formatCompactNumber(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return '—';
-  return new Intl.NumberFormat('en-IN', { notation: 'compact' }).format(value);
 }
 
 export function formatRelativeTime(iso: string | null | undefined): string {

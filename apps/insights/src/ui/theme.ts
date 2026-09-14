@@ -31,13 +31,9 @@ export interface Palette {
   /** Live/online/freshness state — kept apart from "good" so a green uptick and a
    * blue "still connected" dot are never confused for the same kind of news. */
   info: string;
-  infoSoft: string;
   /** Awaiting-action states (e.g. pending verification) — deliberately quiet,
    * neither a caution nor a result. */
   neutral: string;
-  neutralSoft: string;
-  /** Map marker / status dot for an agent that's offline or hasn't reported recently. */
-  neutralDot: string;
   /** Receivables aging ramp, low → critical (0–30 / 31–60 / 61–90 / 90+ days). */
   agingLow: string;
   agingMedium: string;
@@ -84,10 +80,7 @@ const light: Palette = {
   warnSoft: 'rgba(139,63,10,0.12)',
   warnBorder: 'rgba(139,63,10,0.3)',
   info: '#0A5B70',
-  infoSoft: 'rgba(10,91,112,0.12)',
   neutral: '#4C5872',
-  neutralSoft: 'rgba(76,88,114,0.12)',
-  neutralDot: '#9AA3B2',
   agingLow: '#0A5F3F',
   agingMedium: '#8B3F0A',
   agingHigh: '#A63709',
@@ -130,10 +123,7 @@ const dark: Palette = {
   warnSoft: 'rgba(251,191,36,0.14)',
   warnBorder: 'rgba(251,191,36,0.35)',
   info: '#22D3EE',
-  infoSoft: 'rgba(34,211,238,0.14)',
   neutral: '#94A3B8',
-  neutralSoft: 'rgba(148,163,184,0.14)',
-  neutralDot: '#4A5364',
   agingLow: '#34D399',
   agingMedium: '#FBBF24',
   agingHigh: '#FB923C',
