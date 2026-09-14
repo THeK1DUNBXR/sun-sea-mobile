@@ -190,31 +190,26 @@ jobs:
             echo "::warning::AndroidManifest.xml not found at $MANIFEST, skipping Google Maps key injection."
           fi
 
-      - name: Diagnose Gradle's node probes
-        # Gradle runs these node commands during configuration but swallows
-        # their stderr; run them here first so a failure explains itself.
+      - name: Install node shim that records stderr of every node invocation
+        # Gradle's providers.exec swallows stderr of the node commands it runs
+        # during configuration. Put a wrapper first on PATH that tees stderr
+        # (plus the argv) into a log we can print if the build fails.
         run: |
-          set -uo pipefail
-          node --version
-          for expr in \
-            "require.resolve('react-native/package.json')" \
-            "require.resolve('react-native/cli')" \
-            "require.resolve('expo-modules-autolinking/package.json', { paths: [require.resolve('expo/package.json')] })" \
-            "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"; do
-            printf '%s => ' "$expr"; node --print "$expr" || echo "FAILED"
-          done
-          echo "--- expo-modules-autolinking resolve"
-          node --no-warnings --eval "require('expo/bin/autolinking')" expo-modules-autolinking resolve -p android --json > /dev/null && echo OK || echo FAILED
-          echo "--- expo-modules-autolinking react-native-config"
-          node --no-warnings --eval "require('expo/bin/autolinking')" expo-modules-autolinking react-native-config --platform android --json > /dev/null && echo OK || echo FAILED
-          echo "--- expo-modules-autolinking mirror-kotlin-inline-modules"
-          node --no-warnings --eval "require('expo/bin/autolinking')" expo-modules-autolinking mirror-kotlin-inline-modules \
-            --kotlin-files-mirror-directory "$PWD/android/app/src/main/java/inline/modules/" \
-            --inline-modules-list-directory "$PWD/android/app/build/inline/modules/" \
-            --watched-directories-serialized "[]" && echo OK || echo FAILED
-          echo "--- @expo/cli"
-          node --print "require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })" || echo FAILED
-          grep -n "cliFile\|node" android/app/build.gradle | head -20 || true
+          set -euo pipefail
+          REAL_NODE="$(command -v node)"
+          mkdir -p "${RUNNER_TEMP}/node-shim"
+          cat > "${RUNNER_TEMP}/node-shim/node" <<EOS
+          #!/usr/bin/env bash
+          LOG="${RUNNER_TEMP}/node-invocations.log"
+          printf '\n=== node %s (cwd=%s)\n' "\$*" "\$PWD" >> "\$LOG"
+          "${REAL_NODE}" "\$@" 2> >(tee -a "\$LOG" >&2)
+          STATUS=\${PIPESTATUS[0]:-\$?}
+          printf '=== exit %s\n' "\$STATUS" >> "\$LOG"
+          exit "\$STATUS"
+          EOS
+          chmod +x "${RUNNER_TEMP}/node-shim/node"
+          echo "${RUNNER_TEMP}/node-shim" >> "$GITHUB_PATH"
+          "${RUNNER_TEMP}/node-shim/node" --version
 
       - name: Build APK (${{ env.PROFILE }})
         working-directory: apps/${{ matrix.app }}/android
@@ -222,9 +217,9 @@ jobs:
           set -o pipefail
           TASK=assembleRelease
           [ "${PROFILE}" = "debug" ] && TASK=assembleDebug
-          if ! ./gradlew "$TASK" --no-daemon --stacktrace --info 2>&1 | tee "${RUNNER_TEMP}/gradle.log" | grep -v -E "^\s*at |Caching disabled|Task .* is not up-to-date|Resolve mutations|file or directory|Skipping task|Watching|is up-to-date|Build cache" ; then
-            echo "::group::Gradle failure context (node / autolinking / error lines)"
-            grep -n -i -E "node|autolinking|error|exception|what went wrong" "${RUNNER_TEMP}/gradle.log" | grep -v -E "^\S+:\s*at " | tail -150
+          if ! ./gradlew "$TASK" --no-daemon --stacktrace; then
+            echo "::group::stderr of node commands run during the build"
+            cat "${RUNNER_TEMP}/node-invocations.log" 2>/dev/null | tail -200 || true
             echo "::endgroup::"
             exit 1
           fi
