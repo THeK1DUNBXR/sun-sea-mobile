@@ -173,11 +173,15 @@ jobs:
         run: node "${GITHUB_WORKSPACE}/.github/workflows/scripts/patch-android-signing.js"
 
       - name: Inject Google Maps API key (if configured)
-        if: ${{ secrets.GOOGLE_MAPS_API_KEY != '' }}
         env:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
           set -euo pipefail
+          # The secrets context is not available in step `if:`; guard in the shell instead.
+          if [ -z "${GOOGLE_MAPS_API_KEY:-}" ]; then
+            echo "::notice::GOOGLE_MAPS_API_KEY secret not set; Android map tiles will be blank until it is configured."
+            exit 0
+          fi
           MANIFEST=android/app/src/main/AndroidManifest.xml
           if [ -f "$MANIFEST" ]; then
             sed -i "s#</application>#    <meta-data android:name=\"com.google.android.geo.API_KEY\" android:value=\"${GOOGLE_MAPS_API_KEY}\"/>\n</application>#" "$MANIFEST"
