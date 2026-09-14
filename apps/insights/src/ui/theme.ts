@@ -82,6 +82,51 @@ export function useIsDark(): boolean {
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 export const radius = { sm: 8, md: 12, lg: 16, xl: 22, pill: 999 };
 
+/**
+ * Named layout roles, every one just a pointer into `spacing`. Screens should
+ * reach for these instead of picking a raw `spacing.*` step per call site, so
+ * screen gutters, card padding, section rhythm, list-row height and the
+ * scroll-end spacer stay a single decision made here rather than one made
+ * fresh (and inconsistently) at every screen.
+ */
+export const layout = {
+  /** Horizontal/vertical padding at the edge of every scrollable screen. */
+  screenGutter: spacing.lg,
+  /** Matches Card's own default padding — kept explicit for non-Card containers. */
+  cardPadding: spacing.lg,
+  /** Space above a section header (see Section.tsx). */
+  sectionGapTop: spacing.xl,
+  /** Space below a section header's title block, before its content. */
+  sectionGapBottom: spacing.md,
+  /** Vertical padding inside a list row (debtor / leaderboard / activity rows). */
+  rowPaddingV: spacing.md,
+  /** Horizontal padding inside a list row. */
+  rowPaddingH: spacing.lg,
+  /** Gap between a row's rank / avatar / text / number columns. */
+  rowGap: spacing.md,
+  /** Gap between tiles in the KPI grid. */
+  gridGap: spacing.md,
+  /** Breathing room at the end of every scroll view, clear of the tab bar. */
+  scrollEndSpacer: spacing.xxl,
+};
+
+/**
+ * Fixed dp sizes reused across list rows, avatars and map markers so repeated
+ * elements line up on the same grid from screen to screen instead of
+ * drifting by a few px each time one gets rewritten.
+ */
+export const sizes = {
+  rankBadge: 26,
+  avatarSm: 32,
+  avatarMd: 56,
+  iconBadgeSm: 36,
+  iconBadgeMd: 48,
+  mapMarkerRing: 40,
+  mapMarkerBubble: 30,
+  chipPaddingH: 10,
+  chipPaddingV: 6,
+};
+
 /** Type scale: a decisive editorial hierarchy with tight tracking on large sizes. */
 export const typography = {
   label: { fontSize: 12.5, fontWeight: '700' as const, letterSpacing: 0.3 },

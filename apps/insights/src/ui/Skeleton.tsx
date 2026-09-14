@@ -10,7 +10,7 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { radius, spacing, useReducedMotion, usePalette } from './theme';
+import { layout, radius, spacing, useReducedMotion, usePalette } from './theme';
 
 interface SkeletonProps {
   width?: DimensionValue;
@@ -74,17 +74,23 @@ export function Skeleton({ width = '100%', height = 16, radius: r = radius.sm, s
   );
 }
 
+/** Mirrors the overview screen's real KPI shape — a hero, a 6-tile grid, then
+ * a standalone wide tile — so the loading state never jumps in row count or
+ * height once the real data replaces it. */
 export function SkeletonKpiGrid() {
   return (
-    <View style={styles.grid}>
+    <View style={{ gap: spacing.md }}>
       <Skeleton width="100%" height={112} radius={radius.xl} />
-      {Array.from({ length: 7 }).map((_, i) => (
-        <View key={i} style={styles.tile}>
-          <Skeleton width="60%" height={11} />
-          <Skeleton width="80%" height={26} style={{ marginTop: 10 }} />
-          <Skeleton width="45%" height={18} radius={999} style={{ marginTop: 10 }} />
-        </View>
-      ))}
+      <View style={styles.grid}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <View key={i} style={styles.tile}>
+            <Skeleton width="60%" height={11} />
+            <Skeleton width="80%" height={26} style={{ marginTop: spacing.sm }} />
+            <Skeleton width="45%" height={18} radius={radius.pill} style={{ marginTop: spacing.sm }} />
+          </View>
+        ))}
+      </View>
+      <Skeleton width="100%" height={72} radius={radius.xl} />
     </View>
   );
 }
@@ -120,7 +126,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     flexBasis: '47%',
     minWidth: 150,
-    padding: spacing.lg,
+    padding: layout.cardPadding,
   },
   chartPlot: {
     justifyContent: 'flex-end',

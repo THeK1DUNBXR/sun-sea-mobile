@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getErrorMessage } from '@/api/client';
 import { useAuth } from '@/store/auth';
 import { PressableScale } from '@/ui/PressableScale';
-import { radius, spacing, usePalette } from '@/ui/theme';
+import { MIN_TOUCH, radius, spacing, usePalette } from '@/ui/theme';
 
 export default function LoginScreen() {
   const { login, isAuthenticated, isHydrating, sessionMessage, dismissSessionMessage } = useAuth();
@@ -200,8 +200,8 @@ const styles = StyleSheet.create({
   showPasswordButton: {
     position: 'absolute',
     right: spacing.sm,
-    minHeight: 44,
-    minWidth: 44,
+    minHeight: MIN_TOUCH,
+    minWidth: MIN_TOUCH,
     alignItems: 'center',
     justifyContent: 'center',
   },

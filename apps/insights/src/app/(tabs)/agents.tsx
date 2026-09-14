@@ -20,11 +20,16 @@ import { ErrorBanner } from '@/ui/ErrorBanner';
 import { Reveal } from '@/ui/Reveal';
 import { SectionHeader } from '@/ui/Section';
 import { Skeleton } from '@/ui/Skeleton';
-import { contrastText, radius, spacing, typography, useReducedMotion, usePalette } from '@/ui/theme';
+import { contrastText, layout, radius, sizes, spacing, typography, useReducedMotion, usePalette } from '@/ui/theme';
 import type { LiveAgent } from '@/types';
 import { formatMoneyCompact, formatRelativeTime, initials } from '@/utils/format';
 
 const MAX_LEADER_STAGGER = 8;
+// Shared by the live map, its skeleton and its empty/fallback states so the
+// card never changes height as it moves between those states — and sized as
+// roughly one leaderboard row per ~40dp, giving the map a clear but not
+// screen-dominating share of the fold above the leaderboard.
+const MAP_HEIGHT = 260;
 
 /** A rank badge that pops into place just after its row settles in. */
 function RankBadgePop({ index, children }: { index: number; children: React.ReactNode }) {
@@ -225,7 +230,7 @@ export default function AgentsScreen() {
               <EmptyState title="Map unavailable on web preview" message="Open the app on a device to see the live map." />
             </View>
           ) : agentsLive.isPending ? (
-            <Skeleton height={260} radius={0} />
+            <Skeleton height={MAP_HEIGHT} radius={0} />
           ) : !MapView ? (
             <View style={styles.mapFallback}>
               <EmptyState title="Map module unavailable" />
@@ -319,7 +324,7 @@ export default function AgentsScreen() {
           )}
         </Card>
 
-        <View style={{ height: spacing.xxl }} />
+        <View style={{ height: layout.scrollEndSpacer }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -327,21 +332,21 @@ export default function AgentsScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
-  map: { width: '100%', height: 260 },
-  mapFallback: { height: 200, justifyContent: 'center' },
+  scroll: { padding: layout.screenGutter },
+  map: { width: '100%', height: MAP_HEIGHT },
+  mapFallback: { height: MAP_HEIGHT, justifyContent: 'center' },
   markerRing: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: sizes.mapMarkerRing,
+    height: sizes.mapMarkerRing,
+    borderRadius: sizes.mapMarkerRing / 2,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   markerBubble: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: sizes.mapMarkerBubble,
+    height: sizes.mapMarkerBubble,
+    borderRadius: sizes.mapMarkerBubble / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -358,23 +363,32 @@ const styles = StyleSheet.create({
   calloutDot: { width: 8, height: 8, borderRadius: 4 },
   calloutName: { fontWeight: '800', fontSize: 13.5 },
   calloutLine: { fontSize: 12 },
+  // Same rank-column width, row padding and column gap as the overview
+  // screen's debtor rows, so "rank / avatar / text / number" reads as one
+  // grid discipline across both list-style screens, not a per-row guess.
   leaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.sm,
+    paddingHorizontal: layout.rowPaddingH,
+    paddingVertical: layout.rowPaddingV,
+    gap: layout.rowGap,
   },
   rankBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: sizes.rankBadge,
+    height: sizes.rankBadge,
+    borderRadius: sizes.rankBadge / 2,
     borderWidth: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
   },
   rankText: { fontSize: 12, fontWeight: '800' },
-  avatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  avatar: {
+    width: sizes.avatarSm,
+    height: sizes.avatarSm,
+    borderRadius: sizes.avatarSm / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   avatarText: { fontSize: 11.5, fontWeight: '800' },
   leaderName: { fontSize: 14.5, fontWeight: '700' },
   leaderMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 5 },

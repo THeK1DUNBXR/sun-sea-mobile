@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, type ViewProps } from 'react-native';
 
-import { radius, spacing, useElevation, useIsDark, usePalette } from './theme';
+import { layout, radius, useElevation, useIsDark, usePalette } from './theme';
 
 interface CardProps extends ViewProps {
   /** 'raised' gives a stronger lift for the surface's most important block (e.g. the map, the hero chart). */
@@ -34,6 +34,6 @@ export function Card({ style, children, elevation = 'card', ...rest }: CardProps
 const styles = StyleSheet.create({
   card: {
     borderRadius: radius.xl,
-    padding: spacing.lg,
+    padding: layout.cardPadding,
   },
 });

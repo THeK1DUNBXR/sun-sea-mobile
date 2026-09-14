@@ -8,7 +8,7 @@ import { Card } from '@/ui/Card';
 import { Icon } from '@/ui/Icon';
 import { PressableScale } from '@/ui/PressableScale';
 import { SectionHeader } from '@/ui/Section';
-import { MIN_TOUCH, radius, spacing, typography, usePalette } from '@/ui/theme';
+import { MIN_TOUCH, layout, radius, sizes, spacing, typography, usePalette } from '@/ui/theme';
 import { initials } from '@/utils/format';
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -93,6 +93,8 @@ export default function SettingsScreen() {
         <Text style={[styles.footerNote, { color: palette.textFaint }]}>
           SunSea Insights · read-only founder dashboard
         </Text>
+
+        <View style={{ height: layout.scrollEndSpacer }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -100,13 +102,25 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { padding: layout.screenGutter },
   profileCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  avatar: {
+    width: sizes.avatarMd,
+    height: sizes.avatarMd,
+    borderRadius: sizes.avatarMd / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   avatarText: { fontSize: 18, fontWeight: '800' },
   profileName: { fontSize: 17.5, fontWeight: '800', letterSpacing: -0.2 },
   profileEmail: { fontSize: 13, marginTop: 2, fontWeight: '600' },
-  badge: { alignSelf: 'flex-start', borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3, marginTop: 6 },
+  badge: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    marginTop: spacing.xs,
+  },
   badgeText: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.3 },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
   rowLabel: { fontSize: 13, fontWeight: '700' },
@@ -120,7 +134,7 @@ const styles = StyleSheet.create({
     minHeight: MIN_TOUCH,
     borderWidth: 1.5,
     borderRadius: radius.md,
-    paddingVertical: 13,
+    paddingVertical: spacing.md,
   },
   logoutText: { fontSize: 15.5, fontWeight: '800' },
   footerNote: { textAlign: 'center', fontSize: 11, fontWeight: '600', marginTop: spacing.xl },

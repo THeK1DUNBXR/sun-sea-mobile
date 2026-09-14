@@ -1,6 +1,6 @@
 import { useIsFocused } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Reanimated, {
   Easing,
@@ -22,11 +22,16 @@ import { PressableScale } from '@/ui/PressableScale';
 import { Reveal } from '@/ui/Reveal';
 import { SectionHeader } from '@/ui/Section';
 import { SkeletonKpiGrid, SkeletonChart } from '@/ui/Skeleton';
-import { MIN_TOUCH, radius, spacing, typography, useReducedMotion, usePalette } from '@/ui/theme';
+import { MIN_TOUCH, layout, radius, sizes, spacing, typography, useReducedMotion, usePalette } from '@/ui/theme';
 import { useAuth } from '@/store/auth';
 import { formatMoneyCompact, formatRelativeTime } from '@/utils/format';
 
 const RANGE_OPTIONS = [7, 30, 90] as const;
+// Below this content width (landscape phones, small tablets) the 6-tile KPI
+// grid moves from 2 columns to 3 — at 2 columns a wide screen would just
+// stretch each tile instead of using the extra width. 6 divides evenly by
+// both 2 and 3, so neither breakpoint ever leaves an orphan tile.
+const KPI_GRID_WIDE_BREAKPOINT = 600;
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -41,6 +46,12 @@ export default function OverviewScreen() {
   const { user } = useAuth();
   const focused = useIsFocused();
   const [range, setRange] = useState<(typeof RANGE_OPTIONS)[number]>(30);
+  const { width: windowWidth } = useWindowDimensions();
+  const kpiColumns = windowWidth >= KPI_GRID_WIDE_BREAKPOINT ? 3 : 2;
+  const kpiItemStyle = useMemo(
+    () => [styles.kpiGridItem, { flexBasis: `${100 / kpiColumns}%` as const }],
+    [kpiColumns]
+  );
 
   const overview = useOverview(focused);
   const trends = useTrends(range, focused);
@@ -133,12 +144,14 @@ export default function OverviewScreen() {
         ) : null}
 
         {overview.isPending ? (
-          <View style={{ marginTop: spacing.xl }}>
+          // Matches kpiWrap's own marginTop below so the loading state sits at
+          // the same offset as the loaded KPI grid — no vertical jump on load.
+          <View style={styles.kpiWrap}>
             <SkeletonKpiGrid />
           </View>
         ) : (
           <View style={styles.kpiWrap}>
-            <Reveal index={0} staggerMs={40}>
+            <Reveal index={0} staggerMs={40} style={styles.heroWrap}>
               <KpiTile
                 variant="hero"
                 label="Sales, month to date"
@@ -149,7 +162,7 @@ export default function OverviewScreen() {
               />
             </Reveal>
             <View style={styles.kpiGrid}>
-              <Reveal index={1} staggerMs={40} style={styles.kpiGridItem}>
+              <Reveal index={1} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
                   label="Sales today"
                   value={formatMoneyCompact(data?.sales?.today)}
@@ -158,28 +171,28 @@ export default function OverviewScreen() {
                   deltaLabel="vs yesterday"
                 />
               </Reveal>
-              <Reveal index={2} staggerMs={40} style={styles.kpiGridItem}>
+              <Reveal index={2} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
                   label="Collections today"
                   value={formatMoneyCompact(data?.collections?.today)}
                   numericValue={data?.collections?.today}
                 />
               </Reveal>
-              <Reveal index={3} staggerMs={40} style={styles.kpiGridItem}>
+              <Reveal index={3} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
                   label="Collections MTD"
                   value={formatMoneyCompact(data?.collections?.mtd)}
                   numericValue={data?.collections?.mtd}
                 />
               </Reveal>
-              <Reveal index={4} staggerMs={40} style={styles.kpiGridItem}>
+              <Reveal index={4} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
                   label="Total outstanding"
                   value={formatMoneyCompact(data?.receivables?.totalOutstanding)}
                   numericValue={data?.receivables?.totalOutstanding}
                 />
               </Reveal>
-              <Reveal index={5} staggerMs={40} style={styles.kpiGridItem}>
+              <Reveal index={5} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
                   label="Overdue"
                   value={formatMoneyCompact(data?.receivables?.overdue)}
@@ -187,7 +200,7 @@ export default function OverviewScreen() {
                   invertColor
                 />
               </Reveal>
-              <Reveal index={6} staggerMs={40} style={styles.kpiGridItem}>
+              <Reveal index={6} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
                   label="Cash in hand"
                   value={formatMoneyCompact(data?.collections?.cashInHand)}
@@ -195,19 +208,24 @@ export default function OverviewScreen() {
                   caption={`${data?.agents?.active ?? 0} agents active`}
                 />
               </Reveal>
-              <Reveal index={7} staggerMs={40} style={styles.kpiGridItem}>
-                <KpiTile
-                  label="Pending verification"
-                  value={formatMoneyCompact(data?.collections?.pendingVerification?.amount)}
-                  numericValue={data?.collections?.pendingVerification?.amount}
-                  caption={
-                    data?.collections?.pendingVerification?.count
-                      ? `${data.collections.pendingVerification.count} receipt${data.collections.pendingVerification.count === 1 ? '' : 's'}`
-                      : undefined
-                  }
-                />
-              </Reveal>
             </View>
+            {/* A standalone wide tile, not a 7th grid cell — it needs founder
+                attention distinctly from the routine period metrics above, and
+                a lone leftover tile in a 2/3-column grid would otherwise read
+                as an accident rather than a deliberate callout. */}
+            <Reveal index={7} staggerMs={40}>
+              <KpiTile
+                variant="wide"
+                label="Pending verification"
+                value={formatMoneyCompact(data?.collections?.pendingVerification?.amount)}
+                numericValue={data?.collections?.pendingVerification?.amount}
+                caption={
+                  data?.collections?.pendingVerification?.count
+                    ? `${data.collections.pendingVerification.count} receipt${data.collections.pendingVerification.count === 1 ? '' : 's'}`
+                    : undefined
+                }
+              />
+            </Reveal>
           </View>
         )}
 
@@ -344,7 +362,7 @@ export default function OverviewScreen() {
           </Card>
         </Reveal>
 
-        <View style={{ height: spacing.xxl }} />
+        <View style={{ height: layout.scrollEndSpacer }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -364,29 +382,35 @@ function humanizeKey(key: string): string {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { padding: layout.screenGutter },
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
   greeting: { fontSize: 14, fontWeight: '700' },
   updatedChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    gap: spacing.xs,
+    paddingHorizontal: sizes.chipPaddingH,
+    paddingVertical: sizes.chipPaddingV,
     borderRadius: radius.pill,
     marginTop: 2,
   },
   liveDot: { width: 6, height: 6, borderRadius: 3 },
   updatedText: { fontSize: 11.5, fontWeight: '700' },
   kpiWrap: { marginTop: spacing.lg, gap: spacing.md },
+  heroWrap: {
+    // Caps the hero's width on tablets and landscape phones so a single
+    // giant stat doesn't stretch into a thin, disproportionate banner.
+    width: '100%',
+    maxWidth: 640,
+    alignSelf: 'center',
+  },
   kpiGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    gap: layout.gridGap,
   },
   kpiGridItem: {
     flexGrow: 1,
-    flexBasis: '47%',
     minWidth: 150,
   },
   rangeToggle: { flexDirection: 'row', gap: 2, borderRadius: radius.pill, padding: 2 },
@@ -402,14 +426,14 @@ const styles = StyleSheet.create({
   debtorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
+    paddingHorizontal: layout.rowPaddingH,
+    paddingVertical: layout.rowPaddingV,
+    gap: layout.rowGap,
   },
   debtorRank: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: sizes.rankBadge,
+    height: sizes.rankBadge,
+    borderRadius: sizes.rankBadge / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

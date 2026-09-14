@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon, type IconName } from './Icon';
-import { radius, spacing, usePalette } from './theme';
+import { radius, sizes, spacing, usePalette } from './theme';
 
 interface EmptyStateProps {
   title: string;
@@ -31,8 +31,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   iconBadge: {
-    width: 48,
-    height: 48,
+    width: sizes.iconBadgeMd,
+    height: sizes.iconBadgeMd,
     borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',

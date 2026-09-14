@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 
-import { usePalette } from '@/ui/theme';
+import { radius, usePalette } from '@/ui/theme';
 
 interface InlineBarProps {
   /** 0..1 */
@@ -31,7 +31,7 @@ export function InlineBar({ fraction, color, height = 7, width = 60 }: InlineBar
 
 const styles = StyleSheet.create({
   track: {
-    borderRadius: 999,
+    borderRadius: radius.pill,
     overflow: 'hidden',
   },
 });

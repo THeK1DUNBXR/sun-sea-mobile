@@ -14,7 +14,7 @@ import Reanimated, {
 
 import type { TrendPoint } from '@/types';
 import { formatMoneyCompact, formatShortDate } from '@/utils/format';
-import { spacing, useReducedMotion, usePalette } from '@/ui/theme';
+import { radius, sizes, spacing, useReducedMotion, usePalette } from '@/ui/theme';
 
 interface TrendChartProps {
   data: TrendPoint[];
@@ -311,10 +311,10 @@ const styles = StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
+    gap: spacing.xs,
+    paddingHorizontal: sizes.chipPaddingH,
+    paddingVertical: sizes.chipPaddingV,
+    borderRadius: radius.pill,
   },
   dot: { width: 8, height: 8, borderRadius: 4 },
   legendLabel: { fontSize: 11.5, fontWeight: '700' },

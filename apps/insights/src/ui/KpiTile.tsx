@@ -5,7 +5,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { formatMoneyCompact, formatPercent } from '@/utils/format';
 import { AnimatedNumber } from './AnimatedNumber';
 import { Card } from './Card';
-import { spacing, typography, useReducedMotion, usePalette } from './theme';
+import { radius, spacing, typography, useReducedMotion, usePalette } from './theme';
 
 interface KpiTileProps {
   label: string;
@@ -17,8 +17,13 @@ interface KpiTileProps {
   /** Invert semantics for metrics where a rise is bad (e.g. overdue). */
   invertColor?: boolean;
   caption?: string;
-  /** Hero tiles dominate the top of the screen with a larger, wider treatment. */
-  variant?: 'default' | 'hero';
+  /**
+   * 'hero' dominates the top of the screen with a much larger figure.
+   * 'wide' spans a full row like hero, but at grid-tile emphasis — for a
+   * single metric that doesn't pair evenly with the others (so it reads as
+   * a deliberate callout, not a stray tile stretched to fill its row).
+   */
+  variant?: 'default' | 'hero' | 'wide';
   accessibilityHint?: string;
 }
 
@@ -40,6 +45,7 @@ export function KpiTile({
   const deltaSoft = isGood === null ? palette.overlay : isGood ? palette.goodSoft : palette.badSoft;
   const arrow = hasDelta ? (deltaPct! >= 0 ? '▲' : '▼') : '';
   const isHero = variant === 'hero';
+  const isWide = variant === 'wide';
   const reducedMotion = useReducedMotion();
 
   const a11yLabel = [
@@ -51,15 +57,42 @@ export function KpiTile({
     .filter(Boolean)
     .join(', ');
 
-  return (
-    <Card
-      style={[styles.tile, isHero && styles.tileHero]}
-      elevation={isHero ? 'raised' : 'card'}
-      accessible
-      accessibilityRole="summary"
-      accessibilityLabel={a11yLabel}
-      accessibilityHint={accessibilityHint}
-    >
+  const footer =
+    hasDelta || caption ? (
+      <View style={[styles.footerRow, isWide && styles.footerRowWide]}>
+        {hasDelta ? (
+          <Animated.View
+            entering={reducedMotion ? FadeIn.duration(180) : FadeInDown.duration(220).springify().damping(18)}
+            style={[styles.deltaPill, { backgroundColor: deltaSoft }]}
+          >
+            <Text style={[styles.delta, { color: deltaColor }]} maxFontSizeMultiplier={1.6}>
+              {arrow} {formatPercent(Math.abs(deltaPct!)).replace('+', '')}
+            </Text>
+          </Animated.View>
+        ) : null}
+        {hasDelta && deltaLabel ? (
+          <Text
+            style={[styles.deltaLabel, { color: palette.textFaint }]}
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.6}
+          >
+            {deltaLabel}
+          </Text>
+        ) : null}
+        {caption ? (
+          <Text
+            style={[styles.caption, isWide && styles.wideCaption, { color: palette.textFaint }]}
+            numberOfLines={isWide ? 2 : 1}
+            maxFontSizeMultiplier={1.6}
+          >
+            {caption}
+          </Text>
+        ) : null}
+      </View>
+    ) : null;
+
+  const heading = (
+    <>
       <Text
         style={[styles.label, typography.label, { color: palette.textMuted }]}
         numberOfLines={1}
@@ -72,47 +105,38 @@ export function KpiTile({
         format={(v) => formatMoneyCompact(v)}
         fallback={value}
         style={[
-          isHero ? typography.hero : typography.statLg,
+          isHero ? typography.hero : isWide ? typography.stat : typography.statLg,
           styles.tabular,
-          { color: palette.text, marginTop: 6 },
+          { color: palette.text, marginTop: isWide ? 4 : 6 },
         ]}
         numberOfLines={1}
         adjustsFontSizeToFit
         maxFontSizeMultiplier={1.6}
         duration={isHero ? 800 : 650}
       />
-      {hasDelta || caption ? (
-        <View style={styles.footerRow}>
-          {hasDelta ? (
-            <Animated.View
-              entering={reducedMotion ? FadeIn.duration(180) : FadeInDown.duration(220).springify().damping(18)}
-              style={[styles.deltaPill, { backgroundColor: deltaSoft }]}
-            >
-              <Text style={[styles.delta, { color: deltaColor }]} maxFontSizeMultiplier={1.6}>
-                {arrow} {formatPercent(Math.abs(deltaPct!)).replace('+', '')}
-              </Text>
-            </Animated.View>
-          ) : null}
-          {hasDelta && deltaLabel ? (
-            <Text
-              style={[styles.deltaLabel, { color: palette.textFaint }]}
-              numberOfLines={1}
-              maxFontSizeMultiplier={1.6}
-            >
-              {deltaLabel}
-            </Text>
-          ) : null}
-          {caption ? (
-            <Text
-              style={[styles.caption, { color: palette.textFaint }]}
-              numberOfLines={1}
-              maxFontSizeMultiplier={1.6}
-            >
-              {caption}
-            </Text>
-          ) : null}
+    </>
+  );
+
+  return (
+    <Card
+      style={[styles.tile, isHero && styles.tileHero, isWide && styles.tileWide]}
+      elevation={isHero ? 'raised' : 'card'}
+      accessible
+      accessibilityRole="summary"
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={accessibilityHint}
+    >
+      {isWide ? (
+        <View style={styles.wideRow}>
+          <View style={{ flex: 1 }}>{heading}</View>
+          {footer}
         </View>
-      ) : null}
+      ) : (
+        <>
+          {heading}
+          {footer}
+        </>
+      )}
     </Card>
   );
 }
@@ -126,6 +150,19 @@ const styles = StyleSheet.create({
   tileHero: {
     flexBasis: '100%',
     minWidth: '100%',
+    // A giant number needs more air around it than a small stat tile, or the
+    // proportion between figure and card reads cramped instead of confident.
+    paddingVertical: spacing.xl,
+  },
+  tileWide: {
+    flexBasis: '100%',
+    minWidth: '100%',
+  },
+  wideRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
   label: {
     textTransform: 'uppercase',
@@ -140,9 +177,19 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginTop: spacing.sm,
   },
+  footerRowWide: {
+    flexShrink: 0,
+    justifyContent: 'flex-end',
+    marginTop: 0,
+    marginBottom: 2,
+  },
+  wideCaption: {
+    textAlign: 'right',
+    maxWidth: 160,
+  },
   deltaPill: {
-    borderRadius: 999,
-    paddingHorizontal: 8,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
   delta: {

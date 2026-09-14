@@ -11,7 +11,7 @@ import { ErrorBanner } from '@/ui/ErrorBanner';
 import { Icon, type IconName } from '@/ui/Icon';
 import { Reveal } from '@/ui/Reveal';
 import { Skeleton } from '@/ui/Skeleton';
-import { spacing, typography, usePalette, type Palette } from '@/ui/theme';
+import { layout, sizes, spacing, typography, usePalette, type Palette } from '@/ui/theme';
 import type { ActivityItem, ActivityType } from '@/types';
 import { formatDayLabel, formatMoneyCompact, formatRelativeTime } from '@/utils/format';
 
@@ -139,7 +139,7 @@ export default function ActivityScreen() {
           ))
         )}
 
-        <View style={{ height: spacing.xxl }} />
+        <View style={{ height: layout.scrollEndSpacer }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -147,20 +147,23 @@ export default function ActivityScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { padding: spacing.lg },
+  scroll: { padding: layout.screenGutter },
   group: { marginBottom: spacing.lg },
   groupLabel: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2, marginBottom: spacing.sm },
+  // Same row padding and column gap as the overview/agents list rows, so the
+  // icon / text / number columns land on the same grid across every screen
+  // that renders a row-style list.
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
+    paddingHorizontal: layout.rowPaddingH,
+    paddingVertical: layout.rowPaddingV,
+    gap: layout.rowGap,
   },
   iconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: sizes.iconBadgeSm,
+    height: sizes.iconBadgeSm,
+    borderRadius: sizes.iconBadgeSm / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

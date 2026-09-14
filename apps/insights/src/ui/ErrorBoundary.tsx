@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PressableScale } from './PressableScale';
-import { radius, spacing, usePalette, type Palette } from './theme';
+import { MIN_TOUCH, radius, sizes, spacing, usePalette, type Palette } from './theme';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -91,9 +91,9 @@ function getStyles(palette: Palette) {
       gap: spacing.sm,
     },
     badge: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
+      width: sizes.avatarMd,
+      height: sizes.avatarMd,
+      borderRadius: sizes.avatarMd / 2,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: palette.badSoft,
@@ -110,9 +110,9 @@ function getStyles(palette: Palette) {
     },
     button: {
       marginTop: spacing.lg,
-      minHeight: 44,
+      minHeight: MIN_TOUCH,
       paddingHorizontal: spacing.xl,
-      paddingVertical: 12,
+      paddingVertical: spacing.md,
       borderRadius: radius.md,
       backgroundColor: palette.accent,
       alignItems: 'center',
