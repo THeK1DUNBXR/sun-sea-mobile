@@ -1,6 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
+import Reanimated, {
+  Easing,
+  interpolate,
+  useAnimatedProps,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import type { TrendPoint } from '@/types';
 import { formatMoneyCompact, formatShortDate } from '@/utils/format';
@@ -11,7 +21,11 @@ interface TrendChartProps {
   height?: number;
 }
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedCircle = Reanimated.createAnimatedComponent(Circle);
+const AnimatedPath = Reanimated.createAnimatedComponent(Path);
+// A dash length comfortably longer than any realistic chart line, so the
+// stroke-dashoffset trick reveals the whole path regardless of measured width.
+const DASH_LENGTH = 4000;
 
 function buildLinePath(points: { x: number; y: number }[]): string {
   if (points.length === 0) return '';
@@ -25,20 +39,61 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const padding = { top: 20, bottom: 26, left: 8, right: 8 };
 
-  const pulse = useRef(new Animated.Value(0)).current;
+  const pulse = useSharedValue(0);
   useEffect(() => {
     if (reducedMotion) return;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 1400, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0, duration: 0, useNativeDriver: true }),
-      ])
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1400, easing: Easing.linear }),
+        withTiming(0, { duration: 0 })
+      ),
+      -1,
+      false
     );
-    loop.start();
-    return () => loop.stop();
-  }, [pulse, reducedMotion]);
-  const pulseRadius = pulse.interpolate({ inputRange: [0, 1], outputRange: [6, 15] });
-  const pulseOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reducedMotion]);
+  const pulseProps = useAnimatedProps(() => ({
+    r: interpolate(pulse.value, [0, 1], [6, 15]),
+    opacity: interpolate(pulse.value, [0, 1], [0.35, 0]),
+  }));
+
+  // The line-draw progress (0 -> 1) that reveals the sales/collections strokes and
+  // fades the area fill in, plus a slightly-delayed "settle" for the latest-point
+  // rings. Re-triggers once whenever the plotted series itself changes (e.g. a new
+  // date range), not on every same-range refetch.
+  const draw = useSharedValue(reducedMotion ? 1 : 0);
+  const settle = useSharedValue(reducedMotion ? 1 : 0);
+  const seriesKey = data.length > 0 ? `${data.length}:${data[0]?.date}:${data[data.length - 1]?.date}` : '';
+  const prevSeriesKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!seriesKey) return;
+    if (reducedMotion) {
+      draw.value = 1;
+      settle.value = 1;
+      prevSeriesKey.current = seriesKey;
+      return;
+    }
+    if (prevSeriesKey.current !== seriesKey) {
+      const easing = Easing.out(Easing.cubic);
+      draw.value = 0;
+      draw.value = withTiming(1, { duration: 700, easing });
+      settle.value = 0;
+      settle.value = withDelay(500, withTiming(1, { duration: 260, easing }));
+      prevSeriesKey.current = seriesKey;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seriesKey, reducedMotion]);
+
+  const salesLineProps = useAnimatedProps(() => ({
+    strokeDashoffset: (1 - draw.value) * DASH_LENGTH,
+  }));
+  const collectionsLineProps = useAnimatedProps(() => ({
+    strokeDashoffset: (1 - draw.value) * DASH_LENGTH,
+  }));
+  const areaProps = useAnimatedProps(() => ({ opacity: draw.value }));
+  const salesSettleProps = useAnimatedProps(() => ({ r: interpolate(settle.value, [0, 1], [0, 5.5]) }));
+  const collectionsSettleProps = useAnimatedProps(() => ({ r: interpolate(settle.value, [0, 1], [0, 4.5]) }));
 
   const chart = useMemo(() => {
     if (width === 0 || data.length === 0) return null;
@@ -134,37 +189,50 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
                 stroke={palette.border}
                 strokeWidth={1}
               />
-              <Path d={chart.areaPath} fill="url(#salesFill)" />
-              <Path d={chart.collectionsPath} fill="none" stroke={palette.good} strokeWidth={2.5} />
-              <Path d={chart.salesPath} fill="none" stroke={palette.accent} strokeWidth={2.75} />
+              <AnimatedPath d={chart.areaPath} fill="url(#salesFill)" animatedProps={areaProps} />
+              <AnimatedPath
+                d={chart.collectionsPath}
+                fill="none"
+                stroke={palette.good}
+                strokeWidth={2.5}
+                strokeDasharray={[DASH_LENGTH, DASH_LENGTH]}
+                animatedProps={collectionsLineProps}
+              />
+              <AnimatedPath
+                d={chart.salesPath}
+                fill="none"
+                stroke={palette.accent}
+                strokeWidth={2.75}
+                strokeDasharray={[DASH_LENGTH, DASH_LENGTH]}
+                animatedProps={salesLineProps}
+              />
 
-              {/* Highlighted latest point: a quiet pulse plus a solid ring, always visible. */}
+              {/* Highlighted latest point: settles into place after the line draws in, plus a quiet ongoing pulse. */}
               {chart.salesPoints[latestIndex] ? (
                 <>
                   {!reducedMotion ? (
                     <AnimatedCircle
                       cx={chart.salesPoints[latestIndex].x}
                       cy={chart.salesPoints[latestIndex].y}
-                      r={pulseRadius as unknown as number}
                       fill={palette.accent}
-                      opacity={pulseOpacity as unknown as number}
+                      animatedProps={pulseProps}
                     />
                   ) : null}
-                  <Circle
+                  <AnimatedCircle
                     cx={chart.salesPoints[latestIndex].x}
                     cy={chart.salesPoints[latestIndex].y}
-                    r={5.5}
                     fill={palette.bgElevated}
                     stroke={palette.accent}
                     strokeWidth={2.5}
+                    animatedProps={salesSettleProps}
                   />
-                  <Circle
+                  <AnimatedCircle
                     cx={chart.collectionsPoints[latestIndex].x}
                     cy={chart.collectionsPoints[latestIndex].y}
-                    r={4.5}
                     fill={palette.bgElevated}
                     stroke={palette.good}
                     strokeWidth={2.25}
+                    animatedProps={collectionsSettleProps}
                   />
                 </>
               ) : null}

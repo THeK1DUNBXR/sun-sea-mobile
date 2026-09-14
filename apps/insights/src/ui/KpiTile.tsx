@@ -1,13 +1,17 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
-import { formatPercent } from '@/utils/format';
+import { formatMoneyCompact, formatPercent } from '@/utils/format';
+import { AnimatedNumber } from './AnimatedNumber';
 import { Card } from './Card';
-import { spacing, typography, usePalette } from './theme';
+import { spacing, typography, useReducedMotion, usePalette } from './theme';
 
 interface KpiTileProps {
   label: string;
   value: string;
+  /** Raw amount backing `value`; when finite, the figure counts up on mount and rolls on change. */
+  numericValue?: number | null;
   deltaPct?: number | null;
   deltaLabel?: string;
   /** Invert semantics for metrics where a rise is bad (e.g. overdue). */
@@ -21,6 +25,7 @@ interface KpiTileProps {
 export function KpiTile({
   label,
   value,
+  numericValue,
   deltaPct,
   deltaLabel,
   invertColor,
@@ -35,6 +40,7 @@ export function KpiTile({
   const deltaSoft = isGood === null ? palette.overlay : isGood ? palette.goodSoft : palette.badSoft;
   const arrow = hasDelta ? (deltaPct! >= 0 ? '▲' : '▼') : '';
   const isHero = variant === 'hero';
+  const reducedMotion = useReducedMotion();
 
   const a11yLabel = [
     label,
@@ -57,21 +63,30 @@ export function KpiTile({
       <Text style={[styles.label, typography.label, { color: palette.textMuted }]} numberOfLines={1}>
         {label}
       </Text>
-      <Text
-        style={[isHero ? typography.hero : typography.statLg, { color: palette.text, marginTop: 6 }]}
+      <AnimatedNumber
+        value={numericValue ?? null}
+        format={(v) => formatMoneyCompact(v)}
+        fallback={value}
+        style={[
+          isHero ? typography.hero : typography.statLg,
+          styles.tabular,
+          { color: palette.text, marginTop: 6 },
+        ]}
         numberOfLines={1}
         adjustsFontSizeToFit
-      >
-        {value}
-      </Text>
+        duration={isHero ? 800 : 650}
+      />
       {hasDelta || caption ? (
         <View style={styles.footerRow}>
           {hasDelta ? (
-            <View style={[styles.deltaPill, { backgroundColor: deltaSoft }]}>
+            <Animated.View
+              entering={reducedMotion ? FadeIn.duration(180) : FadeInDown.duration(220).springify().damping(18)}
+              style={[styles.deltaPill, { backgroundColor: deltaSoft }]}
+            >
               <Text style={[styles.delta, { color: deltaColor }]}>
                 {arrow} {formatPercent(Math.abs(deltaPct!)).replace('+', '')}
               </Text>
-            </View>
+            </Animated.View>
           ) : null}
           {hasDelta && deltaLabel ? (
             <Text style={[styles.deltaLabel, { color: palette.textFaint }]} numberOfLines={1}>
@@ -101,6 +116,9 @@ const styles = StyleSheet.create({
   },
   label: {
     textTransform: 'uppercase',
+  },
+  tabular: {
+    fontVariant: ['tabular-nums'],
   },
   footerRow: {
     flexDirection: 'row',

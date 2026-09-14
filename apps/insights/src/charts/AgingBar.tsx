@@ -1,10 +1,58 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
+import Reanimated, {
+  Easing,
+  useAnimatedProps,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 
 import type { AgingBuckets } from '@/types';
 import { formatMoneyCompact } from '@/utils/format';
-import { spacing, useIsDark, usePalette } from '@/ui/theme';
+import { spacing, useIsDark, useReducedMotion, usePalette } from '@/ui/theme';
+
+const AnimatedRect = Reanimated.createAnimatedComponent(Rect);
+
+/** One aging segment, growing its width from 0 up to its share of the bar (or rolling to a new share on refresh). */
+function AgingSegment({
+  x,
+  targetWidth,
+  color,
+  height,
+  rx,
+  delayMs,
+  reducedMotion,
+}: {
+  x: number;
+  targetWidth: number;
+  color: string;
+  height: number;
+  rx: number;
+  delayMs: number;
+  reducedMotion: boolean;
+}) {
+  const width = useSharedValue(reducedMotion ? targetWidth : 0);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      width.value = targetWidth;
+      return;
+    }
+    width.value = withDelay(
+      delayMs,
+      withTiming(targetWidth, { duration: 550, easing: Easing.out(Easing.cubic) })
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetWidth, reducedMotion]);
+
+  const animatedProps = useAnimatedProps(() => ({ width: Math.max(width.value, 0) }));
+
+  if (targetWidth <= 0) return null;
+
+  return <AnimatedRect x={x} y={0} width={targetWidth} height={height} rx={rx} fill={color} animatedProps={animatedProps} />;
+}
 
 interface AgingBarProps {
   aging: AgingBuckets | undefined;
@@ -22,6 +70,7 @@ const BUCKET_LABELS: Record<string, string> = {
 export function AgingBar({ aging, height = 36 }: AgingBarProps) {
   const palette = usePalette();
   const dark = useIsDark();
+  const reducedMotion = useReducedMotion();
   const [width, setWidth] = useState(0);
   // A deliberate green -> red severity ramp, kept visually distinct from the accent.
   const colors = [palette.good, palette.warn, dark ? '#FB923C' : '#EA580C', palette.bad];
@@ -53,19 +102,18 @@ export function AgingBar({ aging, height = 36 }: AgingBarProps) {
         {width > 0 ? (
           <Svg width={width} height={height}>
             <Rect x={0} y={0} width={width} height={height} rx={height / 2} fill={palette.overlay} />
-            {segments.map((seg, i) =>
-              seg.width > 0 ? (
-                <Rect
-                  key={i}
-                  x={seg.x}
-                  y={0}
-                  width={Math.max(seg.width - (i < segments.length - 1 ? 2 : 0), 0)}
-                  height={height}
-                  rx={height / 2}
-                  fill={seg.color}
-                />
-              ) : null
-            )}
+            {segments.map((seg, i) => (
+              <AgingSegment
+                key={i}
+                x={seg.x}
+                targetWidth={Math.max(seg.width - (i < segments.length - 1 ? 2 : 0), 0)}
+                color={seg.color}
+                height={height}
+                rx={height / 2}
+                delayMs={i * 60}
+                reducedMotion={reducedMotion}
+              />
+            ))}
           </Svg>
         ) : null}
       </View>

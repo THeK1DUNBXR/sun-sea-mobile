@@ -1,5 +1,14 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View, type DimensionValue } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, View, type DimensionValue } from 'react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Reanimated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { radius, spacing, useReducedMotion, usePalette } from './theme';
 
@@ -13,32 +22,55 @@ interface SkeletonProps {
 export function Skeleton({ width = '100%', height = 16, radius: r = radius.sm, style }: SkeletonProps) {
   const palette = usePalette();
   const reducedMotion = useReducedMotion();
-  const opacity = useRef(new Animated.Value(0.4)).current;
+  const [measuredWidth, setMeasuredWidth] = useState(0);
+  const sweep = useSharedValue(-1);
 
   useEffect(() => {
-    if (reducedMotion) {
-      opacity.setValue(0.55);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 1, duration: 650, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 650, useNativeDriver: true }),
-      ])
+    if (reducedMotion || measuredWidth === 0) return;
+    sweep.value = -1;
+    sweep.value = withRepeat(
+      withSequence(
+        withTiming(-1, { duration: 0 }),
+        withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
     );
-    loop.start();
-    return () => loop.stop();
-  }, [opacity, reducedMotion]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reducedMotion, measuredWidth]);
+
+  const sweepStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: sweep.value * measuredWidth }],
+  }));
 
   return (
-    <Animated.View
+    <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
+      onLayout={(e) => setMeasuredWidth(e.nativeEvent.layout.width)}
       style={[
-        { width, height, borderRadius: r, backgroundColor: palette.overlay, opacity },
+        { width, height, borderRadius: r, backgroundColor: palette.overlay, overflow: 'hidden' },
         style,
       ]}
-    />
+    >
+      {reducedMotion ? (
+        // A single soft fill, no motion — still legibly "loading" without spatial movement.
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: palette.overlay, opacity: 0.6 }]} />
+      ) : measuredWidth > 0 ? (
+        <Reanimated.View style={[StyleSheet.absoluteFill, sweepStyle]}>
+          <Svg width={measuredWidth} height={height}>
+            <Defs>
+              <LinearGradient id="shimmer" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={palette.text} stopOpacity={0} />
+                <Stop offset="0.5" stopColor={palette.text} stopOpacity={0.12} />
+                <Stop offset="1" stopColor={palette.text} stopOpacity={0} />
+              </LinearGradient>
+            </Defs>
+            <Rect x={0} y={0} width={measuredWidth} height={height} fill="url(#shimmer)" />
+          </Svg>
+        </Reanimated.View>
+      ) : null}
+    </View>
   );
 }
 

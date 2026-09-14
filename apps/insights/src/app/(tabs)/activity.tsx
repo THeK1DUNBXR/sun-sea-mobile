@@ -9,6 +9,7 @@ import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { ErrorBanner } from '@/ui/ErrorBanner';
 import { Icon, type IconName } from '@/ui/Icon';
+import { Reveal } from '@/ui/Reveal';
 import { Skeleton } from '@/ui/Skeleton';
 import { spacing, typography, usePalette, type Palette } from '@/ui/theme';
 import type { ActivityItem } from '@/types';
@@ -75,45 +76,49 @@ export default function ActivityScreen() {
         ) : grouped.length === 0 ? (
           <EmptyState title="No recent activity" message="New invoices, collections and deposits will appear here." />
         ) : (
-          grouped.map((group) => (
+          grouped.map((group, gi) => (
             <View key={group.day} style={styles.group}>
               <Text style={[styles.groupLabel, { color: palette.text }]}>{group.day}</Text>
               <Card style={{ padding: 0 }}>
                 {group.items.map((item, i) => {
                   const tint = colorFor(item.type, palette);
+                  // Groups queue in first, then rows within a group cascade quickly —
+                  // capped so a long feed doesn't keep the last rows waiting.
+                  const delay = Math.min(gi, 3) * 70 + Math.min(i, 6) * 35;
                   return (
-                    <View
-                      key={item.id ?? i}
-                      style={[
-                        styles.row,
-                        { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
-                      ]}
-                      accessibilityLabel={`${item.title ?? item.type}${item.amount !== undefined ? `, ${formatMoneyCompact(item.amount)}` : ''}, ${formatRelativeTime(item.occurredAt)}`}
-                    >
-                      <View style={[styles.iconBadge, { backgroundColor: tint + '1F' }]}>
-                        <Icon name={iconFor(item.type)} color={tint} size={18} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.title, { color: palette.text }]} numberOfLines={1}>
-                          {item.title ?? item.type}
-                        </Text>
-                        {item.subtitle ? (
-                          <Text style={[styles.subtitle, { color: palette.textFaint }]} numberOfLines={1}>
-                            {item.subtitle}
+                    <Reveal key={item.id ?? i} delay={delay} axis="x" distance={12}>
+                      <View
+                        style={[
+                          styles.row,
+                          { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
+                        ]}
+                        accessibilityLabel={`${item.title ?? item.type}${item.amount !== undefined ? `, ${formatMoneyCompact(item.amount)}` : ''}, ${formatRelativeTime(item.occurredAt)}`}
+                      >
+                        <View style={[styles.iconBadge, { backgroundColor: tint + '1F' }]}>
+                          <Icon name={iconFor(item.type)} color={tint} size={18} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.title, { color: palette.text }]} numberOfLines={1}>
+                            {item.title ?? item.type}
                           </Text>
-                        ) : null}
-                      </View>
-                      <View style={{ alignItems: 'flex-end' }}>
-                        {item.amount !== undefined ? (
-                          <Text style={[styles.amount, { color: palette.text }]}>
-                            {formatMoneyCompact(item.amount)}
+                          {item.subtitle ? (
+                            <Text style={[styles.subtitle, { color: palette.textFaint }]} numberOfLines={1}>
+                              {item.subtitle}
+                            </Text>
+                          ) : null}
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          {item.amount !== undefined ? (
+                            <Text style={[styles.amount, { color: palette.text }]}>
+                              {formatMoneyCompact(item.amount)}
+                            </Text>
+                          ) : null}
+                          <Text style={[styles.time, { color: palette.textFaint }]}>
+                            {formatRelativeTime(item.occurredAt)}
                           </Text>
-                        ) : null}
-                        <Text style={[styles.time, { color: palette.textFaint }]}>
-                          {formatRelativeTime(item.occurredAt)}
-                        </Text>
+                        </View>
                       </View>
-                    </View>
+                    </Reveal>
                   );
                 })}
               </Card>

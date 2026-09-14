@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getErrorMessage } from '@/api/client';
 import { useAuth } from '@/store/auth';
+import { PressableScale } from '@/ui/PressableScale';
 import { radius, spacing, usePalette } from '@/ui/theme';
 
 export default function LoginScreen() {
@@ -99,7 +99,7 @@ export default function LoginScreen() {
               <Text style={[styles.error, { color: palette.bad }]}>{error}</Text>
             ) : null}
 
-            <Pressable
+            <PressableScale
               onPress={onSubmit}
               disabled={submitting}
               style={({ pressed }) => [
@@ -112,7 +112,7 @@ export default function LoginScreen() {
               ) : (
                 <Text style={[styles.buttonText, { color: palette.accentInk }]}>Sign in</Text>
               )}
-            </Pressable>
+            </PressableScale>
 
             <Text style={[styles.hint, { color: palette.textFaint }]}>
               Requires the &quot;insights-app.access&quot; permission or super admin.

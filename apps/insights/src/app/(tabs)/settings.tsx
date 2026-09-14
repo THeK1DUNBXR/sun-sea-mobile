@@ -1,11 +1,12 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { API_URL } from '@/api/client';
 import { useAuth } from '@/store/auth';
 import { Card } from '@/ui/Card';
 import { Icon } from '@/ui/Icon';
+import { PressableScale } from '@/ui/PressableScale';
 import { SectionHeader } from '@/ui/Section';
 import { MIN_TOUCH, radius, spacing, typography, usePalette } from '@/ui/theme';
 import { initials } from '@/utils/format';
@@ -76,7 +77,7 @@ export default function SettingsScreen() {
           )}
         </Card>
 
-        <Pressable
+        <PressableScale
           onPress={() => logout()}
           accessibilityRole="button"
           accessibilityLabel="Log out"
@@ -87,7 +88,7 @@ export default function SettingsScreen() {
         >
           <Icon name="logout" color={palette.bad} size={18} />
           <Text style={[styles.logoutText, { color: palette.bad }]}>Log out</Text>
-        </Pressable>
+        </PressableScale>
 
         <Text style={[styles.footerNote, { color: palette.textFaint }]}>
           SunSea Insights · read-only founder dashboard

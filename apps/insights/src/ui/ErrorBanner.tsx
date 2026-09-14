@@ -1,6 +1,7 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { PressableScale } from './PressableScale';
 import { MIN_TOUCH, radius, spacing, usePalette } from './theme';
 
 interface ErrorBannerProps {
@@ -17,7 +18,7 @@ export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
     >
       <Text style={[styles.text, { color: palette.bad }]}>{message}</Text>
       {onRetry ? (
-        <Pressable
+        <PressableScale
           onPress={onRetry}
           hitSlop={8}
           accessibilityRole="button"
@@ -25,7 +26,7 @@ export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
           style={styles.retryHit}
         >
           <Text style={[styles.retry, { color: palette.bad }]}>Retry</Text>
-        </Pressable>
+        </PressableScale>
       ) : null}
     </View>
   );
