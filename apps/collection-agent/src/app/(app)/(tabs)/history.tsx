@@ -51,7 +51,7 @@ export default function HistoryScreen() {
           <EmptyState
             icon="cloud-offline-outline"
             tone="offline"
-            title="Couldn't load history"
+            title={copy.history.loadErrorTitle}
             subtitle={copy.assignments.checkConnection}
           />
           <Button title={copy.profile.retry} onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
@@ -65,7 +65,7 @@ export default function HistoryScreen() {
           refreshing={query.isFetching}
           onRefresh={() => query.refetch()}
           ListEmptyComponent={
-            <EmptyState icon="time-outline" title="No activity yet" subtitle="Collections, visits and deposits will show up here." />
+            <EmptyState icon="time-outline" title={copy.history.emptyTitle} subtitle={copy.history.emptySubtitle} />
           }
           renderItem={renderItem}
           initialNumToRender={8}

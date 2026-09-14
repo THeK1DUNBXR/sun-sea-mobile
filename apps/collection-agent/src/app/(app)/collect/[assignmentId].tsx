@@ -441,5 +441,4 @@ const styles = StyleSheet.create({
   confirmedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
   confirmedText: { ...type.body, color: colors.success, ...fontWeight('700') },
   locationCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  muted: { ...type.body, color: colors.textMuted, flex: 1 },
 });

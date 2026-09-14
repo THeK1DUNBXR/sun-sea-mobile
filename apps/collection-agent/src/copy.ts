@@ -62,22 +62,29 @@ export const copy = {
   },
 
   assignmentDetail: {
+    loading: 'Loading…',
     loadErrorTitle: "Couldn't load this assignment",
     recordCollection: 'Record collection',
     recordVisit: 'Record visit',
+    call: 'Call',
     callCustomer: 'Call customer',
     callNoNumber: 'Call — no phone number on file',
+    whatsApp: 'WhatsApp',
     whatsAppCustomer: 'Message customer on WhatsApp',
     whatsAppNoNumber: 'WhatsApp — no phone number on file',
+    navigate: 'Navigate',
     openInMaps: 'Open in Maps',
     openInMapsNoAddress: 'Open in Maps — no address on file',
     noAddress: 'No address on file',
     customerLedger: 'Customer ledger',
+    close: 'Close',
     instructions: 'Instructions',
     items: 'Items',
     previousVisits: 'Previous visits',
     ledgerLoadErrorTitle: "Couldn't load the ledger",
+    invoicesHeading: 'Invoices',
     noInvoices: 'No invoices for this customer.',
+    recentReceiptsHeading: 'Recent receipts',
     noReceipts: 'No receipts yet.',
     linkUnavailableTitle: "Can't open this",
     noPhoneApp: 'No phone app is available to place this call.',
@@ -190,6 +197,12 @@ export const copy = {
     },
   },
 
+  history: {
+    loadErrorTitle: "Couldn't load history",
+    emptyTitle: 'No activity yet',
+    emptySubtitle: 'Collections, visits and deposits will show up here.',
+  },
+
   map: {
     locating: 'Locating you…',
     loadErrorTitle: "Couldn't load assignments",
@@ -222,6 +235,13 @@ export const copy = {
     missingFields: 'Enter your email and password.',
     genericFailure: "Couldn't log in. Check your connection and try again.",
     footer: 'SunSea ERP · Collection Agent',
+  },
+
+  imageGuard: {
+    tooLargeTitle: 'Photo too large',
+    tooLargeMessage(sizeMb: string): string {
+      return `This photo is ${sizeMb} MB — the limit is 5 MB. Try again with a lower quality or a different photo.`;
+    },
   },
 
   errorBoundary: {

@@ -9,7 +9,13 @@ export async function dataUrlToFile(dataUrl: string, filename = `signature-${Dat
   const match = /^data:image\/(\w+);base64,(.+)$/.exec(dataUrl);
   if (!match) return null;
   const [, ext, base64] = match;
-  const dir = (FileSystem as any).cacheDirectory ?? (FileSystem as any).documentDirectory ?? '';
+  // expo-file-system's SDK 57 module type only surfaces the new File/Directory
+  // API; cacheDirectory/documentDirectory are the legacy string-path constants
+  // (still shipped and used above via writeAsStringAsync) that its .d.ts
+  // doesn't declare — narrow the cast to just those two optional fields
+  // instead of an untyped `any`.
+  const legacyDirs = FileSystem as unknown as { cacheDirectory?: string | null; documentDirectory?: string | null };
+  const dir = legacyDirs.cacheDirectory ?? legacyDirs.documentDirectory ?? '';
   const path = `${dir}${filename.replace(/\.\w+$/, '')}.${ext}`;
   try {
     await FileSystem.writeAsStringAsync(path, base64, { encoding: FileSystem.EncodingType.Base64 });

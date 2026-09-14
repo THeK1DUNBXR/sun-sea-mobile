@@ -101,7 +101,7 @@ export default function HomeScreen() {
             <Text style={[styles.cardSubtitle, { flex: 1, color: colors.danger }]}>
               {copy.home.summaryLoadError}
             </Text>
-            <Button title="Retry" onPress={() => summary.refetch()} variant="ghost" fullWidth={false} />
+            <Button title={copy.profile.retry} onPress={() => summary.refetch()} variant="ghost" fullWidth={false} />
           </View>
         </Card>
       )}

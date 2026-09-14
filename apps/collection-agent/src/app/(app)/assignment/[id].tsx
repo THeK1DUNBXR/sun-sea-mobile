@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Alert, Linking, Modal, Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -10,6 +10,7 @@ import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
+import { SkeletonBlock, SkeletonRow } from '@/ui/Skeleton';
 import { colors, spacing, type, fontWeight, tabularNums } from '@/ui/theme';
 import { assignmentStatusMeta, formatDate, formatMoney, isOverdue, visitOutcomeLabel } from '@/ui/format';
 import { copy } from '@/copy';
@@ -106,9 +107,13 @@ export default function AssignmentDetailScreen() {
   if (query.isLoading || !assignment) {
     return (
       <Screen>
-        <View style={styles.ledgerCentered}>
-          <Text style={styles.muted}>Loading…</Text>
-        </View>
+        <Card elevation="raised" style={{ gap: spacing.sm }}>
+          <SkeletonBlock width="40%" height={20} />
+          <SkeletonBlock width="60%" height={14} />
+          <SkeletonBlock width="90%" height={32} style={{ marginTop: spacing.sm }} />
+        </Card>
+        <SkeletonRow />
+        <SkeletonRow />
       </Screen>
     );
   }
@@ -162,7 +167,7 @@ export default function AssignmentDetailScreen() {
         )}
         <View style={styles.contactRow}>
           <Button
-            title="Call"
+            title={copy.assignmentDetail.call}
             onPress={onCall}
             disabled={!phone}
             variant="secondary"
@@ -172,7 +177,7 @@ export default function AssignmentDetailScreen() {
             icon={<Ionicons name="call-outline" size={18} color={phone ? colors.primary : colors.textFaint} />}
           />
           <Button
-            title="WhatsApp"
+            title={copy.assignmentDetail.whatsApp}
             onPress={onWhatsApp}
             disabled={!phone}
             variant="secondary"
@@ -182,7 +187,7 @@ export default function AssignmentDetailScreen() {
             icon={<Ionicons name="logo-whatsapp" size={18} color={phone ? colors.primary : colors.textFaint} />}
           />
           <Button
-            title="Navigate"
+            title={copy.assignmentDetail.navigate}
             onPress={onNavigate}
             disabled={!hasAddress}
             variant="secondary"
@@ -240,14 +245,15 @@ export default function AssignmentDetailScreen() {
           footer={
             <View style={styles.actionRow}>
               {ledger.isError ? <Button title={copy.profile.retry} onPress={() => ledger.refetch()} variant="secondary" /> : null}
-              <Button title="Close" onPress={() => setLedgerOpen(false)} variant="secondary" />
+              <Button title={copy.assignmentDetail.close} onPress={() => setLedgerOpen(false)} variant="secondary" />
             </View>
           }
         >
           <Text style={styles.sectionTitle}>{copy.assignmentDetail.customerLedger}</Text>
           {ledger.isLoading ? (
-            <View style={styles.ledgerCentered}>
-              <Text style={styles.muted}>Loading…</Text>
+            <View style={{ gap: spacing.sm }}>
+              <SkeletonRow />
+              <SkeletonRow />
             </View>
           ) : ledger.isError ? (
             <View style={styles.ledgerCentered}>
@@ -255,7 +261,7 @@ export default function AssignmentDetailScreen() {
             </View>
           ) : (
             <>
-              <Text style={styles.subsectionTitle}>Invoices</Text>
+              <Text style={styles.subsectionTitle}>{copy.assignmentDetail.invoicesHeading}</Text>
               {(ledger.data?.outstandingInvoices ?? []).length === 0 ? (
                 <Text style={styles.mutedFaint}>{copy.assignmentDetail.noInvoices}</Text>
               ) : (
@@ -266,7 +272,7 @@ export default function AssignmentDetailScreen() {
                   </View>
                 ))
               )}
-              <Text style={styles.subsectionTitle}>Recent receipts</Text>
+              <Text style={styles.subsectionTitle}>{copy.assignmentDetail.recentReceiptsHeading}</Text>
               {(ledger.data?.recentReceipts ?? []).length === 0 ? (
                 <Text style={styles.mutedFaint}>{copy.assignmentDetail.noReceipts}</Text>
               ) : (

@@ -1,5 +1,6 @@
 import { Alert } from 'react-native';
 import type { ImagePickerAsset } from 'expo-image-picker';
+import { copy } from '@/copy';
 
 // Matches the backend's multer limit (agent-app.routes.ts: 5 * 1024 * 1024)
 // — reject client-side with a clear message rather than letting the agent
@@ -12,8 +13,8 @@ export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export function assertImageSizeOk(asset: ImagePickerAsset): boolean {
   if (asset.fileSize != null && asset.fileSize > MAX_IMAGE_BYTES) {
     Alert.alert(
-      'Photo too large',
-      `This photo is ${(asset.fileSize / (1024 * 1024)).toFixed(1)} MB — the limit is 5 MB. Try again with a lower quality or a different photo.`,
+      copy.imageGuard.tooLargeTitle,
+      copy.imageGuard.tooLargeMessage((asset.fileSize / (1024 * 1024)).toFixed(1)),
     );
     return false;
   }

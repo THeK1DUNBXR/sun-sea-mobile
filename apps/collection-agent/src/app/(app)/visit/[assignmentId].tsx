@@ -191,5 +191,4 @@ const styles = StyleSheet.create({
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.xs },
   preview: { width: sizes.previewLarge, height: sizes.previewLarge, borderRadius: radius.sm, marginTop: spacing.sm },
   locationCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  muted: { ...type.body, color: colors.textMuted, flex: 1 },
 });
