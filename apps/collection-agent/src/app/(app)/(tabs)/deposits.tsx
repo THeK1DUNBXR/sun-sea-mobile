@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
+import Animated, { FadeInDown, FadeInUp, Layout } from 'react-native-reanimated';
 
 import { fetchDeposits } from '@/api/agentApi';
 import { enqueue } from '@/offline/queue';
@@ -12,11 +13,15 @@ import { Badge } from '@/ui/Badge';
 import { Input } from '@/ui/Input';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
+import { SkeletonRow } from '@/ui/Skeleton';
 import { SuccessOverlay } from '@/ui/SuccessOverlay';
+import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
 import { DEPOSIT_STATUS_META, formatDateTime, formatMoney } from '@/ui/format';
 import * as Crypto from 'expo-crypto';
 import type { AgentCashDeposit } from '@/types/models';
+
+const STAGGER_CAP = 8;
 
 export default function DepositsScreen() {
   const queryClient = useQueryClient();
@@ -82,6 +87,7 @@ export default function DepositsScreen() {
       </View>
 
       {showForm && (
+        <Animated.View entering={FadeInDown.duration(220)}>
         <Card elevation="raised">
           <Input
             label="Amount (₹)"
@@ -104,16 +110,23 @@ export default function DepositsScreen() {
           {proofUri ? <Image source={{ uri: proofUri }} style={styles.preview} accessibilityLabel="Deposit proof preview" /> : null}
           <Button title="Submit deposit" onPress={onSubmit} loading={submitting} style={{ marginTop: spacing.sm }} />
         </Card>
+        </Animated.View>
       )}
 
-      {(query.data ?? []).length === 0 && !query.isLoading ? (
+      {query.isLoading ? (
+        <>
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+        </>
+      ) : (query.data ?? []).length === 0 ? (
         <EmptyState
           icon="wallet-outline"
           title="No deposits yet"
           subtitle="Cash handed to the office will show up here."
         />
       ) : (
-        (query.data ?? []).map((deposit) => <DepositRow key={deposit.id} deposit={deposit} />)
+        (query.data ?? []).map((deposit, index) => <DepositRow key={deposit.id} deposit={deposit} index={index} />)
       )}
 
       <SuccessOverlay
@@ -127,19 +140,25 @@ export default function DepositsScreen() {
   );
 }
 
-function DepositRow({ deposit }: { deposit: AgentCashDeposit }) {
+function DepositRow({ deposit, index }: { deposit: AgentCashDeposit; index: number }) {
   const meta = DEPOSIT_STATUS_META[deposit.status];
+  const reduceMotion = useReducedMotion();
   return (
-    <Card style={styles.row}>
-      <View style={styles.rowTop}>
-        <Text style={styles.amount} numberOfLines={1}>
-          {formatMoney(deposit.amount)}
-        </Text>
-        <Badge label={meta.label} tone={meta.tone} dot />
-      </View>
-      <Text style={styles.subtitle}>{formatDateTime(deposit.depositedAt)}</Text>
-      {deposit.notes ? <Text style={styles.subtitle}>{deposit.notes}</Text> : null}
-    </Card>
+    <Animated.View
+      entering={reduceMotion ? undefined : FadeInUp.delay(Math.min(index, STAGGER_CAP) * 40).duration(280)}
+      layout={reduceMotion ? undefined : Layout.springify().damping(18)}
+    >
+      <Card style={styles.row}>
+        <View style={styles.rowTop}>
+          <Text style={styles.amount} numberOfLines={1}>
+            {formatMoney(deposit.amount)}
+          </Text>
+          <Badge label={meta.label} tone={meta.tone} dot />
+        </View>
+        <Text style={styles.subtitle}>{formatDateTime(deposit.depositedAt)}</Text>
+        {deposit.notes ? <Text style={styles.subtitle}>{deposit.notes}</Text> : null}
+      </Card>
+    </Animated.View>
   );
 }
 

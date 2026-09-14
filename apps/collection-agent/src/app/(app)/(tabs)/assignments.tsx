@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { fetchAssignments, type AssignmentSort } from '@/api/agentApi';
 import { Card } from '@/ui/Card';
@@ -12,10 +13,15 @@ import { Badge } from '@/ui/Badge';
 import { Avatar } from '@/ui/Avatar';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
+import { PressableScale } from '@/ui/PressableScale';
+import { SkeletonRow } from '@/ui/Skeleton';
+import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
 import { assignmentStatusMeta, formatDate, formatMoney, initials, isOverdue, priorityColor } from '@/ui/format';
 import { getCurrentPosition } from '@/location/tracking';
 import type { Assignment } from '@/types/models';
+
+const STAGGER_CAP = 8;
 
 const STATUS_FILTERS: { label: string; value?: string }[] = [
   { label: 'All' },
@@ -72,44 +78,65 @@ export default function AssignmentsScreen() {
           ))}
         </View>
       </View>
-      <FlatList
-        data={query.data ?? []}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        refreshing={query.isFetching}
-        onRefresh={() => query.refetch()}
-        ListEmptyComponent={
-          !query.isLoading ? (
+      {query.isLoading ? (
+        <View style={styles.listContent}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonRow key={i} />
+          ))}
+        </View>
+      ) : (
+        <FlatList
+          data={query.data ?? []}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshing={query.isFetching}
+          onRefresh={() => query.refetch()}
+          ListEmptyComponent={
             <EmptyState
               icon="checkmark-done-circle-outline"
               tone="success"
               title="No assignments"
               subtitle="Nothing matches these filters."
             />
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <AssignmentRow assignment={item} onPress={() => router.push(`/(app)/assignment/${item.id}`)} />
-        )}
-      />
+          }
+          renderItem={({ item, index }) => (
+            <AssignmentRow
+              assignment={item}
+              index={index}
+              onPress={() => router.push(`/(app)/assignment/${item.id}`)}
+            />
+          )}
+        />
+      )}
     </Screen>
   );
 }
 
-function AssignmentRow({ assignment, onPress }: { assignment: Assignment; onPress: () => void }) {
+function AssignmentRow({
+  assignment,
+  index,
+  onPress,
+}: {
+  assignment: Assignment;
+  index: number;
+  onPress: () => void;
+}) {
   const overdue = isOverdue(assignment.invoice?.dueDate);
   const statusMeta = assignmentStatusMeta(assignment.status);
   const name = assignment.customer?.displayName ?? assignment.customer?.firmName ?? 'Customer';
   const markColor = overdue ? colors.danger : priorityColor(assignment.priority);
+  const reduceMotion = useReducedMotion();
 
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`${name}, ${formatMoney(assignment.invoice?.outstanding)} outstanding, ${statusMeta.label}${overdue ? ', overdue' : ''}`}
+    <Animated.View
+      entering={reduceMotion ? undefined : FadeInUp.delay(Math.min(index, STAGGER_CAP) * 40).duration(280)}
     >
-      {({ pressed }) => (
-        <Card style={[styles.row, pressed && styles.rowPressed]}>
+      <PressableScale
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${name}, ${formatMoney(assignment.invoice?.outstanding)} outstanding, ${statusMeta.label}${overdue ? ', overdue' : ''}`}
+      >
+        <Card style={styles.row}>
           <View style={styles.rowTop}>
             <Avatar label={initials(name)} color={markColor} />
             <View style={{ flex: 1 }}>
@@ -138,8 +165,8 @@ function AssignmentRow({ assignment, onPress }: { assignment: Assignment; onPres
             {assignment.promise?.promisedDate && <Badge label="PTP" tone="warning" dot />}
           </View>
         </Card>
-      )}
-    </Pressable>
+      </PressableScale>
+    </Animated.View>
   );
 }
 
@@ -148,7 +175,6 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap' },
   listContent: { padding: spacing.lg, gap: spacing.md },
   row: { gap: spacing.md },
-  rowPressed: { backgroundColor: colors.surfaceSunk },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   customer: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text },
   invoice: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },

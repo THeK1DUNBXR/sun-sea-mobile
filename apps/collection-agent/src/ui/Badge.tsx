@@ -1,7 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { colors, radius, spacing, fontSize, letterSpacing } from './theme';
+import { useReducedMotion } from './useReducedMotion';
 import type { Tone } from './format';
 
 interface BadgeProps {
@@ -22,12 +24,22 @@ const toneColors: Record<Tone, { bg: string; fg: string }> = {
 
 export function Badge({ label, tone = 'default', dot = false }: BadgeProps) {
   const t = toneColors[tone];
+  const reduceMotion = useReducedMotion();
+  // Keyed on label+tone so a status change (e.g. Pending -> Collected)
+  // remounts this inner view and cross-fades instead of snapping.
   return (
-    <View style={[styles.badge, { backgroundColor: t.bg }]} accessibilityRole="text">
-      {dot ? <View style={[styles.dot, { backgroundColor: t.fg }]} /> : null}
-      <Text style={[styles.text, { color: t.fg }]} numberOfLines={1}>
-        {label}
-      </Text>
+    <View accessibilityRole="text">
+      <Animated.View
+        key={`${label}-${tone}`}
+        entering={reduceMotion ? undefined : FadeIn.duration(180)}
+        exiting={reduceMotion ? undefined : FadeOut.duration(120)}
+        style={[styles.badge, { backgroundColor: t.bg }]}
+      >
+        {dot ? <View style={[styles.dot, { backgroundColor: t.fg }]} /> : null}
+        <Text style={[styles.text, { color: t.fg }]} numberOfLines={1}>
+          {label}
+        </Text>
+      </Animated.View>
     </View>
   );
 }

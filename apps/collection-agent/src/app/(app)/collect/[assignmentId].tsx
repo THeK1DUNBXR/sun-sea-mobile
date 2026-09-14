@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as Crypto from 'expo-crypto';
 import SignatureScreen, { type SignatureViewRef } from 'react-native-signature-canvas';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { fetchAssignment } from '@/api/agentApi';
 import { enqueue } from '@/offline/queue';
@@ -17,6 +18,8 @@ import { Chip } from '@/ui/Chip';
 import { Input } from '@/ui/Input';
 import { Screen } from '@/ui/Screen';
 import { SuccessOverlay } from '@/ui/SuccessOverlay';
+import { GpsStatus } from '@/ui/GpsStatus';
+import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, spacing, fontSize, radius, letterSpacing } from '@/ui/theme';
 import { formatMoney } from '@/ui/format';
 
@@ -52,12 +55,16 @@ export default function CollectScreen() {
   const [chequeError, setChequeError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submittedAmount, setSubmittedAmount] = useState<number | null>(null);
+  const [amountHighlight, setAmountHighlight] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     getCurrentPosition().then(setPosition);
   }, []);
 
   const amountValue = Number(amount);
+  const step1Valid = Boolean(amountValue) && amountValue > 0 && amountValue <= outstanding + 0.01;
+  const step2Valid = step1Valid && (method !== 'CHEQUE' || Boolean(chequeNumber));
 
   const pickProof = async (fromCamera: boolean) => {
     const result = fromCamera
@@ -129,12 +136,14 @@ export default function CollectScreen() {
           }}
           placeholder="0"
           error={amountError}
+          highlightSignal={amountHighlight}
         />
         <Button
           title="Full outstanding"
           onPress={() => {
             setAmount(String(outstanding));
             setAmountError(null);
+            setAmountHighlight((n) => n + 1);
           }}
           variant="secondary"
           fullWidth={false}
@@ -142,83 +151,97 @@ export default function CollectScreen() {
         />
       </Step>
 
-      <Step number={2} title="Payment method">
-        <View style={styles.chipWrap}>
-          {METHODS.map((m) => (
-            <Chip key={m} label={m.replace('_', ' ')} selected={method === m} onPress={() => setMethod(m)} />
-          ))}
-        </View>
-        <Input label="Reference number (optional)" value={referenceNumber} onChangeText={setReferenceNumber} />
-        {method === 'CHEQUE' && (
-          <>
-            <Input
-              label="Cheque number"
-              value={chequeNumber}
-              onChangeText={(v) => {
-                setChequeNumber(v);
-                if (chequeError) setChequeError(null);
-              }}
-              error={chequeError}
-            />
-            <Input label="Cheque date (YYYY-MM-DD)" value={chequeDate} onChangeText={setChequeDate} />
-            <Input label="Bank name" value={bankName} onChangeText={setBankName} />
-          </>
-        )}
-        <Input label="Payer name (optional)" value={payerName} onChangeText={setPayerName} />
-        <Input label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
-      </Step>
+      {step1Valid && (
+        <Animated.View entering={reduceMotion ? undefined : FadeInDown.duration(260)}>
+          <Step number={2} title="Payment method">
+            <View style={styles.chipWrap}>
+              {METHODS.map((m) => (
+                <Chip key={m} label={m.replace('_', ' ')} selected={method === m} onPress={() => setMethod(m)} />
+              ))}
+            </View>
+            <Input label="Reference number (optional)" value={referenceNumber} onChangeText={setReferenceNumber} />
+            {method === 'CHEQUE' && (
+              <>
+                <Input
+                  label="Cheque number"
+                  value={chequeNumber}
+                  onChangeText={(v) => {
+                    setChequeNumber(v);
+                    if (chequeError) setChequeError(null);
+                  }}
+                  error={chequeError}
+                />
+                <Input label="Cheque date (YYYY-MM-DD)" value={chequeDate} onChangeText={setChequeDate} />
+                <Input label="Bank name" value={bankName} onChangeText={setBankName} />
+              </>
+            )}
+            <Input label="Payer name (optional)" value={payerName} onChangeText={setPayerName} />
+            <Input label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
+          </Step>
+        </Animated.View>
+      )}
 
-      <Step number={3} title="Proof photo" optional>
-        <View style={styles.chipRowButtons}>
-          <Button
-            title="Camera"
-            onPress={() => pickProof(true)}
-            variant="secondary"
-            fullWidth={false}
-            style={styles.halfBtn}
-            icon={<Ionicons name="camera-outline" size={18} color={colors.primary} />}
-          />
-          <Button
-            title="Gallery"
-            onPress={() => pickProof(false)}
-            variant="secondary"
-            fullWidth={false}
-            style={styles.halfBtn}
-            icon={<Ionicons name="images-outline" size={18} color={colors.primary} />}
-          />
-        </View>
-        {proofUri ? <Image source={{ uri: proofUri }} style={styles.preview} accessibilityLabel="Proof photo preview" /> : null}
-      </Step>
+      {step2Valid && (
+        <Animated.View entering={reduceMotion ? undefined : FadeInDown.duration(260)}>
+          <Step number={3} title="Proof photo" optional>
+            <View style={styles.chipRowButtons}>
+              <Button
+                title="Camera"
+                onPress={() => pickProof(true)}
+                variant="secondary"
+                fullWidth={false}
+                style={styles.halfBtn}
+                icon={<Ionicons name="camera-outline" size={18} color={colors.primary} />}
+              />
+              <Button
+                title="Gallery"
+                onPress={() => pickProof(false)}
+                variant="secondary"
+                fullWidth={false}
+                style={styles.halfBtn}
+                icon={<Ionicons name="images-outline" size={18} color={colors.primary} />}
+              />
+            </View>
+            {proofUri ? <Image source={{ uri: proofUri }} style={styles.preview} accessibilityLabel="Proof photo preview" /> : null}
+          </Step>
+        </Animated.View>
+      )}
 
-      <Step number={4} title="Signature" optional>
-        <View style={styles.signatureBox}>
-          <SignatureScreen
-            ref={signatureRef}
-            onOK={async (sig) => setSignatureUri(await dataUrlToFile(sig))}
-            onEmpty={() => setSignatureUri(null)}
-            descriptionText=""
-            webStyle="body,html{background:transparent;}"
-          />
-        </View>
-        <View style={styles.chipRowButtons}>
-          <Button title="Clear" onPress={() => signatureRef.current?.clearSignature()} variant="ghost" fullWidth={false} />
-          <Button title="Save signature" onPress={() => signatureRef.current?.readSignature()} variant="ghost" fullWidth={false} />
-        </View>
-        {signatureUri ? (
-          <View style={styles.confirmedRow}>
-            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-            <Text style={styles.confirmedText}>Signature saved</Text>
-          </View>
-        ) : null}
-      </Step>
+      {step2Valid && (
+        <Animated.View entering={reduceMotion ? undefined : FadeInDown.delay(60).duration(260)}>
+          <Step number={4} title="Signature" optional>
+            <View style={styles.signatureBox}>
+              <SignatureScreen
+                ref={signatureRef}
+                onOK={async (sig) => setSignatureUri(await dataUrlToFile(sig))}
+                onEmpty={() => setSignatureUri(null)}
+                descriptionText=""
+                webStyle="body,html{background:transparent;}"
+              />
+            </View>
+            <View style={styles.chipRowButtons}>
+              <Button title="Clear" onPress={() => signatureRef.current?.clearSignature()} variant="ghost" fullWidth={false} />
+              <Button title="Save signature" onPress={() => signatureRef.current?.readSignature()} variant="ghost" fullWidth={false} />
+            </View>
+            {signatureUri ? (
+              <View style={styles.confirmedRow}>
+                <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                <Text style={styles.confirmedText}>Signature saved</Text>
+              </View>
+            ) : null}
+          </Step>
+        </Animated.View>
+      )}
 
       <Card style={styles.locationCard}>
-        <Ionicons name="location-outline" size={18} color={colors.textMuted} />
-        <Text style={styles.muted}>
-          {position
-            ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)} (±${Math.round(position.accuracy ?? 0)}m)`
-            : 'Capturing GPS…'}
-        </Text>
+        <GpsStatus
+          locked={Boolean(position)}
+          label={
+            position
+              ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)} (±${Math.round(position.accuracy ?? 0)}m)`
+              : 'Capturing GPS…'
+          }
+        />
       </Card>
 
       <Button title="Submit collection" onPress={onSubmit} loading={submitting} />

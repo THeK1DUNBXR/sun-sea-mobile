@@ -1,14 +1,26 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useFocusEffect, useRouter } from 'expo-router';
+import Animated, {
+  Easing,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { fetchMySummary } from '@/api/agentApi';
 import { Card } from '@/ui/Card';
 import { Screen } from '@/ui/Screen';
 import { Button } from '@/ui/Button';
-import { colors, spacing, fontSize, radius, letterSpacing } from '@/ui/theme';
+import { AnimatedNumber } from '@/ui/AnimatedNumber';
+import { SkeletonBlock } from '@/ui/Skeleton';
+import { useReducedMotion } from '@/ui/useReducedMotion';
+import { colors, spacing, fontSize, radius, letterSpacing, elevation } from '@/ui/theme';
 import { formatMoney } from '@/ui/format';
 import { useAuth } from '@/store/auth';
 import { useSyncStatus } from '@/offline/useSyncStatus';
@@ -72,23 +84,50 @@ export default function HomeScreen() {
       <View style={styles.heroRow}>
         <Card style={styles.heroCard} elevation="raised">
           <Text style={styles.heroLabel}>Outstanding</Text>
-          <Text style={styles.heroValue} numberOfLines={1} adjustsFontSizeToFit>
-            {formatMoney(s?.outstanding)}
-          </Text>
+          {summary.isLoading ? (
+            <SkeletonBlock width="70%" height={28} style={{ marginTop: 4 }} />
+          ) : (
+            <AnimatedNumber
+              value={s?.outstanding ?? 0}
+              formatter={formatMoney}
+              style={styles.heroValue}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            />
+          )}
         </Card>
         <Card style={[styles.heroCard, styles.heroCardAccent]} elevation="raised">
           <Text style={[styles.heroLabel, styles.heroLabelAccent]}>Collected today</Text>
-          <Text style={[styles.heroValue, styles.heroValueAccent]} numberOfLines={1} adjustsFontSizeToFit>
-            {formatMoney(s?.collectedToday)}
-          </Text>
+          {summary.isLoading ? (
+            <SkeletonBlock width="70%" height={28} style={{ marginTop: 4, backgroundColor: colors.primaryDark }} />
+          ) : (
+            <AnimatedNumber
+              value={s?.collectedToday ?? 0}
+              formatter={formatMoney}
+              style={[styles.heroValue, styles.heroValueAccent]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            />
+          )}
         </Card>
       </View>
 
       <View style={styles.grid}>
-        <Kpi label="Assigned" value={String(assigned)} icon="briefcase-outline" />
-        <Kpi label="Visits today" value={String(s?.visitsToday ?? 0)} icon="walk-outline" />
-        <Kpi label="Cash in hand" value={formatMoney(s?.cashInHand)} icon="wallet-outline" />
-        <Kpi label="PTP due today" value={String(ptpDue)} icon="calendar-outline" warn={ptpDue > 0} />
+        {summary.isLoading ? (
+          <>
+            <KpiSkeleton />
+            <KpiSkeleton />
+            <KpiSkeleton />
+            <KpiSkeleton />
+          </>
+        ) : (
+          <>
+            <Kpi index={0} label="Assigned" value={assigned} icon="briefcase-outline" />
+            <Kpi index={1} label="Visits today" value={s?.visitsToday ?? 0} icon="walk-outline" />
+            <Kpi index={2} label="Cash in hand" value={s?.cashInHand ?? 0} icon="wallet-outline" money />
+            <Kpi index={3} label="PTP due today" value={ptpDue} icon="calendar-outline" warn={ptpDue > 0} />
+          </>
+        )}
       </View>
 
       <SyncCard pendingCount={sync.pendingCount} syncing={sync.syncing} lastError={sync.lastError} />
@@ -125,13 +164,30 @@ export default function HomeScreen() {
 }
 
 function TrackingPill({ on }: { on: boolean }) {
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+  const wasOn = useRef(on);
+
+  useEffect(() => {
+    if (on && !wasOn.current && !reduceMotion) {
+      // Pulse once when tracking flips on, to confirm the state change.
+      scale.value = withSequence(
+        withTiming(1.12, { duration: 140, easing: Easing.out(Easing.ease) }),
+        withSpring(1, { damping: 10, stiffness: 200 }),
+      );
+    }
+    wasOn.current = on;
+  }, [on, reduceMotion, scale]);
+
+  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   return (
-    <View style={[styles.pill, on ? styles.pillOn : styles.pillOff]}>
+    <Animated.View style={[styles.pill, on ? styles.pillOn : styles.pillOff, animatedStyle]}>
       <View style={[styles.pillDot, { backgroundColor: on ? colors.success : colors.textFaint }]} />
       <Text style={[styles.pillText, { color: on ? colors.success : colors.textMuted }]}>
         {on ? 'Live' : 'Not sharing'}
       </Text>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -144,16 +200,57 @@ function SyncCard({
   syncing: boolean;
   lastError: string | null;
 }) {
+  const reduceMotion = useReducedMotion();
+  const pulse = useSharedValue(1);
+  const shake = useSharedValue(0);
+  const wasSyncing = useRef(syncing);
+  const hadError = useRef(Boolean(lastError));
+
+  useEffect(() => {
+    if (syncing && !wasSyncing.current && !reduceMotion) {
+      pulse.value = withSequence(
+        withTiming(1.03, { duration: 160, easing: Easing.out(Easing.ease) }),
+        withTiming(1, { duration: 160, easing: Easing.inOut(Easing.ease) }),
+      );
+    }
+    wasSyncing.current = syncing;
+  }, [syncing, reduceMotion, pulse]);
+
+  useEffect(() => {
+    const hasError = Boolean(lastError);
+    if (hasError && !hadError.current && !reduceMotion) {
+      shake.value = withSequence(
+        withTiming(-6, { duration: 45 }),
+        withTiming(6, { duration: 90 }),
+        withTiming(-4, { duration: 90 }),
+        withTiming(0, { duration: 60 }),
+      );
+    }
+    hadError.current = hasError;
+  }, [lastError, reduceMotion, shake]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pulse.value }, { translateX: shake.value }],
+  }));
+
   if (pendingCount === 0 && !syncing) {
     return (
-      <Card style={styles.syncOkCard}>
+      <Animated.View
+        key="ok"
+        entering={reduceMotion ? undefined : FadeInUp.duration(220)}
+        style={[styles.card, styles.syncOkCard]}
+      >
         <Ionicons name="cloud-done-outline" size={18} color={colors.success} />
         <Text style={styles.syncOkText}>All caught up — everything is synced</Text>
-      </Card>
+      </Animated.View>
     );
   }
   return (
-    <Card style={[styles.syncCard, lastError && styles.syncCardError]}>
+    <Animated.View
+      key="pending"
+      entering={reduceMotion ? undefined : FadeInUp.duration(220)}
+      style={[styles.card, styles.syncCard, lastError && styles.syncCardError, animatedStyle]}
+    >
       <Ionicons
         name={lastError ? 'cloud-offline-outline' : 'cloud-upload-outline'}
         size={18}
@@ -165,18 +262,50 @@ function SyncCard({
         </Text>
         {lastError ? <Text style={styles.syncError}>{lastError}</Text> : null}
       </View>
-    </Card>
+    </Animated.View>
   );
 }
 
-function Kpi({ label, value, icon, warn }: { label: string; value: string; icon: keyof typeof Ionicons.glyphMap; warn?: boolean }) {
+function Kpi({
+  index,
+  label,
+  value,
+  icon,
+  warn,
+  money,
+}: {
+  index: number;
+  label: string;
+  value: number;
+  icon: keyof typeof Ionicons.glyphMap;
+  warn?: boolean;
+  money?: boolean;
+}) {
+  const reduceMotion = useReducedMotion();
   return (
-    <View style={[styles.kpi, warn && styles.kpiWarn]}>
+    <Animated.View
+      entering={reduceMotion ? undefined : FadeInUp.delay(index * 60).duration(320)}
+      style={[styles.kpi, warn && styles.kpiWarn]}
+    >
       <Ionicons name={icon} size={18} color={warn ? colors.warning : colors.textMuted} />
-      <Text style={[styles.kpiValue, warn && styles.kpiValueWarn]} numberOfLines={1} adjustsFontSizeToFit>
-        {value}
-      </Text>
+      <AnimatedNumber
+        value={value}
+        formatter={money ? formatMoney : (n) => String(Math.round(n))}
+        style={[styles.kpiValue, warn && styles.kpiValueWarn]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      />
       <Text style={styles.kpiLabel}>{label}</Text>
+    </Animated.View>
+  );
+}
+
+function KpiSkeleton() {
+  return (
+    <View style={styles.kpi}>
+      <SkeletonBlock width={18} height={18} radius={9} />
+      <SkeletonBlock width="50%" height={20} style={{ marginTop: 4 }} />
+      <SkeletonBlock width="70%" height={12} />
     </View>
   );
 }
@@ -230,6 +359,14 @@ const styles = StyleSheet.create({
   kpiValueWarn: { color: colors.warning },
   kpiLabel: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '600' },
 
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    ...elevation.card,
+  },
   syncCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.primaryTint, borderColor: colors.primary },
   syncCardError: { backgroundColor: colors.dangerTint, borderColor: colors.danger },
   syncText: { color: colors.primaryDark, fontWeight: '700' },

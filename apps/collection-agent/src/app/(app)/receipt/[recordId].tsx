@@ -5,11 +5,22 @@ import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import Animated, {
+  Easing,
+  SlideInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { fetchReceipt } from '@/api/agentApi';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { Screen } from '@/ui/Screen';
+import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, spacing, fontSize, radius, letterSpacing } from '@/ui/theme';
 import { amountInWords, formatDateTime, formatMoney } from '@/ui/format';
 import type { Receipt } from '@/types/models';
@@ -56,35 +67,8 @@ export default function ReceiptScreen() {
 
   return (
     <Screen style={styles.screen}>
-      <View style={styles.ticket}>
-        <Card elevation="raised" style={styles.ticketCard}>
-          <View style={styles.paidStamp}>
-            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-            <Text style={styles.paidStampText}>Paid</Text>
-          </View>
+      <ReceiptTicket receipt={receipt} />
 
-          <Text style={styles.company}>{receipt.company?.name ?? 'SunSea'}</Text>
-          {receipt.company?.address ? <Text style={styles.muted}>{receipt.company.address}</Text> : null}
-
-          <TearLine />
-
-          <Text style={styles.amount} numberOfLines={1} adjustsFontSizeToFit>
-            {formatMoney(receipt.amount)}
-          </Text>
-          <Text style={styles.words}>{amountInWords(receipt.amount ?? 0)}</Text>
-          <Text style={styles.receiptNo}>Receipt {receipt.receiptNo}</Text>
-          <Text style={styles.muted}>{formatDateTime(receipt.collectedAt)}</Text>
-
-          <TearLine />
-
-          <Row label="From" value={receipt.customer?.displayName ?? receipt.customer?.firmName} />
-          <Row label="Invoice" value={receipt.invoice?.invoiceNo} />
-          <Row label="Method" value={receipt.paymentMethod} />
-          <Row label="Collected by" value={receipt.agentName} />
-        </Card>
-        <View style={styles.notchLeft} />
-        <View style={styles.notchRight} />
-      </View>
 
       <View style={styles.actions}>
         <Button
@@ -101,6 +85,65 @@ export default function ReceiptScreen() {
         />
       </View>
     </Screen>
+  );
+}
+
+function ReceiptTicket({ receipt }: { receipt: Receipt }) {
+  const reduceMotion = useReducedMotion();
+  const stampScale = useSharedValue(0);
+
+  const stampStyle = useAnimatedStyle(() => ({ transform: [{ scale: stampScale.value }, { rotate: '4deg' }] }));
+
+  const onTicketLayout = () => {
+    // Fires once the ticket has slid in; the stamp lands right after with a
+    // deliberate overshoot, like it was physically pressed down.
+    stampScale.value = reduceMotion
+      ? withTiming(1, { duration: 1 })
+      : withDelay(
+          260,
+          withSequence(
+            withTiming(1.35, { duration: 160, easing: Easing.out(Easing.ease) }),
+            withTiming(0.92, { duration: 100 }),
+            withSpring(1, { damping: 9, stiffness: 220 }),
+          ),
+        );
+  };
+
+  React.useEffect(onTicketLayout, [reduceMotion, stampScale]);
+
+  return (
+    <Animated.View
+      entering={reduceMotion ? undefined : SlideInUp.duration(420).easing(Easing.out(Easing.cubic))}
+      style={styles.ticket}
+    >
+      <Card elevation="raised" style={styles.ticketCard}>
+        <Animated.View style={[styles.paidStamp, stampStyle]}>
+          <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+          <Text style={styles.paidStampText}>Paid</Text>
+        </Animated.View>
+
+        <Text style={styles.company}>{receipt.company?.name ?? 'SunSea'}</Text>
+        {receipt.company?.address ? <Text style={styles.muted}>{receipt.company.address}</Text> : null}
+
+        <TearLine />
+
+        <Text style={styles.amount} numberOfLines={1} adjustsFontSizeToFit>
+          {formatMoney(receipt.amount)}
+        </Text>
+        <Text style={styles.words}>{amountInWords(receipt.amount ?? 0)}</Text>
+        <Text style={styles.receiptNo}>Receipt {receipt.receiptNo}</Text>
+        <Text style={styles.muted}>{formatDateTime(receipt.collectedAt)}</Text>
+
+        <TearLine />
+
+        <Row label="From" value={receipt.customer?.displayName ?? receipt.customer?.firmName} />
+        <Row label="Invoice" value={receipt.invoice?.invoiceNo} />
+        <Row label="Method" value={receipt.paymentMethod} />
+        <Row label="Collected by" value={receipt.agentName} />
+      </Card>
+      <View style={styles.notchLeft} />
+      <View style={styles.notchRight} />
+    </Animated.View>
   );
 }
 
@@ -173,7 +216,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: radius.sm,
-    transform: [{ rotate: '4deg' }],
   },
   paidStampText: { color: colors.success, fontWeight: '900', fontSize: fontSize.xs, textTransform: 'uppercase', letterSpacing: letterSpacing.wideLabel },
   company: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },

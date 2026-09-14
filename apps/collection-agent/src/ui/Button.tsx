@@ -1,7 +1,9 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { colors, radius, spacing, fontSize, elevation, minTouch } from './theme';
+import { useReducedMotion } from './useReducedMotion';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
@@ -29,34 +31,45 @@ export function Button({
   accessibilityLabel,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+  const animatedWrapperStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? title}
-      accessibilityState={{ disabled: isDisabled, busy: loading }}
-      hitSlop={4}
-      onPress={isDisabled ? undefined : onPress}
-      style={({ pressed }) => [
-        styles.base,
-        variantStyles[variant],
-        variant === 'primary' && !isDisabled && elevation.card,
-        fullWidth && styles.fullWidth,
-        isDisabled && styles.disabled,
-        pressed && !isDisabled && pressedStyles[variant],
-        style,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator color={variant === 'secondary' || variant === 'ghost' ? colors.primary : colors.onPrimary} />
-      ) : (
-        <View style={styles.content}>
-          {icon}
-          <Text style={[styles.text, textStyles[variant]]} numberOfLines={1}>
-            {title}
-          </Text>
-        </View>
-      )}
-    </Pressable>
+    <Animated.View style={[fullWidth && styles.fullWidth, animatedWrapperStyle, style]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? title}
+        accessibilityState={{ disabled: isDisabled, busy: loading }}
+        hitSlop={4}
+        onPress={isDisabled ? undefined : onPress}
+        onPressIn={() => {
+          if (isDisabled) return;
+          scale.value = reduceMotion ? 1 : withSpring(0.98, { damping: 18, stiffness: 260 });
+        }}
+        onPressOut={() => {
+          scale.value = withSpring(1, { damping: 18, stiffness: 260 });
+        }}
+        style={({ pressed }) => [
+          styles.base,
+          variantStyles[variant],
+          variant === 'primary' && !isDisabled && elevation.card,
+          isDisabled && styles.disabled,
+          pressed && !isDisabled && pressedStyles[variant],
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={variant === 'secondary' || variant === 'ghost' ? colors.primary : colors.onPrimary} />
+        ) : (
+          <View style={styles.content}>
+            {icon}
+            <Text style={[styles.text, textStyles[variant]]} numberOfLines={1}>
+              {title}
+            </Text>
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }
 

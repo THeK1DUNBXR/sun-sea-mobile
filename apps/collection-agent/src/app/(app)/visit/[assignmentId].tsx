@@ -13,6 +13,7 @@ import { Chip } from '@/ui/Chip';
 import { Input } from '@/ui/Input';
 import { Screen } from '@/ui/Screen';
 import { SuccessOverlay } from '@/ui/SuccessOverlay';
+import { GpsStatus } from '@/ui/GpsStatus';
 import { colors, spacing, fontSize, radius } from '@/ui/theme';
 
 const OUTCOMES = [
@@ -119,10 +120,10 @@ export default function VisitScreen() {
       </Card>
 
       <Card style={styles.locationCard}>
-        <Ionicons name="location-outline" size={18} color={colors.textMuted} />
-        <Text style={styles.muted}>
-          {position ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}` : 'Capturing GPS…'}
-        </Text>
+        <GpsStatus
+          locked={Boolean(position)}
+          label={position ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}` : 'Capturing GPS…'}
+        />
       </Card>
 
       <Button title="Submit visit" onPress={onSubmit} loading={submitting} />
