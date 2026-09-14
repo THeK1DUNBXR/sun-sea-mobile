@@ -1,44 +1,118 @@
 import { Platform } from 'react-native';
 
-// Light theme, high-contrast, large touch targets — designed for outdoor
-// field use. One brand hue (SunSea green) carries identity; green / amber /
-// red carry meaning (collected / promised / overdue) and nothing else.
+// ---------------------------------------------------------------------------
+// Color system — light theme, high-contrast, large touch targets, built for
+// outdoor field use in direct sunlight and in a hurry. Every value below was
+// checked against its real background(s) with WCAG's relative-luminance
+// contrast formula (not eyeballed): body/label text clears 4.5:1, large text
+// and UI/icon strokes clear 3:1, each with a small margin so an uncalibrated
+// outdoor screen doesn't land right on the line. Where a role needed
+// darkening to clear its bar, lightness was reduced and hue/saturation held
+// steady rather than picking an arbitrary swatch, so the "warmer/cooler"
+// feel of each color survives the fix.
+//
+// Semantic vocabulary — one meaning per hue, used nowhere else:
+//   primary (brand green)  → identity + the primary action, spent narrowly.
+//   success (green)        → positive outcome: collected, verified, done.
+//   info    (blue)         → live/ongoing status: GPS lock, tracking, sync.
+//   warning (amber)        → needs attention soon: promise-to-pay, retrying.
+//   danger  (red)          → needs attention now: overdue, rejected, failed.
+//   neutral (gray)         → no state to report yet: pending, unassigned.
+// Every one of these ships a soft "Tint" background for its badge/pill/card
+// form, so the saturated value stays reserved for text, icons and dots —
+// exactly the "concentrate color on the figure/badge, not the surface" rule
+// this app follows throughout.
+function hexToRgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** Turns a theme hex color into an rgba() string — used instead of a
+ * hand-typed rgba(...) literal so a translucent surface (a modal scrim, a
+ * pressed overlay) stays visibly derived from a real role instead of being
+ * its own untracked color. */
+export function withAlpha(hex: string, alpha: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export const colors = {
+  // --- Surface tiers: base → recessed → raised, darkest to lightest. ------
   bg: '#F5F7F6',
   bgAlt: '#EAF1ED',
-  surface: '#FFFFFF',
   surfaceSunk: '#F1F5F3',
+  surface: '#FFFFFF',
   border: '#DCE3E0',
-  borderStrong: '#B9C7C0',
+  /** A border with real presence — form controls and anything else where the
+   * outline itself is load-bearing UI, not a decorative divider. ≥3:1
+   * against `surface`. */
+  borderStrong: '#799487',
+
+  // --- Text tiers: primary reading copy → secondary → the dimmest label
+  // that must still hold. All three clear 4.5:1 against every surface tier
+  // above (checked against `bg`, the darkest one, not just white). ---------
   text: '#0B1F17',
   textMuted: '#5B6D65',
-  textFaint: '#8A9A93',
+  textFaint: '#607069',
 
+  // --- Brand accent: the one hue this app claims as its own. Spent on the
+  // primary action and identity marks; never used to color a status. -------
   primary: '#0F6E4F',
   primaryDark: '#0A4E38',
   primaryDeep: '#062E20',
   primaryTint: '#E4F5EC',
   onPrimary: '#FFFFFF',
 
-  success: '#1B8A5A',
+  // --- Semantic roles: one saturated value + one soft tint each. ----------
+  /** Positive / collected / verified / done. */
+  success: '#187C51',
   successTint: '#E4F5EC',
-  warning: '#B7791F',
+  /** Needs attention soon: promised-to-pay, retrying, review pending. */
+  warning: '#956319',
   warningTint: '#FBF0DD',
+  /** Needs attention now: overdue, rejected, failed. */
   danger: '#C0392B',
+  dangerDark: '#A23024',
   dangerTint: '#FBE7E4',
+  /** Live / ongoing / informational: GPS lock, location tracking, syncing. */
   info: '#1B6FA8',
   infoTint: '#E2F0FA',
+  /** No state to report yet: pending, unassigned, awaiting action. Kept
+   * genuinely gray rather than brand-tinted so it reads as "nothing to see
+   * here" and doesn't spend the brand hue on an empty state. */
+  neutral: '#5B6D65',
+  neutralTint: '#F1F5F3',
 
+  // Domain aliases — same values as the semantic roles above, named for the
+  // specific thing they mark in this app so a call site reads as intent
+  // ("this is overdue") rather than raw severity ("this is danger").
   overdue: '#C0392B',
-  ptp: '#B7791F',
+  ptp: '#956319',
+
+  /** Selectable-chip resting fill (Chip, Button ghost-pressed) — a brand
+   * tint, distinct from the neutral/pending role above: chips are brand
+   * controls, not status indicators. */
   chipBg: '#E9F2EE',
 
   // Priority markers — used as small filled dots / avatar rings, never as
-  // left-edge stripes.
+  // left-edge stripes. Share their hex with the semantic role of matching
+  // severity so a customer's priority ring and their overdue badge read as
+  // the same visual language.
   priorityUrgent: '#C0392B',
-  priorityHigh: '#B7791F',
+  priorityHigh: '#956319',
   priorityNormal: '#0F6E4F',
   priorityLow: '#5B6D65',
+};
+
+/** Map marker fill per assignment state — status and due-date outrank
+ * priority so an overdue or already-collected stop is never shown as if it
+ * were merely low/normal priority. Always paired with the marker's callout
+ * text (status + "Overdue"/"PTP"), never color alone. */
+export const mapPin = {
+  overdue: colors.overdue,
+  collected: colors.success,
+  promised: colors.ptp,
+  default: colors.primary,
 };
 
 export const spacing = {

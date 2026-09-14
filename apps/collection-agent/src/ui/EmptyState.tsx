@@ -12,13 +12,13 @@ interface EmptyStateProps {
 }
 
 const toneColor: Record<NonNullable<EmptyStateProps['tone']>, string> = {
-  neutral: colors.textMuted,
+  neutral: colors.neutral,
   offline: colors.warning,
   success: colors.success,
 };
 
 const toneBg: Record<NonNullable<EmptyStateProps['tone']>, string> = {
-  neutral: colors.surfaceSunk,
+  neutral: colors.neutralTint,
   offline: colors.warningTint,
   success: colors.successTint,
 };

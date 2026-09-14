@@ -203,8 +203,10 @@ function TrackingPill({ on }: { on: boolean }) {
 
   return (
     <Animated.View style={[styles.pill, on ? styles.pillOn : styles.pillOff, animatedStyle]}>
-      <View style={[styles.pillDot, { backgroundColor: on ? colors.success : colors.textFaint }]} />
-      <Text style={[styles.pillText, { color: on ? colors.success : colors.textMuted }]}>
+      {/* Info/tracking — "Live" location sharing is an ongoing status, kept
+          out of the success-green vocabulary reserved for collected money. */}
+      <View style={[styles.pillDot, { backgroundColor: on ? colors.info : colors.textFaint }]} />
+      <Text style={[styles.pillText, { color: on ? colors.info : colors.textMuted }]}>
         {on ? 'Live' : 'Not sharing'}
       </Text>
     </Animated.View>
@@ -274,7 +276,7 @@ function SyncCard({
       <Ionicons
         name={lastError ? 'cloud-offline-outline' : 'cloud-upload-outline'}
         size={18}
-        color={lastError ? colors.danger : colors.primaryDark}
+        color={lastError ? colors.danger : colors.info}
       />
       <View style={{ flex: 1 }}>
         <Text style={[styles.syncText, lastError && styles.syncErrorTitle]}>
@@ -344,7 +346,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1,
   },
-  pillOn: { backgroundColor: colors.successTint, borderColor: colors.success },
+  pillOn: { backgroundColor: colors.infoTint, borderColor: colors.info },
   pillOff: { backgroundColor: colors.surfaceSunk, borderColor: colors.border },
   pillDot: { width: 8, height: 8, borderRadius: 4 },
   pillText: { ...type.caption, textTransform: 'uppercase' },
@@ -392,9 +394,11 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...elevation.card,
   },
-  syncCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.primaryTint, borderColor: colors.primary },
+  // Info, not brand — "waiting to sync" is an ongoing status, not the
+  // primary action; the brand hue stays reserved for identity and CTAs.
+  syncCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.infoTint, borderColor: colors.info },
   syncCardError: { backgroundColor: colors.dangerTint, borderColor: colors.danger },
-  syncText: { ...type.title, color: colors.primaryDark },
+  syncText: { ...type.title, color: colors.info },
   syncErrorTitle: { color: colors.danger },
   syncError: { ...type.caption, color: colors.danger, marginTop: spacing.xs },
   syncOkCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

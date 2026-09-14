@@ -278,6 +278,12 @@ export default function CollectScreen() {
                 onEmpty={() => setSignatureUri(null)}
                 descriptionText=""
                 webStyle="body,html{background:transparent;}"
+                // Explicit theme roles — the library defaults an unset pen to
+                // plain black and an unset canvas to opaque white, which
+                // would be the one hard-coded-color surface left in this
+                // screen if left implicit.
+                penColor={colors.text}
+                backgroundColor="transparent"
               />
             </View>
             <View style={styles.chipRowButtons}>

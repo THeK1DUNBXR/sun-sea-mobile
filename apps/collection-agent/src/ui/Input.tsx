@@ -88,7 +88,9 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 52,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    // A form control's own outline is load-bearing UI (≥3:1), unlike a
+    // card's decorative divider — borderStrong, not border.
+    borderColor: colors.borderStrong,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     ...type.input,

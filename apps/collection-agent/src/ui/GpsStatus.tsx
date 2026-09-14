@@ -57,7 +57,10 @@ export function GpsStatus({ label, locked }: GpsStatusProps) {
       <View style={styles.iconSlot}>
         {locked ? (
           <Animated.View style={iconStyle}>
-            <Ionicons name="location" size={18} color={colors.success} />
+            {/* Info/tracking, not success — a GPS lock is a live status, not
+                a completed/positive outcome (that stays reserved for
+                collected/verified/done). */}
+            <Ionicons name="location" size={18} color={colors.info} />
           </Animated.View>
         ) : (
           <>

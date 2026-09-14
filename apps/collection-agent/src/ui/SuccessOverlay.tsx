@@ -4,7 +4,7 @@ import { Animated, Modal, StyleSheet, Text, View } from 'react-native';
 import { Button } from './Button';
 import { CheckDraw } from './CheckDraw';
 import { useReducedMotion } from './useReducedMotion';
-import { colors, radius, spacing, type, elevation } from './theme';
+import { colors, radius, spacing, type, elevation, withAlpha } from './theme';
 
 interface SuccessOverlayProps {
   visible: boolean;
@@ -127,7 +127,7 @@ export function SuccessOverlay({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(11,31,23,0.55)',
+    backgroundColor: withAlpha(colors.text, 0.55),
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,

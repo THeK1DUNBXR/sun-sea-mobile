@@ -11,7 +11,9 @@ import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, type, spacing } from '@/ui/theme';
+import { colors, mapPin, type, spacing } from '@/ui/theme';
+import { assignmentStatusMeta, isOverdue } from '@/ui/format';
+import type { Assignment } from '@/types/models';
 
 const STAGGER_CAP = 10;
 
@@ -19,6 +21,17 @@ const STAGGER_CAP = 10;
 // never resolves (permission denied, GPS off indoors) — better than
 // blocking the whole map screen on a fix that may never arrive.
 const FALLBACK_REGION = { latitude: 22.9734, longitude: 78.6569, latitudeDelta: 8, longitudeDelta: 8 };
+
+/** Marker fill for one assignment — status/due-date outrank priority so an
+ * overdue or already-collected stop never reads as merely low/normal
+ * priority. Color is never the only signal: callers also render the status
+ * label (and "Overdue"/"PTP") into the marker's callout text below. */
+function pinColorFor(assignment: Assignment): string {
+  if (isOverdue(assignment.invoice?.dueDate)) return mapPin.overdue;
+  if (assignment.status === 'COLLECTED') return mapPin.collected;
+  if (assignment.promise?.promisedDate) return mapPin.promised;
+  return mapPin.default;
+}
 
 export default function MapScreen() {
   const router = useRouter();
@@ -75,12 +88,19 @@ export default function MapScreen() {
       >
         {pins.map((a, index) => {
           const addr = a.customer!.addresses![0];
+          const overdue = isOverdue(a.invoice?.dueDate);
+          const statusMeta = assignmentStatusMeta(a.status);
+          // The pin's fill carries the status at a glance, but the callout's
+          // text carries the same meaning in words — color is never the
+          // only signal here.
+          const flags = [statusMeta.label, overdue && 'Overdue', a.promise?.promisedDate && 'PTP'].filter(Boolean);
+          const description = [a.invoice?.invoiceNo, flags.join(' · ')].filter(Boolean).join(' — ');
           return (
             <Marker
               key={a.id}
               coordinate={{ latitude: addr.latitude!, longitude: addr.longitude! }}
               title={a.customer?.displayName ?? a.customer?.firmName}
-              description={a.invoice?.invoiceNo}
+              description={description}
               onCalloutPress={() => router.push(`/(app)/assignment/${a.id}`)}
             >
               <Animated.View
@@ -89,7 +109,7 @@ export default function MapScreen() {
                 }
                 style={styles.markerDot}
               >
-                <View style={styles.markerDotInner} />
+                <View style={[styles.markerDotInner, { backgroundColor: pinColorFor(a) }]} />
               </Animated.View>
             </Marker>
           );
@@ -105,20 +125,20 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#0B1F17',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 4,
   },
+  // Fill color set per-marker (pinColorFor) — this just supplies the shape.
   markerDotInner: {
     width: 14,
     height: 14,
     borderRadius: 7,
-    backgroundColor: colors.primary,
   },
   muted: { ...type.body, color: colors.textMuted, padding: spacing.lg },
 });

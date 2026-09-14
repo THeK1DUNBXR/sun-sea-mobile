@@ -136,7 +136,7 @@ function AssignmentRow({
   const overdue = isOverdue(assignment.invoice?.dueDate);
   const statusMeta = assignmentStatusMeta(assignment.status);
   const name = assignment.customer?.displayName ?? assignment.customer?.firmName ?? 'Customer';
-  const markColor = overdue ? colors.danger : priorityColor(assignment.priority);
+  const markColor = overdue ? colors.overdue : priorityColor(assignment.priority);
   const reduceMotion = useReducedMotion();
 
   return (

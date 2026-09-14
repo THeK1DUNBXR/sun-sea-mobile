@@ -98,7 +98,7 @@ const variantStyles = StyleSheet.create({
 const pressedStyles = StyleSheet.create({
   primary: { backgroundColor: colors.primaryDark },
   secondary: { backgroundColor: colors.primaryTint },
-  danger: { backgroundColor: '#9A2F23' },
+  danger: { backgroundColor: colors.dangerDark },
   ghost: { backgroundColor: colors.chipBg },
 });
 

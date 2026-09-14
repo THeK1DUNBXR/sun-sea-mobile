@@ -15,7 +15,9 @@ interface BadgeProps {
 }
 
 const toneColors: Record<Tone, { bg: string; fg: string }> = {
-  default: { bg: colors.chipBg, fg: colors.primaryDark },
+  // Genuinely neutral (not brand-tinted): "nothing to report yet" shouldn't
+  // borrow the brand hue, which stays reserved for identity and actions.
+  default: { bg: colors.neutralTint, fg: colors.neutral },
   success: { bg: colors.successTint, fg: colors.success },
   warning: { bg: colors.warningTint, fg: colors.warning },
   danger: { bg: colors.dangerTint, fg: colors.danger },
