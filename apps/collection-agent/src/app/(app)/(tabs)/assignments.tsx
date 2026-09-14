@@ -17,7 +17,7 @@ import { Screen } from '@/ui/Screen';
 import { PressableScale } from '@/ui/PressableScale';
 import { SkeletonRow } from '@/ui/Skeleton';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
+import { colors, spacing, fontSize, letterSpacing, layout } from '@/ui/theme';
 import { assignmentStatusMeta, formatDate, formatMoney, initials, isOverdue, priorityColor } from '@/ui/format';
 import { getCurrentPosition } from '@/location/tracking';
 import type { Assignment } from '@/types/models';
@@ -86,20 +86,21 @@ export default function AssignmentsScreen() {
           ))}
         </View>
       ) : query.isError ? (
-        <View style={styles.listContent}>
+        <View style={styles.stateArea}>
           <EmptyState
             icon="cloud-offline-outline"
             tone="offline"
             title="Couldn't load assignments"
             subtitle="Check your connection and try again."
           />
-          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" />
+          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
         </View>
       ) : (
         <FlatList
+          style={styles.flex}
           data={query.data ?? []}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, (query.data ?? []).length === 0 && styles.listContentEmpty]}
           refreshing={query.isFetching}
           onRefresh={() => query.refetch()}
           ListEmptyComponent={
@@ -182,13 +183,17 @@ function AssignmentRow({
 }
 
 const styles = StyleSheet.create({
-  filters: { padding: spacing.lg, paddingBottom: 0, backgroundColor: colors.bg },
+  flex: { flex: 1 },
+  filters: { padding: layout.screenGutter, paddingBottom: 0, backgroundColor: colors.bg },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap' },
-  listContent: { padding: spacing.lg, gap: spacing.md },
+  listContent: { padding: layout.screenGutter, paddingBottom: layout.scrollEndPad, gap: layout.sectionGap },
+  listContentEmpty: { flexGrow: 1, justifyContent: 'center' },
+  stateArea: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: layout.screenGutter },
+  stateButton: { alignSelf: 'stretch' },
   row: { gap: spacing.md },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   customer: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text },
-  invoice: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
+  invoice: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xxs },
   amountBlock: { alignItems: 'flex-end' },
   amount: {
     fontSize: fontSize.lg,
@@ -197,7 +202,7 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     letterSpacing: letterSpacing.tightDisplay,
   },
-  distanceRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 },
+  distanceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, marginTop: spacing.xxs },
   distance: { fontSize: fontSize.xs, color: colors.textFaint, fontWeight: '700' },
   badgeRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
 });

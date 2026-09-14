@@ -9,7 +9,7 @@ import { Badge } from '@/ui/Badge';
 import { Avatar } from '@/ui/Avatar';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
-import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
+import { colors, spacing, fontSize, letterSpacing, radius, sizes } from '@/ui/theme';
 import { formatDateTime, initials } from '@/ui/format';
 import { useAuth } from '@/store/auth';
 import { useSyncStatus } from '@/offline/useSyncStatus';
@@ -51,7 +51,7 @@ export default function ProfileScreen() {
   return (
     <Screen>
       <Card elevation="raised" style={styles.identityRow}>
-        <Avatar label={initials(user?.fullName)} color={colors.primary} size={56} />
+        <Avatar label={initials(user?.fullName)} color={colors.primary} size={sizes.avatar + spacing.md} />
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{user?.fullName ?? 'Agent'}</Text>
           <Text style={styles.subtitle}>{user?.email ?? user?.username ?? ''}</Text>
@@ -152,7 +152,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   identityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   name: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
-  subtitle: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
+  subtitle: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xxs },
   trackingLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   cardTitle: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     backgroundColor: colors.warningTint,
-    borderRadius: 8,
+    borderRadius: radius.sm,
     padding: spacing.sm,
   },
   noteText: { flex: 1, color: colors.text, fontSize: fontSize.sm },

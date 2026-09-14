@@ -40,6 +40,7 @@ export const colors = {
 };
 
 export const spacing = {
+  xxs: 2,
   xs: 4,
   sm: 8,
   md: 12,
@@ -47,6 +48,42 @@ export const spacing = {
   xl: 24,
   xxl: 32,
   xxxl: 40,
+};
+
+/**
+ * Semantic layout roles built on the spacing scale above. Screens should
+ * reach for these instead of repeating a raw `spacing.*` value inline, so
+ * the same kind of gap (a screen gutter, a gap between stacked cards, a gap
+ * between stacked form fields…) reads identically everywhere it shows up.
+ */
+export const layout = {
+  /** Horizontal edge padding for a screen's scrollable content. */
+  screenGutter: spacing.lg,
+  /** Internal padding for a Card (matches Card's own default). */
+  cardPadding: spacing.lg,
+  /** Vertical gap between stacked cards/sections on one screen. */
+  sectionGap: spacing.md,
+  /** Gap between stacked form fields/controls inside a card. */
+  fieldGap: spacing.md,
+  /** Extra room appended past a screen's own edge padding at the bottom of
+   * a scroll view, so the last card clears the tab bar and home indicator
+   * instead of sitting flush against them. */
+  scrollEndPad: spacing.xl,
+  /** Height of the sticky bottom action bar's own internal padding. */
+  actionBarPadding: spacing.md,
+};
+
+/** Reused pixel dimensions that aren't spacing (avatars, badges, thumbnails)
+ * but still need one definition instead of a magic number per screen. */
+export const sizes = {
+  avatar: 44,
+  iconBadge: 40,
+  stepBadge: 28,
+  previewThumb: 96,
+  previewLarge: 120,
+  signatureHeight: 180,
+  ticketNotch: 18,
+  emptyStateIcon: 60,
 };
 
 export const radius = {

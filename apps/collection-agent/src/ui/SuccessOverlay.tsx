@@ -152,6 +152,6 @@ const styles = StyleSheet.create({
   },
   content: { width: '100%', alignItems: 'center', gap: spacing.xs },
   title: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, textAlign: 'center' },
-  subtitle: { fontSize: fontSize.md, color: colors.textMuted, textAlign: 'center', marginTop: 2 },
+  subtitle: { fontSize: fontSize.md, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xxs },
   actions: { width: '100%', gap: spacing.sm, marginTop: spacing.lg },
 });

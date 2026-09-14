@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors } from './theme';
+import { colors, sizes } from './theme';
 
 interface AvatarProps {
   label: string;
@@ -12,7 +12,7 @@ interface AvatarProps {
 /** A colored initials mark used to carry the priority/status signal on scan
  * lists — replaces a left-edge border stripe with something that reads at a
  * glance and doubles as the customer identity mark. */
-export function Avatar({ label, color, size = 44 }: AvatarProps) {
+export function Avatar({ label, color, size = sizes.avatar }: AvatarProps) {
   return (
     <View
       style={[

@@ -17,7 +17,7 @@ import { Screen } from '@/ui/Screen';
 import { SkeletonRow } from '@/ui/Skeleton';
 import { SuccessOverlay } from '@/ui/SuccessOverlay';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
+import { colors, spacing, fontSize, letterSpacing, radius, layout, sizes } from '@/ui/theme';
 import { DEPOSIT_STATUS_META, formatDateTime, formatMoney } from '@/ui/format';
 import * as Crypto from 'expo-crypto';
 import type { AgentCashDeposit } from '@/types/models';
@@ -120,27 +120,29 @@ export default function DepositsScreen() {
       )}
 
       {query.isLoading ? (
-        <>
+        <View style={{ gap: layout.sectionGap }}>
           <SkeletonRow />
           <SkeletonRow />
           <SkeletonRow />
-        </>
+        </View>
       ) : query.isError ? (
-        <View style={{ gap: spacing.sm }}>
+        <View style={styles.stateArea}>
           <EmptyState
             icon="cloud-offline-outline"
             tone="offline"
             title="Couldn't load deposits"
             subtitle="Check your connection and try again."
           />
-          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" />
+          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
         </View>
       ) : (query.data ?? []).length === 0 ? (
-        <EmptyState
-          icon="wallet-outline"
-          title="No deposits yet"
-          subtitle="Cash handed to the office will show up here."
-        />
+        <View style={styles.stateArea}>
+          <EmptyState
+            icon="wallet-outline"
+            title="No deposits yet"
+            subtitle="Cash handed to the office will show up here."
+          />
+        </View>
       ) : (
         (query.data ?? []).map((deposit, index) => <DepositRow key={deposit.id} deposit={deposit} index={index} />)
       )}
@@ -181,7 +183,9 @@ function DepositRow({ deposit, index }: { deposit: AgentCashDeposit; index: numb
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heading: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
-  row: { gap: 4 },
+  stateArea: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+  stateButton: { alignSelf: 'stretch' },
+  row: { gap: spacing.xs },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   amount: {
     fontSize: fontSize.xl,
@@ -190,5 +194,5 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   subtitle: { fontSize: fontSize.sm, color: colors.textMuted },
-  preview: { width: 96, height: 96, borderRadius: 8, marginTop: spacing.sm },
+  preview: { width: sizes.previewThumb, height: sizes.previewThumb, borderRadius: radius.sm, marginTop: spacing.sm },
 });

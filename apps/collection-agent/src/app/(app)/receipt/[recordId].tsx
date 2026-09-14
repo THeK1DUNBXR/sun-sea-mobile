@@ -22,7 +22,7 @@ import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, spacing, fontSize, radius, letterSpacing } from '@/ui/theme';
+import { colors, spacing, fontSize, radius, letterSpacing, sizes } from '@/ui/theme';
 import { amountInWords, formatDateTime, formatMoney } from '@/ui/format';
 import type { Receipt } from '@/types/models';
 
@@ -76,13 +76,15 @@ export default function ReceiptScreen() {
   if (query.isError) {
     return (
       <Screen>
-        <EmptyState
-          icon="cloud-offline-outline"
-          tone="offline"
-          title="Couldn't load this receipt"
-          subtitle="If this collection hasn't synced yet, it will be available once it does."
-        />
-        <Button title="Retry" onPress={() => query.refetch()} variant="secondary" />
+        <View style={styles.stateArea}>
+          <EmptyState
+            icon="cloud-offline-outline"
+            tone="offline"
+            title="Couldn't load this receipt"
+            subtitle="If this collection hasn't synced yet, it will be available once it does."
+          />
+          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
+        </View>
       </Screen>
     );
   }
@@ -90,7 +92,9 @@ export default function ReceiptScreen() {
   if (query.isLoading || !receipt) {
     return (
       <Screen>
-        <Text style={styles.loading}>Loading receipt…</Text>
+        <View style={styles.stateArea}>
+          <Text style={styles.loading}>Loading receipt…</Text>
+        </View>
       </Screen>
     );
   }
@@ -98,7 +102,6 @@ export default function ReceiptScreen() {
   return (
     <Screen style={styles.screen}>
       <ReceiptTicket receipt={receipt} />
-
 
       <View style={styles.actions}>
         <Button
@@ -210,13 +213,15 @@ function buildReceiptHtml(receipt?: Receipt): string {
   </body></html>`;
 }
 
-const NOTCH = 18;
+const NOTCH = sizes.ticketNotch;
 
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.bgAlt },
-  loading: { color: colors.textMuted, padding: spacing.lg },
+  loading: { color: colors.textMuted },
+  stateArea: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+  stateButton: { alignSelf: 'stretch' },
   ticket: { alignItems: 'center', paddingTop: spacing.sm },
-  ticketCard: { width: '100%', alignItems: 'center', paddingTop: spacing.xl, gap: 2 },
+  ticketCard: { width: '100%', alignItems: 'center', paddingTop: spacing.xl, gap: spacing.xxs },
   notchLeft: {
     position: 'absolute',
     left: -NOTCH / 2,
@@ -241,15 +246,15 @@ const styles = StyleSheet.create({
     right: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xxs,
     backgroundColor: colors.successTint,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: spacing.xxs,
     borderRadius: radius.sm,
   },
   paidStampText: { color: colors.success, fontWeight: '900', fontSize: fontSize.xs, textTransform: 'uppercase', letterSpacing: letterSpacing.wideLabel },
   company: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
-  muted: { color: colors.textMuted, marginTop: 2, textAlign: 'center' },
+  muted: { color: colors.textMuted, marginTop: spacing.xxs, textAlign: 'center' },
   tearLine: {
     width: '100%',
     borderStyle: 'dashed',
@@ -264,10 +269,17 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     letterSpacing: letterSpacing.tightDisplay,
   },
-  words: { color: colors.textMuted, fontSize: fontSize.sm, textAlign: 'center', marginTop: 4, marginBottom: spacing.sm, fontStyle: 'italic' },
+  words: {
+    color: colors.textMuted,
+    fontSize: fontSize.sm,
+    textAlign: 'center',
+    marginTop: spacing.xxs,
+    marginBottom: spacing.sm,
+    fontStyle: 'italic',
+  },
   receiptNo: { fontSize: fontSize.md, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, width: '100%' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs, width: '100%' },
   rowLabel: { color: colors.textMuted, fontWeight: '600' },
   rowValue: { color: colors.text, fontWeight: '700' },
-  actions: { gap: spacing.sm, marginTop: spacing.lg },
+  actions: { gap: spacing.sm },
 });

@@ -13,7 +13,7 @@ import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { SkeletonRow } from '@/ui/Skeleton';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, spacing, fontSize } from '@/ui/theme';
+import { colors, spacing, fontSize, letterSpacing, layout } from '@/ui/theme';
 import { formatDateTime, formatMoney } from '@/ui/format';
 import type { HistoryEntry } from '@/types/models';
 
@@ -38,20 +38,21 @@ export default function HistoryScreen() {
           ))}
         </View>
       ) : query.isError ? (
-        <View style={styles.listContent}>
+        <View style={styles.stateArea}>
           <EmptyState
             icon="cloud-offline-outline"
             tone="offline"
             title="Couldn't load history"
             subtitle="Check your connection and try again."
           />
-          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" />
+          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
         </View>
       ) : (
         <FlatList
+          style={styles.flex}
           data={query.data ?? []}
           keyExtractor={(item) => `${item.kind}-${item.id}`}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, (query.data ?? []).length === 0 && styles.listContentEmpty]}
           refreshing={query.isFetching}
           onRefresh={() => query.refetch()}
           ListEmptyComponent={
@@ -95,14 +96,18 @@ function HistoryRow({ entry, index, onPress }: { entry: HistoryEntry; index: num
 }
 
 const styles = StyleSheet.create({
-  listContent: { padding: spacing.lg, gap: spacing.md },
-  row: { gap: 4 },
+  flex: { flex: 1 },
+  listContent: { padding: layout.screenGutter, paddingBottom: layout.scrollEndPad, gap: layout.sectionGap },
+  listContentEmpty: { flexGrow: 1, justifyContent: 'center' },
+  stateArea: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: layout.screenGutter },
+  stateButton: { alignSelf: 'stretch' },
+  row: { gap: spacing.xs },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  kindGroup: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  kindLabel: { fontSize: fontSize.xs, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.6 },
+  kindGroup: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  kindLabel: { fontSize: fontSize.xs, fontWeight: '800', textTransform: 'uppercase', letterSpacing: letterSpacing.wideLabel },
   time: { fontSize: fontSize.sm, color: colors.textMuted },
   title: { fontSize: fontSize.md, fontWeight: '800', color: colors.text },
   subtitle: { fontSize: fontSize.sm, color: colors.textMuted },
-  rowBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  rowBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
   amount: { fontSize: fontSize.md, fontWeight: '900', color: colors.primaryDark, fontVariant: ['tabular-nums'] },
 });

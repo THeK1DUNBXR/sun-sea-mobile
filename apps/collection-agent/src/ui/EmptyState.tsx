@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, radius, spacing, fontSize } from './theme';
+import { colors, radius, spacing, fontSize, sizes } from './theme';
 
 interface EmptyStateProps {
   title: string;
@@ -38,8 +38,8 @@ export function EmptyState({ title, subtitle, icon = 'file-tray-outline', tone =
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center', padding: spacing.xxl, gap: spacing.sm },
   iconWrap: {
-    width: 60,
-    height: 60,
+    width: sizes.emptyStateIcon,
+    height: sizes.emptyStateIcon,
     borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',

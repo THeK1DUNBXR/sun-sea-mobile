@@ -22,7 +22,7 @@ import { Screen } from '@/ui/Screen';
 import { SuccessOverlay } from '@/ui/SuccessOverlay';
 import { GpsStatus } from '@/ui/GpsStatus';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, spacing, fontSize, radius, letterSpacing } from '@/ui/theme';
+import { colors, spacing, fontSize, radius, letterSpacing, sizes, layout } from '@/ui/theme';
 import { formatMoney } from '@/ui/format';
 
 const METHODS = ['CASH', 'UPI', 'CHEQUE', 'BANK_TRANSFER', 'CARD', 'OTHER'] as const;
@@ -352,7 +352,7 @@ function Step({
 }
 
 const styles = StyleSheet.create({
-  outstandingCard: { backgroundColor: colors.primary, borderColor: colors.primary, gap: 4 },
+  outstandingCard: { backgroundColor: colors.primary, borderColor: colors.primary, gap: spacing.xxs },
   outstandingLabel: { color: colors.primaryTint, fontSize: fontSize.sm, fontWeight: '700' },
   outstandingValue: {
     color: colors.onPrimary,
@@ -361,16 +361,16 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
     letterSpacing: letterSpacing.tightDisplay,
   },
-  outstandingUnknown: { color: colors.onPrimary, fontSize: fontSize.md, fontWeight: '700', marginTop: 4 },
+  outstandingUnknown: { color: colors.onPrimary, fontSize: fontSize.md, fontWeight: '700', marginTop: spacing.xxs },
   warnCard: { backgroundColor: colors.warningTint, borderColor: colors.warning },
   warnRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   warnText: { flex: 1, color: colors.text, fontSize: fontSize.sm },
   stepCard: {},
-  stepHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  stepHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: layout.fieldGap },
   stepBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: sizes.stepBadge,
+    height: sizes.stepBadge,
+    borderRadius: sizes.stepBadge / 2,
     backgroundColor: colors.primaryTint,
     alignItems: 'center',
     justifyContent: 'center',
@@ -378,12 +378,21 @@ const styles = StyleSheet.create({
   stepBadgeText: { color: colors.primaryDark, fontWeight: '900', fontSize: fontSize.sm },
   stepTitle: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text, flex: 1 },
   stepOptional: { fontSize: fontSize.xs, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: letterSpacing.wideLabel },
-  chipWrap: { flexDirection: 'row', flexWrap: 'wrap' },
+  // Chip's own marginBottom (spacing.sm) plus this trailing bit brings the
+  // gap before the next field up to the field rhythm (layout.fieldGap).
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.xs },
   chipRowButtons: { flexDirection: 'row', gap: spacing.sm },
   halfBtn: { flexGrow: 1 },
-  preview: { width: 120, height: 120, borderRadius: radius.sm, marginTop: spacing.sm },
-  signatureBox: { height: 180, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, overflow: 'hidden' },
-  confirmedRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs },
+  preview: { width: sizes.previewLarge, height: sizes.previewLarge, borderRadius: radius.sm, marginTop: spacing.sm },
+  signatureBox: {
+    height: sizes.signatureHeight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+    marginBottom: layout.fieldGap,
+  },
+  confirmedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
   confirmedText: { color: colors.success, fontWeight: '700', fontSize: fontSize.sm },
   locationCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   muted: { color: colors.textMuted, flex: 1 },

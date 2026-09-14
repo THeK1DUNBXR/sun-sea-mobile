@@ -20,7 +20,7 @@ import { Button } from '@/ui/Button';
 import { AnimatedNumber } from '@/ui/AnimatedNumber';
 import { SkeletonBlock } from '@/ui/Skeleton';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, spacing, fontSize, radius, letterSpacing, elevation } from '@/ui/theme';
+import { colors, spacing, fontSize, radius, letterSpacing, elevation, sizes } from '@/ui/theme';
 import { formatMoney } from '@/ui/format';
 import { useAuth } from '@/store/auth';
 import { useSyncStatus } from '@/offline/useSyncStatus';
@@ -105,7 +105,7 @@ export default function HomeScreen() {
         <Card style={styles.heroCard} elevation="raised">
           <Text style={styles.heroLabel}>Outstanding</Text>
           {summary.isLoading ? (
-            <SkeletonBlock width="70%" height={28} style={{ marginTop: 4 }} />
+            <SkeletonBlock width="70%" height={28} style={{ marginTop: spacing.xs }} />
           ) : (
             <AnimatedNumber
               value={s?.outstanding ?? 0}
@@ -119,7 +119,7 @@ export default function HomeScreen() {
         <Card style={[styles.heroCard, styles.heroCardAccent]} elevation="raised">
           <Text style={[styles.heroLabel, styles.heroLabelAccent]}>Collected today</Text>
           {summary.isLoading ? (
-            <SkeletonBlock width="70%" height={28} style={{ marginTop: 4, backgroundColor: colors.primaryDark }} />
+            <SkeletonBlock width="70%" height={28} style={{ marginTop: spacing.xs, backgroundColor: colors.primaryDark }} />
           ) : (
             <AnimatedNumber
               value={s?.collectedToday ?? 0}
@@ -324,7 +324,7 @@ function KpiSkeleton() {
   return (
     <View style={styles.kpi}>
       <SkeletonBlock width={18} height={18} radius={9} />
-      <SkeletonBlock width="50%" height={20} style={{ marginTop: 4 }} />
+      <SkeletonBlock width="50%" height={20} style={{ marginTop: spacing.xs }} />
       <SkeletonBlock width="70%" height={12} />
     </View>
   );
@@ -333,7 +333,7 @@ function KpiSkeleton() {
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   greeting: { fontSize: fontSize.xxl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
-  nextUp: { fontSize: fontSize.md, color: colors.textMuted, marginTop: 2, fontWeight: '600' },
+  nextUp: { fontSize: fontSize.md, color: colors.textMuted, marginTop: spacing.xxs, fontWeight: '600' },
 
   pill: {
     flexDirection: 'row',
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   pillText: { fontSize: fontSize.xs, fontWeight: '800', letterSpacing: letterSpacing.wideLabel, textTransform: 'uppercase' },
 
   heroRow: { flexDirection: 'row', gap: spacing.md },
-  heroCard: { flex: 1, gap: 4 },
+  heroCard: { flex: 1, gap: spacing.xs },
   heroCardAccent: { backgroundColor: colors.primary, borderColor: colors.primary },
   heroLabel: { fontSize: fontSize.sm, fontWeight: '800', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: letterSpacing.wideLabel },
   heroLabelAccent: { color: colors.primaryTint },
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.lg,
     padding: spacing.lg,
-    gap: 4,
+    gap: spacing.xs,
   },
   kpiWarn: { backgroundColor: colors.warningTint, borderColor: colors.warning },
   kpiValue: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, fontVariant: ['tabular-nums'] },
@@ -404,13 +404,13 @@ const styles = StyleSheet.create({
 
   trackingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   trackingIconWrap: {
-    width: 40,
-    height: 40,
+    width: sizes.iconBadge,
+    height: sizes.iconBadge,
     borderRadius: radius.md,
     backgroundColor: colors.primaryTint,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cardTitle: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text },
-  cardSubtitle: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
+  cardSubtitle: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xxs },
 });

@@ -48,13 +48,13 @@ const styles = StyleSheet.create({
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm + 2,
-    paddingVertical: 5,
+    paddingHorizontal: spacing.sm + spacing.xxs,
+    paddingVertical: spacing.xs,
     borderRadius: radius.sm,
     alignSelf: 'flex-start',
-    gap: 5,
+    gap: spacing.xs,
   },
-  dot: { width: 6, height: 6, borderRadius: 3 },
+  dot: { width: spacing.xs + spacing.xxs, height: spacing.xs + spacing.xxs, borderRadius: (spacing.xs + spacing.xxs) / 2 },
   text: {
     fontSize: fontSize.xs,
     fontWeight: '800',

@@ -84,8 +84,10 @@ export default function AssignmentDetailScreen() {
   if (query.isError) {
     return (
       <Screen>
-        <EmptyState icon="cloud-offline-outline" tone="offline" title="Couldn't load this assignment" subtitle="Check your connection and try again." />
-        <Button title="Retry" onPress={() => query.refetch()} variant="secondary" />
+        <View style={styles.ledgerCentered}>
+          <EmptyState icon="cloud-offline-outline" tone="offline" title="Couldn't load this assignment" subtitle="Check your connection and try again." />
+          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" style={styles.retryButton} />
+        </View>
       </Screen>
     );
   }
@@ -93,7 +95,9 @@ export default function AssignmentDetailScreen() {
   if (query.isLoading || !assignment) {
     return (
       <Screen>
-        <Text style={styles.muted}>Loading…</Text>
+        <View style={styles.ledgerCentered}>
+          <Text style={styles.muted}>Loading…</Text>
+        </View>
       </Screen>
     );
   }
@@ -101,7 +105,23 @@ export default function AssignmentDetailScreen() {
   const statusMeta = assignmentStatusMeta(assignment.status);
 
   return (
-    <Screen>
+    <Screen
+      footer={
+        <View style={styles.actionRow}>
+          <Button
+            title="Record Collection"
+            onPress={() => router.push(`/(app)/collect/${assignment.id}`)}
+            icon={<Ionicons name="cash-outline" size={20} color={colors.onPrimary} />}
+          />
+          <Button
+            title="Record Visit"
+            onPress={() => router.push(`/(app)/visit/${assignment.id}`)}
+            variant="secondary"
+            icon={<Ionicons name="clipboard-outline" size={20} color={colors.primary} />}
+          />
+        </View>
+      }
+    >
       <Card elevation="raised">
         <View style={styles.rowBetween}>
           <Text style={styles.invoiceNo}>{invoice?.invoiceNo}</Text>
@@ -204,27 +224,24 @@ export default function AssignmentDetailScreen() {
         </Card>
       )}
 
-      <View style={styles.actionRow}>
-        <Button
-          title="Record Collection"
-          onPress={() => router.push(`/(app)/collect/${assignment.id}`)}
-          icon={<Ionicons name="cash-outline" size={20} color={colors.onPrimary} />}
-        />
-        <Button
-          title="Record Visit"
-          onPress={() => router.push(`/(app)/visit/${assignment.id}`)}
-          variant="secondary"
-          icon={<Ionicons name="clipboard-outline" size={20} color={colors.primary} />}
-        />
-      </View>
-
       <Modal visible={ledgerOpen} animationType="slide" onRequestClose={() => setLedgerOpen(false)}>
-        <Screen>
+        <Screen
+          footer={
+            <View style={styles.actionRow}>
+              {ledger.isError ? <Button title="Retry" onPress={() => ledger.refetch()} variant="secondary" /> : null}
+              <Button title="Close" onPress={() => setLedgerOpen(false)} variant="secondary" />
+            </View>
+          }
+        >
           <Text style={styles.sectionTitle}>Customer ledger</Text>
           {ledger.isLoading ? (
-            <Text style={styles.muted}>Loading…</Text>
+            <View style={styles.ledgerCentered}>
+              <Text style={styles.muted}>Loading…</Text>
+            </View>
           ) : ledger.isError ? (
-            <EmptyState icon="cloud-offline-outline" tone="offline" title="Couldn't load the ledger" subtitle="Check your connection and try again." />
+            <View style={styles.ledgerCentered}>
+              <EmptyState icon="cloud-offline-outline" tone="offline" title="Couldn't load the ledger" subtitle="Check your connection and try again." />
+            </View>
           ) : (
             <>
               <Text style={styles.subsectionTitle}>Invoices</Text>
@@ -251,10 +268,6 @@ export default function AssignmentDetailScreen() {
               )}
             </>
           )}
-          {ledger.isError ? (
-            <Button title="Retry" onPress={() => ledger.refetch()} variant="secondary" />
-          ) : null}
-          <Button title="Close" onPress={() => setLedgerOpen(false)} variant="secondary" />
         </Screen>
       </Modal>
     </Screen>
@@ -273,9 +286,9 @@ function AmountBlock({ label, value, emphasize }: { label: string; value?: numbe
 const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   invoiceNo: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
-  muted: { color: colors.textMuted, fontSize: fontSize.sm, marginTop: 2 },
-  mutedFaint: { color: colors.textFaint, fontSize: fontSize.sm, marginTop: 2, fontStyle: 'italic' },
-  itemMeta: { color: colors.textFaint, fontSize: fontSize.xs, marginTop: 1 },
+  muted: { color: colors.textMuted, fontSize: fontSize.sm, marginTop: spacing.xxs },
+  mutedFaint: { color: colors.textFaint, fontSize: fontSize.sm, marginTop: spacing.xxs, fontStyle: 'italic' },
+  itemMeta: { color: colors.textFaint, fontSize: fontSize.xs, marginTop: spacing.xxs },
   badgeRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
   amountRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.lg },
   amountBlock: { alignItems: 'flex-start' },
@@ -294,4 +307,6 @@ const styles = StyleSheet.create({
   },
   itemDesc: { color: colors.text, flex: 1, marginRight: spacing.sm },
   actionRow: { gap: spacing.sm },
+  ledgerCentered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+  retryButton: { alignSelf: 'stretch' },
 });

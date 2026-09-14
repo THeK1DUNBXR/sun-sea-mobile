@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   wordLg: { fontSize: fontSize.xxl },
   wordMd: { fontSize: fontSize.lg },
   wordAccent: { color: colors.primary },
-  sub: { fontWeight: '800', color: colors.textMuted, letterSpacing: letterSpacing.wideEyebrow, marginTop: 2 },
+  sub: { fontWeight: '800', color: colors.textMuted, letterSpacing: letterSpacing.wideEyebrow, marginTop: spacing.xxs },
   subLg: { fontSize: fontSize.sm },
   subMd: { fontSize: fontSize.xs },
 });

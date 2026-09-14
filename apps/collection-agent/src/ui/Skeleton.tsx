@@ -9,7 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors, radius } from './theme';
+import { colors, radius, sizes, spacing, layout } from './theme';
 import { useReducedMotion } from './useReducedMotion';
 
 interface SkeletonBlockProps {
@@ -58,7 +58,7 @@ export function SkeletonCard({ style }: { style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[styles.card, style]}>
       <SkeletonBlock width="55%" height={12} />
-      <SkeletonBlock width="80%" height={20} style={{ marginTop: 10 }} />
+      <SkeletonBlock width="80%" height={20} style={styles.cardValueGap} />
     </View>
   );
 }
@@ -68,8 +68,8 @@ export function SkeletonCard({ style }: { style?: StyleProp<ViewStyle> }) {
 export function SkeletonRow({ style }: { style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[styles.row, style]}>
-      <SkeletonBlock width={44} height={44} radius={22} />
-      <View style={{ flex: 1, gap: 8 }}>
+      <SkeletonBlock width={sizes.avatar} height={sizes.avatar} radius={sizes.avatar / 2} />
+      <View style={styles.rowBody}>
         <SkeletonBlock width="60%" height={14} />
         <SkeletonBlock width="40%" height={12} />
       </View>
@@ -80,21 +80,23 @@ export function SkeletonRow({ style }: { style?: StyleProp<ViewStyle> }) {
 
 const styles = StyleSheet.create({
   block: { backgroundColor: colors.border },
+  cardValueGap: { marginTop: spacing.sm },
+  rowBody: { flex: 1, gap: spacing.sm },
   card: {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
-    padding: 16,
+    padding: layout.cardPadding,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.md,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
-    padding: 16,
+    padding: layout.cardPadding,
   },
 });
