@@ -17,7 +17,7 @@ import { Screen } from '@/ui/Screen';
 import { PressableScale } from '@/ui/PressableScale';
 import { SkeletonRow } from '@/ui/Skeleton';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, spacing, fontSize, letterSpacing, layout } from '@/ui/theme';
+import { colors, spacing, type, layout, tabularNums } from '@/ui/theme';
 import { assignmentStatusMeta, formatDate, formatMoney, initials, isOverdue, priorityColor } from '@/ui/format';
 import { getCurrentPosition } from '@/location/tracking';
 import type { Assignment } from '@/types/models';
@@ -166,7 +166,7 @@ function AssignmentRow({
               {typeof assignment.distanceKm === 'number' && (
                 <View style={styles.distanceRow}>
                   <Ionicons name="navigate-outline" size={12} color={colors.textFaint} />
-                  <Text style={styles.distance}>{assignment.distanceKm.toFixed(1)} km</Text>
+                  <Text style={[styles.distance, tabularNums]}>{assignment.distanceKm.toFixed(1)} km</Text>
                 </View>
               )}
             </View>
@@ -192,17 +192,20 @@ const styles = StyleSheet.create({
   stateButton: { alignSelf: 'stretch' },
   row: { gap: spacing.md },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  customer: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text },
-  invoice: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xxs },
+  customer: { ...type.title, color: colors.text },
+  invoice: { ...type.caption, color: colors.textMuted, marginTop: spacing.xxs },
   amountBlock: { alignItems: 'flex-end' },
+  // Same weight/tracking as the stat role, dialed down a step for a denser
+  // list row — only the size shrinks, so the numeral still carries the
+  // scale's full weight contrast against the row's title/caption text.
   amount: {
-    fontSize: fontSize.lg,
-    fontWeight: '900',
+    ...type.stat,
+    fontSize: 20,
+    lineHeight: 24,
     color: colors.primaryDark,
     fontVariant: ['tabular-nums'],
-    letterSpacing: letterSpacing.tightDisplay,
   },
   distanceRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, marginTop: spacing.xxs },
-  distance: { fontSize: fontSize.xs, color: colors.textFaint, fontWeight: '700' },
+  distance: { ...type.caption, color: colors.textFaint },
   badgeRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
 });

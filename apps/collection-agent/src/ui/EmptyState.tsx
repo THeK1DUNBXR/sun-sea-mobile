@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors, radius, spacing, fontSize, sizes } from './theme';
+import { colors, radius, spacing, type, sizes } from './theme';
 
 interface EmptyStateProps {
   title: string;
@@ -45,6 +45,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.xs,
   },
-  title: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text, textAlign: 'center' },
-  subtitle: { fontSize: fontSize.md, color: colors.textMuted, textAlign: 'center' },
+  title: { ...type.title, color: colors.text, textAlign: 'center' },
+  subtitle: { ...type.body, color: colors.textMuted, textAlign: 'center' },
 });

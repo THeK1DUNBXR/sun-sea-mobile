@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
-import { colors, radius, spacing, fontSize, letterSpacing } from './theme';
+import { colors, radius, spacing, type } from './theme';
 import { useReducedMotion } from './useReducedMotion';
 import type { Tone } from './format';
 
@@ -56,9 +56,7 @@ const styles = StyleSheet.create({
   },
   dot: { width: spacing.xs + spacing.xxs, height: spacing.xs + spacing.xxs, borderRadius: (spacing.xs + spacing.xxs) / 2 },
   text: {
-    fontSize: fontSize.xs,
-    fontWeight: '800',
-    letterSpacing: letterSpacing.wideLabel,
+    ...type.label,
     textTransform: 'uppercase',
   },
 });

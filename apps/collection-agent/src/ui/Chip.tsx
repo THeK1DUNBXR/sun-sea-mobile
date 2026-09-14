@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { colors, radius, spacing, fontSize, minTouch } from './theme';
+import { colors, radius, spacing, type, minTouch } from './theme';
 import { useReducedMotion } from './useReducedMotion';
 
 interface ChipProps {
@@ -55,5 +55,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: 1.5,
   },
-  label: { fontSize: fontSize.sm, fontWeight: '800' },
+  // Chips carry mixed-case selectable copy (payment methods, outcomes), so
+  // the label scale's wide tracking — meant for short all-caps tags — is
+  // dropped here.
+  label: { ...type.label, letterSpacing: 0 },
 });

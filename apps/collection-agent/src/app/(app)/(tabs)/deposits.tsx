@@ -17,7 +17,7 @@ import { Screen } from '@/ui/Screen';
 import { SkeletonRow } from '@/ui/Skeleton';
 import { SuccessOverlay } from '@/ui/SuccessOverlay';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, spacing, fontSize, letterSpacing, radius, layout, sizes } from '@/ui/theme';
+import { colors, spacing, type, radius, layout, sizes } from '@/ui/theme';
 import { DEPOSIT_STATUS_META, formatDateTime, formatMoney } from '@/ui/format';
 import * as Crypto from 'expo-crypto';
 import type { AgentCashDeposit } from '@/types/models';
@@ -182,17 +182,16 @@ function DepositRow({ deposit, index }: { deposit: AgentCashDeposit; index: numb
 
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  heading: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
+  heading: { ...type.headline, color: colors.text },
   stateArea: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   stateButton: { alignSelf: 'stretch' },
   row: { gap: spacing.xs },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   amount: {
-    fontSize: fontSize.xl,
-    fontWeight: '900',
+    ...type.stat,
     color: colors.primaryDark,
     fontVariant: ['tabular-nums'],
   },
-  subtitle: { fontSize: fontSize.sm, color: colors.textMuted },
+  subtitle: { ...type.caption, color: colors.textMuted },
   preview: { width: sizes.previewThumb, height: sizes.previewThumb, borderRadius: radius.sm, marginTop: spacing.sm },
 });

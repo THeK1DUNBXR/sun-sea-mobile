@@ -20,7 +20,7 @@ import { Button } from '@/ui/Button';
 import { AnimatedNumber } from '@/ui/AnimatedNumber';
 import { SkeletonBlock } from '@/ui/Skeleton';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, spacing, fontSize, radius, letterSpacing, elevation, sizes } from '@/ui/theme';
+import { colors, spacing, type, radius, elevation, sizes } from '@/ui/theme';
 import { formatMoney } from '@/ui/format';
 import { useAuth } from '@/store/auth';
 import { useSyncStatus } from '@/offline/useSyncStatus';
@@ -332,8 +332,8 @@ function KpiSkeleton() {
 
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  greeting: { fontSize: fontSize.xxl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
-  nextUp: { fontSize: fontSize.md, color: colors.textMuted, marginTop: spacing.xxs, fontWeight: '600' },
+  greeting: { ...type.headline, color: colors.text },
+  nextUp: { ...type.body, color: colors.textMuted, marginTop: spacing.xxs },
 
   pill: {
     flexDirection: 'row',
@@ -347,19 +347,17 @@ const styles = StyleSheet.create({
   pillOn: { backgroundColor: colors.successTint, borderColor: colors.success },
   pillOff: { backgroundColor: colors.surfaceSunk, borderColor: colors.border },
   pillDot: { width: 8, height: 8, borderRadius: 4 },
-  pillText: { fontSize: fontSize.xs, fontWeight: '800', letterSpacing: letterSpacing.wideLabel, textTransform: 'uppercase' },
+  pillText: { ...type.caption, textTransform: 'uppercase' },
 
   heroRow: { flexDirection: 'row', gap: spacing.md },
   heroCard: { flex: 1, gap: spacing.xs },
   heroCardAccent: { backgroundColor: colors.primary, borderColor: colors.primary },
-  heroLabel: { fontSize: fontSize.sm, fontWeight: '800', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: letterSpacing.wideLabel },
+  heroLabel: { ...type.label, color: colors.textMuted, textTransform: 'uppercase' },
   heroLabelAccent: { color: colors.primaryTint },
   heroValue: {
-    fontSize: fontSize.xxxl,
-    fontWeight: '900',
+    ...type.display,
     color: colors.primaryDark,
     fontVariant: ['tabular-nums'],
-    letterSpacing: letterSpacing.tightDisplay,
   },
   heroValueAccent: { color: colors.onPrimary },
 
@@ -375,9 +373,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   kpiWarn: { backgroundColor: colors.warningTint, borderColor: colors.warning },
-  kpiValue: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, fontVariant: ['tabular-nums'] },
+  kpiValue: { ...type.stat, color: colors.text, fontVariant: ['tabular-nums'] },
   kpiValueWarn: { color: colors.warning },
-  kpiLabel: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: '600' },
+  kpiLabel: { ...type.body, color: colors.textMuted },
 
   errorCard: {
     backgroundColor: colors.dangerTint,
@@ -396,11 +394,11 @@ const styles = StyleSheet.create({
   },
   syncCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.primaryTint, borderColor: colors.primary },
   syncCardError: { backgroundColor: colors.dangerTint, borderColor: colors.danger },
-  syncText: { color: colors.primaryDark, fontWeight: '700' },
+  syncText: { ...type.title, color: colors.primaryDark },
   syncErrorTitle: { color: colors.danger },
-  syncError: { color: colors.danger, marginTop: spacing.xs, fontSize: fontSize.sm },
+  syncError: { ...type.caption, color: colors.danger, marginTop: spacing.xs },
   syncOkCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  syncOkText: { color: colors.success, fontWeight: '700' },
+  syncOkText: { ...type.title, color: colors.success },
 
   trackingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   trackingIconWrap: {
@@ -411,6 +409,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardTitle: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text },
-  cardSubtitle: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xxs },
+  cardTitle: { ...type.title, color: colors.text },
+  cardSubtitle: { ...type.body, color: colors.textMuted, marginTop: spacing.xxs },
 });

@@ -11,7 +11,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors, radius, spacing, fontSize } from './theme';
+import { colors, radius, spacing, type } from './theme';
 import { useReducedMotion } from './useReducedMotion';
 
 interface InputProps extends TextInputProps {
@@ -84,18 +84,18 @@ export function Input({ label, error, style, onFocus, onBlur, highlightSignal, .
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: spacing.md },
-  label: { fontSize: fontSize.sm, fontWeight: '700', color: colors.textMuted, marginBottom: spacing.xs },
+  label: { ...type.label, color: colors.textMuted, marginBottom: spacing.xs },
   input: {
     minHeight: 52,
     borderWidth: 1.5,
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    fontSize: fontSize.lg,
+    ...type.input,
     color: colors.text,
     backgroundColor: 'transparent',
   },
   inputFocused: { borderColor: colors.primary },
   inputError: { borderColor: colors.danger },
-  error: { color: colors.danger, fontSize: fontSize.sm, marginTop: spacing.xs, fontWeight: '600' },
+  error: { ...type.body, color: colors.danger, marginTop: spacing.xs },
 });

@@ -13,7 +13,7 @@ import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { SkeletonRow } from '@/ui/Skeleton';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, spacing, fontSize, letterSpacing, layout } from '@/ui/theme';
+import { colors, spacing, type, layout } from '@/ui/theme';
 import { formatDateTime, formatMoney } from '@/ui/format';
 import type { HistoryEntry } from '@/types/models';
 
@@ -104,10 +104,10 @@ const styles = StyleSheet.create({
   row: { gap: spacing.xs },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   kindGroup: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  kindLabel: { fontSize: fontSize.xs, fontWeight: '800', textTransform: 'uppercase', letterSpacing: letterSpacing.wideLabel },
-  time: { fontSize: fontSize.sm, color: colors.textMuted },
-  title: { fontSize: fontSize.md, fontWeight: '800', color: colors.text },
-  subtitle: { fontSize: fontSize.sm, color: colors.textMuted },
+  kindLabel: { ...type.label, textTransform: 'uppercase' },
+  time: { ...type.caption, color: colors.textMuted },
+  title: { ...type.title, color: colors.text },
+  subtitle: { ...type.body, color: colors.textMuted },
   rowBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
-  amount: { fontSize: fontSize.md, fontWeight: '900', color: colors.primaryDark, fontVariant: ['tabular-nums'] },
+  amount: { ...type.stat, fontSize: 17, lineHeight: 21, color: colors.primaryDark, fontVariant: ['tabular-nums'] },
 });

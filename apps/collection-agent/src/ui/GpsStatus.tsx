@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors, fontSize, spacing } from './theme';
+import { colors, type, spacing } from './theme';
 import { useReducedMotion } from './useReducedMotion';
 
 interface GpsStatusProps {
@@ -83,5 +83,5 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     backgroundColor: colors.warning,
   },
-  text: { color: colors.textMuted, flex: 1, fontSize: fontSize.md },
+  text: { ...type.body, color: colors.textMuted, flex: 1, fontVariant: ['tabular-nums'] },
 });

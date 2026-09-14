@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 // Light theme, high-contrast, large touch targets — designed for outdoor
 // field use. One brand hue (SunSea green) carries identity; green / amber /
 // red carry meaning (collected / promised / overdue) and nothing else.
@@ -94,23 +96,94 @@ export const radius = {
   pill: 999,
 };
 
-// A decisive, slightly tighter-than-default scale so real copy and big
-// money figures both read from arm's length without fluid sizing.
-export const fontSize = {
-  xs: 12,
-  sm: 13,
-  md: 15,
-  lg: 17,
-  xl: 20,
-  xxl: 26,
-  xxxl: 34,
-  display: 40,
-};
-
 export const letterSpacing = {
   tightDisplay: -0.5,
   wideLabel: 0.6,
   wideEyebrow: 1.1,
+};
+
+// ---------------------------------------------------------------------------
+// Type scale — the single source of hierarchy for every screen, card, row,
+// badge, chip, input label, receipt and overlay. Each role bundles size,
+// weight, line-height and tracking together so a screen picks a role, never
+// a bare fontSize/fontWeight pair. Sizes hold a fixed rem-style scale (no
+// fluid/clamp sizing) with a tighter ratio, per Operate-mode product UI, and
+// respect the field-use floor: body text stays ≥15sp and captions ≥12sp so
+// copy stays legible at arm's length in direct sunlight.
+//
+// System fonts only — no bundled/custom font files. iOS's SF Pro system
+// font renders any fontWeight string faithfully; Android's default
+// sans-serif family only ships four true static weights (regular, medium,
+// bold, black), so intermediate requests are routed to the closest real
+// family/weight pair instead of asking the OS to synthesize a weight it
+// doesn't have.
+type FontWeight = '400' | '500' | '600' | '700' | '800' | '900';
+
+const ANDROID_FAMILY: Record<FontWeight, string> = {
+  '400': 'sans-serif',
+  '500': 'sans-serif-medium',
+  '600': 'sans-serif-medium',
+  '700': 'sans-serif',
+  '800': 'sans-serif',
+  '900': 'sans-serif-black',
+};
+const ANDROID_WEIGHT: Record<FontWeight, FontWeight> = {
+  '400': '400',
+  '500': '500',
+  '600': '500',
+  '700': '700',
+  '800': '700',
+  '900': '900',
+};
+
+/** Platform-aware weight: exact fontWeight on iOS, nearest real Android
+ * system family + weight pair on Android. Exported for the rare case that
+ * needs a weight at a size the scale doesn't name (e.g. an avatar's
+ * initials, sized proportionally to the circle it sits in) — screens and
+ * components should otherwise reach for a `type.<role>` below. */
+export function fontWeight(w: FontWeight): { fontWeight: FontWeight; fontFamily?: string } {
+  return Platform.OS === 'android'
+    ? { fontFamily: ANDROID_FAMILY[w], fontWeight: ANDROID_WEIGHT[w] }
+    : { fontWeight: w };
+}
+
+/** Tabular (fixed-width) figures — spread this onto any role wherever the
+ * text is a money amount or a count, so digits never jitter as they change
+ * and columns of numbers stay aligned. */
+export const tabularNums: { fontVariant: ('tabular-nums' | 'lining-nums')[] } = { fontVariant: ['tabular-nums'] };
+
+/** The platform's monospace system family — reserved for the receipt
+ * number on the printed-ticket screen, never for general "technical" copy. */
+export const monoFamily = Platform.select<string>({ ios: 'Courier', android: 'monospace', default: 'monospace' });
+
+export const type = {
+  /** The hero outstanding/collected figure — the one number on a screen
+   * meant to be read from arm's length at a glance. Pair with
+   * AnimatedNumber's maxFontSizeMultiplier + adjustsFontSizeToFit so it
+   * survives Dynamic Type without blowing out its card. */
+  display: { fontSize: 36, lineHeight: 42, letterSpacing: -0.5, ...fontWeight('900') },
+  /** Secondary emphasized numbers: KPI tiles, list-row amounts, deposit and
+   * history amounts. Always pair with `tabularNums`. */
+  stat: { fontSize: 24, lineHeight: 29, letterSpacing: -0.3, ...fontWeight('900') },
+  /** Screen-level headings and card lead lines (e.g. "Cash deposits",
+   * greeting, brand wordmark, empty-state title). */
+  headline: { fontSize: 21, lineHeight: 26, letterSpacing: -0.4, ...fontWeight('800') },
+  /** Card/section titles, list-row primary text (customer name, invoice
+   * no.), step titles. */
+  title: { fontSize: 17, lineHeight: 22, letterSpacing: -0.2, ...fontWeight('800') },
+  /** Ordinary body copy: descriptions, instructions, ledger rows, error
+   * copy. Field-use floor: never below 15sp. */
+  body: { fontSize: 15, lineHeight: 21, letterSpacing: 0, ...fontWeight('500') },
+  /** Field labels and small all-caps tags (input labels, step badges,
+   * "Optional"). Not for badge/chip pill text, which keeps its own tight
+   * pill-specific tracking. */
+  label: { fontSize: 13, lineHeight: 16, letterSpacing: letterSpacing.wideLabel, ...fontWeight('700') },
+  /** Metadata and fine print: timestamps, distances, helper text under a
+   * value. Field-use floor: never below 12sp. */
+  caption: { fontSize: 12, lineHeight: 16, letterSpacing: 0.2, ...fontWeight('600') },
+  /** Form input text and placeholders — kept ≥16sp so focusing a field
+   * never triggers iOS's automatic zoom. */
+  input: { fontSize: 17, lineHeight: 22, ...fontWeight('500') },
 };
 
 // Real elevation: an offset + soft blur, never a flat/colored halo.

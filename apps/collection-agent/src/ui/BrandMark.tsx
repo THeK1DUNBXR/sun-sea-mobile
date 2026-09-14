@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, fontSize, letterSpacing, elevation } from './theme';
+import { colors, radius, spacing, letterSpacing, elevation, fontWeight } from './theme';
 
 interface BrandMarkProps {
   size?: 'lg' | 'md';
@@ -38,14 +38,14 @@ const styles = StyleSheet.create({
   },
   tileLg: { width: 64, height: 64 },
   tileMd: { width: 44, height: 44, borderRadius: radius.md },
-  monogram: { color: colors.onPrimary, fontWeight: '900' },
-  monogramLg: { fontSize: 26, letterSpacing: -0.5 },
-  monogramMd: { fontSize: 17, letterSpacing: -0.5 },
-  word: { fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
-  wordLg: { fontSize: fontSize.xxl },
-  wordMd: { fontSize: fontSize.lg },
+  monogram: { color: colors.onPrimary, ...fontWeight('900') },
+  monogramLg: { fontSize: 26, lineHeight: 30, letterSpacing: -0.5 },
+  monogramMd: { fontSize: 17, lineHeight: 20, letterSpacing: -0.5 },
+  word: { color: colors.text, letterSpacing: letterSpacing.tightDisplay, ...fontWeight('900') },
+  wordLg: { fontSize: 26, lineHeight: 30 },
+  wordMd: { fontSize: 17, lineHeight: 20 },
   wordAccent: { color: colors.primary },
-  sub: { fontWeight: '800', color: colors.textMuted, letterSpacing: letterSpacing.wideEyebrow, marginTop: spacing.xxs },
-  subLg: { fontSize: fontSize.sm },
-  subMd: { fontSize: fontSize.xs },
+  sub: { color: colors.textMuted, letterSpacing: letterSpacing.wideEyebrow, marginTop: spacing.xxs, ...fontWeight('800') },
+  subLg: { fontSize: 13, lineHeight: 16 },
+  subMd: { fontSize: 12, lineHeight: 15 },
 });

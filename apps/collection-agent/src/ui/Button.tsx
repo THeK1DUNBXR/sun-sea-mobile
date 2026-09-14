@@ -2,7 +2,7 @@ import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { colors, radius, spacing, fontSize, elevation, minTouch } from './theme';
+import { colors, radius, spacing, type, elevation, minTouch } from './theme';
 import { useReducedMotion } from './useReducedMotion';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   },
   fullWidth: { alignSelf: 'stretch' },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  text: { fontSize: fontSize.lg, fontWeight: '800' },
+  text: { ...type.title },
   disabled: { opacity: 0.45 },
 });
 

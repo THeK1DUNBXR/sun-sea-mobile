@@ -22,7 +22,7 @@ import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, spacing, fontSize, radius, letterSpacing, sizes } from '@/ui/theme';
+import { colors, spacing, type, radius, sizes, monoFamily, fontWeight } from '@/ui/theme';
 import { amountInWords, formatDateTime, formatMoney } from '@/ui/format';
 import type { Receipt } from '@/types/models';
 
@@ -160,7 +160,7 @@ function ReceiptTicket({ receipt }: { receipt: Receipt }) {
 
         <TearLine />
 
-        <Text style={styles.amount} numberOfLines={1} adjustsFontSizeToFit>
+        <Text style={styles.amount} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.6}>
           {formatMoney(receipt.amount)}
         </Text>
         <Text style={styles.words}>{amountInWords(receipt.amount ?? 0)}</Text>
@@ -217,7 +217,7 @@ const NOTCH = sizes.ticketNotch;
 
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.bgAlt },
-  loading: { color: colors.textMuted },
+  loading: { ...type.body, color: colors.textMuted },
   stateArea: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   stateButton: { alignSelf: 'stretch' },
   ticket: { alignItems: 'center', paddingTop: spacing.sm },
@@ -252,9 +252,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxs,
     borderRadius: radius.sm,
   },
-  paidStampText: { color: colors.success, fontWeight: '900', fontSize: fontSize.xs, textTransform: 'uppercase', letterSpacing: letterSpacing.wideLabel },
-  company: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
-  muted: { color: colors.textMuted, marginTop: spacing.xxs, textAlign: 'center' },
+  paidStampText: { ...type.label, color: colors.success, textTransform: 'uppercase' },
+  company: { ...type.headline, color: colors.text },
+  muted: { ...type.body, color: colors.textMuted, marginTop: spacing.xxs, textAlign: 'center' },
   tearLine: {
     width: '100%',
     borderStyle: 'dashed',
@@ -262,24 +262,32 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     marginVertical: spacing.md,
   },
+  // The one figure on the ticket meant to be read at a glance — same hero
+  // role as the outstanding/collected amounts elsewhere in the app.
   amount: {
-    fontSize: fontSize.display,
-    fontWeight: '900',
+    ...type.display,
     color: colors.primaryDark,
     fontVariant: ['tabular-nums'],
-    letterSpacing: letterSpacing.tightDisplay,
   },
   words: {
+    ...type.caption,
     color: colors.textMuted,
-    fontSize: fontSize.sm,
     textAlign: 'center',
     marginTop: spacing.xxs,
     marginBottom: spacing.sm,
     fontStyle: 'italic',
   },
-  receiptNo: { fontSize: fontSize.md, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
+  // The receipt number is the one place on the ticket that reads like a
+  // printed stub: fixed-width numerals in the platform's monospace family,
+  // not the UI sans everything else on this screen uses.
+  receiptNo: {
+    ...type.title,
+    color: colors.text,
+    fontFamily: monoFamily,
+    fontVariant: ['tabular-nums'],
+  },
   row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs, width: '100%' },
-  rowLabel: { color: colors.textMuted, fontWeight: '600' },
-  rowValue: { color: colors.text, fontWeight: '700' },
+  rowLabel: { ...type.body, color: colors.textMuted },
+  rowValue: { ...type.body, color: colors.text, ...fontWeight('700') },
   actions: { gap: spacing.sm },
 });

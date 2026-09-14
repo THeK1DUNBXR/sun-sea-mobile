@@ -9,7 +9,7 @@ import { Badge } from '@/ui/Badge';
 import { Avatar } from '@/ui/Avatar';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
-import { colors, spacing, fontSize, letterSpacing, radius, sizes } from '@/ui/theme';
+import { colors, spacing, type, radius, sizes, fontWeight } from '@/ui/theme';
 import { formatDateTime, initials } from '@/ui/format';
 import { useAuth } from '@/store/auth';
 import { useSyncStatus } from '@/offline/useSyncStatus';
@@ -151,10 +151,10 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   identityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  name: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
-  subtitle: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xxs },
+  name: { ...type.headline, color: colors.text },
+  subtitle: { ...type.body, color: colors.textMuted, marginTop: spacing.xxs },
   trackingLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  cardTitle: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text },
+  cardTitle: { ...type.title, color: colors.text },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   queueRow: {
     flexDirection: 'row',
@@ -164,8 +164,8 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     paddingTop: spacing.sm,
   },
-  queueKind: { fontWeight: '800', color: colors.text, textTransform: 'capitalize' },
-  errorText: { color: colors.danger, fontSize: fontSize.sm },
+  queueKind: { ...type.body, color: colors.text, textTransform: 'capitalize', ...fontWeight('800') },
+  errorText: { ...type.caption, color: colors.danger },
   noteRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -174,5 +174,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     padding: spacing.sm,
   },
-  noteText: { flex: 1, color: colors.text, fontSize: fontSize.sm },
+  noteText: { ...type.body, flex: 1, color: colors.text },
 });

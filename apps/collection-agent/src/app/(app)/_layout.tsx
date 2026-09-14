@@ -1,7 +1,7 @@
 import React from 'react';
 import { Stack } from 'expo-router';
 
-import { colors } from '@/ui/theme';
+import { colors, fontWeight } from '@/ui/theme';
 
 export default function AppLayout() {
   return (
@@ -10,7 +10,7 @@ export default function AppLayout() {
         headerStyle: { backgroundColor: colors.surface },
         headerShadowVisible: true,
         headerTintColor: colors.primaryDark,
-        headerTitleStyle: { fontWeight: '800' },
+        headerTitleStyle: { fontSize: 17, ...fontWeight('800') },
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

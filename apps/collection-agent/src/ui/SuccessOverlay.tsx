@@ -4,7 +4,7 @@ import { Animated, Modal, StyleSheet, Text, View } from 'react-native';
 import { Button } from './Button';
 import { CheckDraw } from './CheckDraw';
 import { useReducedMotion } from './useReducedMotion';
-import { colors, radius, spacing, fontSize, elevation } from './theme';
+import { colors, radius, spacing, type, elevation } from './theme';
 
 interface SuccessOverlayProps {
   visible: boolean;
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   content: { width: '100%', alignItems: 'center', gap: spacing.xs },
-  title: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, textAlign: 'center' },
-  subtitle: { fontSize: fontSize.md, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xxs },
+  title: { ...type.headline, color: colors.text, textAlign: 'center' },
+  subtitle: { ...type.body, color: colors.textMuted, textAlign: 'center', marginTop: spacing.xxs },
   actions: { width: '100%', gap: spacing.sm, marginTop: spacing.lg },
 });

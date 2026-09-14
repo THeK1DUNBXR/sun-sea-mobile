@@ -2,7 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { colors } from '@/ui/theme';
+import { colors, type } from '@/ui/theme';
 
 export default function TabsLayout() {
   return (
@@ -12,7 +12,9 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textFaint,
         tabBarStyle: { height: 64, paddingBottom: 10, paddingTop: 8, borderTopColor: colors.border },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '800' },
+        // Tab bar labels floor at the caption role's 12sp — 11sp fell below
+        // the sunlight-legibility floor for field use.
+        tabBarLabelStyle: { ...type.caption },
       }}
     >
       <Tabs.Screen

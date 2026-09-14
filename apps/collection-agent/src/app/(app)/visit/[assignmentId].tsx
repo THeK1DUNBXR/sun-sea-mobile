@@ -15,7 +15,7 @@ import { Input } from '@/ui/Input';
 import { Screen } from '@/ui/Screen';
 import { SuccessOverlay } from '@/ui/SuccessOverlay';
 import { GpsStatus } from '@/ui/GpsStatus';
-import { colors, spacing, fontSize, radius, sizes } from '@/ui/theme';
+import { colors, spacing, type, radius, sizes } from '@/ui/theme';
 
 const OUTCOMES = [
   { value: 'CUSTOMER_UNAVAILABLE', label: 'Unavailable' },
@@ -166,9 +166,9 @@ export default function VisitScreen() {
 }
 
 const styles = StyleSheet.create({
-  label: { fontSize: fontSize.sm, fontWeight: '700', color: colors.textMuted, marginBottom: spacing.sm },
+  label: { ...type.label, color: colors.textMuted, marginBottom: spacing.sm },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.xs },
   preview: { width: sizes.previewLarge, height: sizes.previewLarge, borderRadius: radius.sm, marginTop: spacing.sm },
   locationCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  muted: { color: colors.textMuted, flex: 1 },
+  muted: { ...type.body, color: colors.textMuted, flex: 1 },
 });

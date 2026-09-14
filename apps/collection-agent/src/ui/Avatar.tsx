@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, sizes } from './theme';
+import { colors, sizes, fontWeight } from './theme';
 
 interface AvatarProps {
   label: string;
@@ -27,5 +27,5 @@ export function Avatar({ label, color, size = sizes.avatar }: AvatarProps) {
 
 const styles = StyleSheet.create({
   circle: { alignItems: 'center', justifyContent: 'center' },
-  label: { color: colors.onPrimary, fontWeight: '900', letterSpacing: -0.2 },
+  label: { color: colors.onPrimary, letterSpacing: -0.2, ...fontWeight('900') },
 });

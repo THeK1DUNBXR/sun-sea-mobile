@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from './Button';
-import { colors, spacing, fontSize, letterSpacing } from './theme';
+import { colors, spacing, type } from './theme';
 
 interface Props {
   children: React.ReactNode;
@@ -69,6 +69,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.lg,
   },
-  title: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay, textAlign: 'center' },
-  subtitle: { fontSize: fontSize.md, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
+  title: { ...type.headline, color: colors.text, textAlign: 'center' },
+  subtitle: { ...type.body, color: colors.textMuted, textAlign: 'center', marginTop: spacing.sm },
 });

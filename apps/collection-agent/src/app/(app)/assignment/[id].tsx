@@ -10,7 +10,7 @@ import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
-import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
+import { colors, spacing, type, fontWeight, tabularNums } from '@/ui/theme';
 import { assignmentStatusMeta, formatDate, formatMoney, isOverdue } from '@/ui/format';
 
 /** Normalizes an Indian mobile number for tel:/wa.me links: strips
@@ -201,12 +201,12 @@ export default function AssignmentDetailScreen() {
                   {item.productName ?? 'Item'}
                 </Text>
                 {item.quantity != null && item.unitPrice != null ? (
-                  <Text style={styles.itemMeta}>
+                  <Text style={[styles.itemMeta, tabularNums]}>
                     {item.quantity} × {formatMoney(item.unitPrice)}
                   </Text>
                 ) : null}
               </View>
-              <Text style={styles.muted}>{formatMoney(item.lineTotal)}</Text>
+              <Text style={[styles.muted, tabularNums]}>{formatMoney(item.lineTotal)}</Text>
             </View>
           ))}
         </Card>
@@ -251,7 +251,7 @@ export default function AssignmentDetailScreen() {
                 (ledger.data?.outstandingInvoices ?? []).map((inv) => (
                   <View key={inv.id} style={styles.itemRow}>
                     <Text style={styles.itemDesc}>{inv.invoiceNo}</Text>
-                    <Text style={styles.muted}>{formatMoney(inv.outstanding)}</Text>
+                    <Text style={[styles.muted, tabularNums]}>{formatMoney(inv.outstanding)}</Text>
                   </View>
                 ))
               )}
@@ -262,7 +262,7 @@ export default function AssignmentDetailScreen() {
                 (ledger.data?.recentReceipts ?? []).map((r) => (
                   <View key={r.id} style={styles.itemRow}>
                     <Text style={styles.itemDesc}>{r.receiptNo}</Text>
-                    <Text style={styles.muted}>{formatMoney(r.amount)}</Text>
+                    <Text style={[styles.muted, tabularNums]}>{formatMoney(r.amount)}</Text>
                   </View>
                 ))
               )}
@@ -285,17 +285,17 @@ function AmountBlock({ label, value, emphasize }: { label: string; value?: numbe
 
 const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  invoiceNo: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
-  muted: { color: colors.textMuted, fontSize: fontSize.sm, marginTop: spacing.xxs },
-  mutedFaint: { color: colors.textFaint, fontSize: fontSize.sm, marginTop: spacing.xxs, fontStyle: 'italic' },
-  itemMeta: { color: colors.textFaint, fontSize: fontSize.xs, marginTop: spacing.xxs },
+  invoiceNo: { ...type.headline, color: colors.text },
+  muted: { ...type.body, color: colors.textMuted, marginTop: spacing.xxs },
+  mutedFaint: { ...type.body, color: colors.textFaint, marginTop: spacing.xxs, fontStyle: 'italic' },
+  itemMeta: { ...type.caption, color: colors.textFaint, marginTop: spacing.xxs },
   badgeRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
   amountRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.lg },
   amountBlock: { alignItems: 'flex-start' },
-  amountValue: { fontSize: fontSize.md, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
-  amountValueEmphasis: { color: colors.primaryDark, fontSize: fontSize.xxl, fontWeight: '900' },
-  sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text, marginBottom: spacing.sm },
-  subsectionTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.text, marginTop: spacing.md },
+  amountValue: { ...type.title, color: colors.text, fontVariant: ['tabular-nums'] },
+  amountValueEmphasis: { ...type.stat, color: colors.primaryDark, fontVariant: ['tabular-nums'] },
+  sectionTitle: { ...type.title, color: colors.text, marginBottom: spacing.sm },
+  subsectionTitle: { ...type.body, color: colors.text, marginTop: spacing.md, ...fontWeight('700') },
   contactRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
   contactBtn: { flexGrow: 1 },
   itemRow: {
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  itemDesc: { color: colors.text, flex: 1, marginRight: spacing.sm },
+  itemDesc: { ...type.body, color: colors.text, flex: 1, marginRight: spacing.sm },
   actionRow: { gap: spacing.sm },
   ledgerCentered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   retryButton: { alignSelf: 'stretch' },

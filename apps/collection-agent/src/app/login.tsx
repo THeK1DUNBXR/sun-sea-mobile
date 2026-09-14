@@ -6,7 +6,7 @@ import { Button } from '@/ui/Button';
 import { Input } from '@/ui/Input';
 import { Screen } from '@/ui/Screen';
 import { BrandMark } from '@/ui/BrandMark';
-import { colors, spacing, fontSize, radius, letterSpacing } from '@/ui/theme';
+import { colors, spacing, type, radius, letterSpacing } from '@/ui/theme';
 import { useAuth } from '@/store/auth';
 
 export default function LoginScreen() {
@@ -83,10 +83,9 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', padding: spacing.xl },
   logoWrap: { alignItems: 'flex-start', marginBottom: spacing.xxxl },
   tagline: {
-    fontSize: fontSize.md,
+    ...type.body,
     color: colors.textMuted,
     marginTop: spacing.md,
-    fontWeight: '500',
   },
   form: { gap: spacing.sm },
   errorBox: {
@@ -97,12 +96,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     padding: spacing.md,
   },
-  error: { color: colors.danger, fontSize: fontSize.md, fontWeight: '600', flex: 1 },
+  error: { ...type.body, color: colors.danger, flex: 1 },
   footer: {
+    ...type.caption,
     textAlign: 'center',
     color: colors.textFaint,
-    fontSize: fontSize.xs,
-    fontWeight: '700',
     letterSpacing: letterSpacing.wideLabel,
     paddingBottom: spacing.lg,
     textTransform: 'uppercase',

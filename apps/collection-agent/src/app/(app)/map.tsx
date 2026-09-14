@@ -11,7 +11,7 @@ import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, fontSize, spacing } from '@/ui/theme';
+import { colors, type, spacing } from '@/ui/theme';
 
 const STAGGER_CAP = 10;
 
@@ -120,5 +120,5 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     backgroundColor: colors.primary,
   },
-  muted: { color: colors.textMuted, padding: spacing.lg, fontSize: fontSize.md },
+  muted: { ...type.body, color: colors.textMuted, padding: spacing.lg },
 });
