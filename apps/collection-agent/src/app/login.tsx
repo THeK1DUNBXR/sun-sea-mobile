@@ -1,21 +1,32 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Button } from '@/ui/Button';
 import { Input } from '@/ui/Input';
+import { PressableScale } from '@/ui/PressableScale';
 import { Screen } from '@/ui/Screen';
 import { BrandMark } from '@/ui/BrandMark';
 import { colors, spacing, type, radius, letterSpacing } from '@/ui/theme';
+import { getServerHostLabel, getServerUrl, hydrateServerUrl } from '@/api/serverUrl';
 import { useAuth } from '@/store/auth';
 import { copy } from '@/copy';
 
 export default function LoginScreen() {
+  const router = useRouter();
   const { login, error, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [serverHost, setServerHost] = useState(getServerHostLabel(getServerUrl()));
+
+  useFocusEffect(
+    useCallback(() => {
+      hydrateServerUrl().then((url) => setServerHost(getServerHostLabel(url)));
+    }, []),
+  );
 
   const onSubmit = async () => {
     setFormError(null);
@@ -73,6 +84,16 @@ export default function LoginScreen() {
           ) : null}
           <Button title={copy.login.logIn} onPress={onSubmit} loading={submitting} style={{ marginTop: spacing.sm }} />
         </View>
+
+        <PressableScale
+          onPress={() => router.push('/server')}
+          accessibilityRole="button"
+          accessibilityLabel={copy.login.serverLinkA11y}
+          style={styles.serverLink}
+        >
+          <Ionicons name="server-outline" size={14} color={colors.textMuted} />
+          <Text style={styles.serverLinkText}>{copy.login.serverLink(serverHost)}</Text>
+        </PressableScale>
       </View>
       <Text style={styles.footer}>{copy.login.footer}</Text>
     </Screen>
@@ -89,6 +110,15 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   form: { gap: spacing.sm },
+  serverLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xl,
+    minHeight: 44,
+  },
+  serverLinkText: { ...type.caption, color: colors.textMuted },
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',

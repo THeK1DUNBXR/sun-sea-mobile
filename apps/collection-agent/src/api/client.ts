@@ -1,9 +1,9 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-export const ACCESS_TOKEN_KEY = 'sunsea.collection.accessToken';
+import { hydrateServerUrl } from './serverUrl';
 
-export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:5000/api';
+export const ACCESS_TOKEN_KEY = 'sunsea.collection.accessToken';
 
 // Set by the auth store on hydrate/login/logout so the client can react to
 // a 401 without creating a circular import between api/client and store/auth.
@@ -32,12 +32,20 @@ export async function setStoredToken(token: string | null) {
   }
 }
 
+// baseURL is intentionally not set here: it's resolved per request below, so
+// that changing the server address in Settings takes effect on the very next
+// call without recreating this client or restarting the app. This same
+// client is used from the headless background-location task and the offline
+// queue flush, so the resolve below must work from any JS context.
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
   timeout: 30000,
 });
 
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  // Resolves from the in-memory cache once hydrated (the common case, and
+  // cheap even from a headless context); on the very first request of a cold
+  // start it awaits the one-time AsyncStorage read.
+  config.baseURL = await hydrateServerUrl();
   const token = await getStoredToken();
   if (token) {
     config.headers = config.headers ?? {};

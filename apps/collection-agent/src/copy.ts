@@ -235,6 +235,54 @@ export const copy = {
     missingFields: 'Enter your email and password.',
     genericFailure: "Couldn't log in. Check your connection and try again.",
     footer: 'SunSea ERP · Collection Agent',
+    serverLink(host: string): string {
+      return `Server: ${host}`;
+    },
+    serverLinkA11y: 'Server address. Change which backend the app connects to.',
+  },
+
+  server: {
+    screenTitle: 'Server address',
+    profileRowLabel: 'Server address',
+    currentLabel: 'Current server',
+    inputLabel: 'Server address',
+    inputPlaceholder: 'https://your-server.example.com/api',
+    inputA11y: 'Server address',
+    helperTitle: 'Examples',
+    helperAndroidEmulator: 'Android emulator: http://10.0.2.2:5000/api',
+    helperLanPhone: "Phone on the same Wi-Fi: http://<your PC's LAN IP>:5000/api",
+    helperHosted: 'Hosted: https://<your-domain>/api',
+    testButton: 'Test connection',
+    testingButton: 'Testing…',
+    testButtonA11y: 'Test connection to this server',
+    saveButton: 'Save',
+    savingButton: 'Saving…',
+    saveButtonA11y: 'Save server address',
+    resetButton: 'Reset to default',
+    resetButtonA11y: 'Reset server address to the default',
+    changeNote:
+      "You're signed in. Saving a different server will sign you out — any pending offline items will upload to the new server once you sign back in.",
+    reasons: {
+      empty: 'Enter a server address.',
+      invalid: "That doesn't look like a valid address.",
+      invalidPort: 'The port must be a number between 1 and 65535.',
+      invalidHost: 'Enter a valid hostname, domain, or IP address.',
+    },
+    test: {
+      success(version: string, environment: string, latencyMs: number): string {
+        return `Connected — Sunsea ERP API v${version} (${environment}), ${latencyMs}ms`;
+      },
+      successA11y(version: string, environment: string, latencyMs: number): string {
+        return `Connected to Sunsea ERP API version ${version}, ${environment} environment, ${latencyMs} milliseconds`;
+      },
+      unexpectedResponse: "That address responded, but it doesn't look like the Sunsea ERP API.",
+    },
+    errors: {
+      timeout: 'The request timed out. Check the address and that the server is running.',
+      offline: "Couldn't reach that address. Check the address and your connection.",
+      server: 'The server responded with an error.',
+      generic: 'Something went wrong. Please try again.',
+    },
   },
 
   imageGuard: {

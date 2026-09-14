@@ -20,7 +20,13 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Signs out because the server address changed, not because the agent
+   * chose to log out — same effect (stop tracking, clear the token), kept
+   * as its own entry point so the server screen doesn't have to reach past
+   * `logout`'s "agent decided to leave" framing. */
+  signOutForServerChange: () => Promise<void>;
   clearError: () => void;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -120,7 +126,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearError = useCallback(() => setState((s) => ({ ...s, error: null })), []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ ...state, login, logout: signOut, clearError }),
+    () => ({
+      ...state,
+      login,
+      logout: signOut,
+      signOutForServerChange: signOut,
+      clearError,
+      isAuthenticated: state.status === 'signedIn',
+    }),
     [state, login, signOut, clearError],
   );
 

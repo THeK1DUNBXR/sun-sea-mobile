@@ -10,17 +10,23 @@
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.sunsea.collectionagent",
+      "buildNumber": "1",
       "supportsTablet": false,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "SunSea Collect uses your location to show nearby customers and record where collections and visits happen.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "SunSea Collect shares your live route with the office while you are on collection duty, including when the app is in the background.",
         "NSCameraUsageDescription": "SunSea Collect uses the camera to capture proof of payment and visit photos.",
         "NSPhotoLibraryUsageDescription": "SunSea Collect lets you attach photos from your library as proof of payment.",
-        "UIBackgroundModes": ["location"]
+        "UIBackgroundModes": ["location"],
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
       "package": "com.sunsea.collectionagent",
+      "versionCode": 1,
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

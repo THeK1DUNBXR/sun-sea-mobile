@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { Badge } from '@/ui/Badge';
 import { Avatar } from '@/ui/Avatar';
 import { EmptyState } from '@/ui/EmptyState';
+import { PressableScale } from '@/ui/PressableScale';
 import { Screen } from '@/ui/Screen';
 import { colors, spacing, type, radius, sizes, fontWeight } from '@/ui/theme';
 import { formatDateTime, initials } from '@/ui/format';
+import { getServerHostLabel, getServerUrl, hydrateServerUrl } from '@/api/serverUrl';
 import { useAuth } from '@/store/auth';
 import { useSyncStatus } from '@/offline/useSyncStatus';
 import { retryItem, removeItem, subscribeSyncNotes, dismissSyncNote, type SyncNote } from '@/offline/queue';
@@ -18,12 +20,20 @@ import { startTracking, stopTracking, getTrackingPreference } from '@/location/t
 import { copy } from '@/copy';
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { user, logout } = useAuth();
   const sync = useSyncStatus();
   const [tracking, setTracking] = useState(false);
   const [notes, setNotes] = useState<SyncNote[]>([]);
+  const [serverHost, setServerHost] = useState(getServerHostLabel(getServerUrl()));
 
   useEffect(() => subscribeSyncNotes(setNotes), []);
+
+  useFocusEffect(
+    useCallback(() => {
+      hydrateServerUrl().then((url) => setServerHost(getServerHostLabel(url)));
+    }, []),
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -69,6 +79,24 @@ export default function ProfileScreen() {
             accessibilityLabel="Location tracking"
           />
         </View>
+      </Card>
+
+      <Card>
+        <PressableScale
+          onPress={() => router.push('/server')}
+          accessibilityRole="button"
+          accessibilityLabel={`${copy.server.profileRowLabel}. ${serverHost}`}
+          style={styles.rowBetween}
+        >
+          <View style={styles.trackingLabel}>
+            <Ionicons name="server-outline" size={18} color={colors.primary} />
+            <View>
+              <Text style={styles.cardTitle}>{copy.server.profileRowLabel}</Text>
+              <Text style={styles.subtitle}>{serverHost}</Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+        </PressableScale>
       </Card>
 
       <Card>

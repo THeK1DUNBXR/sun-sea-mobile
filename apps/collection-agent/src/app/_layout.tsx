@@ -9,7 +9,12 @@ import { queryClient, setupOnlineManager } from '@/api/queryClient';
 import { AuthProvider, useAuth } from '@/store/auth';
 import { resumeTrackingIfEnabled } from '@/location/tracking';
 import { registerForPushNotifications, subscribeNotificationTaps } from '@/notifications/push';
+import { hydrateServerUrl } from '@/api/serverUrl';
+import { copy } from '@/copy';
+import { colors, fontWeight } from '@/ui/theme';
 import { ErrorBoundary } from '@/ui/ErrorBoundary';
+
+hydrateServerUrl();
 
 setupOnlineManager();
 
@@ -42,6 +47,17 @@ function RootNavigation() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />
       <Stack.Screen name="(app)" />
+      <Stack.Screen
+        name="server"
+        options={{
+          headerShown: true,
+          title: copy.server.screenTitle,
+          headerStyle: { backgroundColor: colors.surface },
+          headerShadowVisible: true,
+          headerTintColor: colors.primaryDark,
+          headerTitleStyle: { fontSize: 17, ...fontWeight('800') },
+        }}
+      />
     </Stack>
   );
 }
