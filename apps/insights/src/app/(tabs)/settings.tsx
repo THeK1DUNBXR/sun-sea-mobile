@@ -1,9 +1,10 @@
-import React from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { API_URL } from '@/api/client';
-import { settingsScreen as copy } from '@/copy';
+import { getServerHostLabel, getServerUrl, hydrateServerUrl } from '@/api/serverUrl';
+import { serverScreen as serverCopy, settingsScreen as copy } from '@/copy';
 import { useAuth } from '@/store/auth';
 import { Card } from '@/ui/Card';
 import { Icon } from '@/ui/Icon';
@@ -25,6 +26,41 @@ function Row({ label, value, numeric }: { label: string; value: string; numeric?
         {value}
       </Text>
     </View>
+  );
+}
+
+function ServerRow() {
+  const palette = usePalette();
+  const router = useRouter();
+  const [serverUrl, setServerUrl] = useState(getServerUrl());
+
+  useFocusEffect(
+    useCallback(() => {
+      hydrateServerUrl().then(setServerUrl);
+    }, [])
+  );
+
+  const host = getServerHostLabel(serverUrl);
+
+  return (
+    <PressableScale
+      onPress={() => router.push('/server')}
+      accessibilityRole="button"
+      accessibilityLabel={serverCopy.settingsRowA11y(host)}
+      style={styles.row}
+    >
+      <Text style={[typography.bodySm, { color: palette.textMuted }]}>{copy.serverLabel}</Text>
+      <View style={styles.rowValue}>
+        <Text
+          style={[typography.body, { color: palette.accent, flexShrink: 1 }]}
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.6}
+        >
+          {host}
+        </Text>
+        <Text style={[typography.body, { color: palette.textFaint }]}>›</Text>
+      </View>
+    </PressableScale>
   );
 }
 
@@ -61,7 +97,7 @@ export default function SettingsScreen() {
 
         <SectionHeader title={copy.connectionSection} />
         <Card style={{ gap: spacing.sm }}>
-          <Row label={copy.serverLabel} value={API_URL} />
+          <ServerRow />
           <Row label={copy.overviewRefreshLabel} value={copy.overviewRefreshValue} />
           <Row label={copy.agentsRefreshLabel} value={copy.agentsRefreshValue} />
         </Card>
@@ -128,7 +164,8 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     marginTop: spacing.xs,
   },
-  row: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.md },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md, minHeight: MIN_TOUCH },
+  rowValue: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',

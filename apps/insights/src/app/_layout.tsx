@@ -5,9 +5,11 @@ import React, { useEffect } from 'react';
 import { AppState, type AppStateStatus, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { hydrateServerUrl } from '@/api/serverUrl';
+import { serverScreen as serverCopy } from '@/copy';
 import { AuthProvider } from '@/store/auth';
 import { ErrorBoundary } from '@/ui/ErrorBoundary';
-import { usePalette } from '@/ui/theme';
+import { typography, usePalette } from '@/ui/theme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,10 +40,18 @@ function RootBackground({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   const scheme = useColorScheme();
+  const palette = usePalette();
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', onAppStateChange);
     return () => subscription.remove();
+  }, []);
+
+  // Pre-warms the server-URL cache so the very first API request (the boot-time
+  // /auth/me probe, or the login POST) already resolves the right baseURL
+  // without waiting on an AsyncStorage read of its own — see api/serverUrl.ts.
+  useEffect(() => {
+    void hydrateServerUrl();
   }, []);
 
   return (
@@ -54,6 +64,21 @@ export default function RootLayout() {
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="login" />
                 <Stack.Screen name="(tabs)" />
+                {/* Reachable both signed-out (from the login screen) and
+                    signed-in (from Settings) — this is the one screen in the
+                    app that keeps the native header, so there's a back
+                    button regardless of which flow pushed it. */}
+                <Stack.Screen
+                  name="server"
+                  options={{
+                    headerShown: true,
+                    title: serverCopy.title,
+                    headerStyle: { backgroundColor: palette.bg },
+                    headerTintColor: palette.text,
+                    headerTitleStyle: typography.title,
+                    headerShadowVisible: false,
+                  }}
+                />
               </Stack>
             </RootBackground>
           </SafeAreaProvider>

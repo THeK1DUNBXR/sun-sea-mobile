@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 
 import { getErrorMessage, setUnauthorizedHandler, TOKEN_KEY } from '@/api/client';
 import { fetchMe, login as loginRequest } from '@/api/insightsApi';
-import { auth as authCopy, login as loginCopy, REQUIRED_PERMISSION } from '@/copy';
+import { auth as authCopy, login as loginCopy, REQUIRED_PERMISSION, serverScreen as serverCopy } from '@/copy';
 import type { MeResponse, User } from '@/types';
 
 export { REQUIRED_PERMISSION };
@@ -20,6 +20,9 @@ interface AuthState {
   dismissSessionMessage: () => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  /** Logs out and leaves a note explaining why — used when the founder points
+   * the app at a different server address than the one they're signed in on. */
+  signOutForServerChange: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -131,6 +134,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const dismissSessionMessage = useCallback(() => setSessionMessage(null), []);
 
+  const signOutForServerChange = useCallback(async () => {
+    await logout();
+    if (mountedRef.current) setSessionMessage(serverCopy.signedOutNotice);
+  }, [logout]);
+
   const value = useMemo<AuthState>(
     () => ({
       isHydrating,
@@ -142,8 +150,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       dismissSessionMessage,
       login,
       logout,
+      signOutForServerChange,
     }),
-    [isHydrating, isAuthenticated, user, permissions, isSuperAdmin, sessionMessage, dismissSessionMessage, login, logout]
+    [
+      isHydrating,
+      isAuthenticated,
+      user,
+      permissions,
+      isSuperAdmin,
+      sessionMessage,
+      dismissSessionMessage,
+      login,
+      logout,
+      signOutForServerChange,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -2,11 +2,9 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 import { auth as authCopy, errors as errorCopy } from '@/copy';
+import { hydrateServerUrl } from './serverUrl';
 
 export const TOKEN_KEY = 'insights.accessToken';
-
-export const API_URL =
-  process.env.EXPO_PUBLIC_API_URL?.replace(/\/+$/, '') ?? 'http://10.0.2.2:5000/api';
 
 /** Called by the auth store when the server tells us the session is dead
  * (401 from any authenticated request). Also carries a short reason so the
@@ -17,12 +15,17 @@ export function setUnauthorizedHandler(handler: ((reason: string) => void) | nul
   onUnauthorized = handler;
 }
 
+// baseURL is intentionally not set here: it's resolved per request below, so
+// that changing the server address in Settings takes effect on the very next
+// call without recreating this client or restarting the app.
 export const apiClient = axios.create({
-  baseURL: API_URL,
   timeout: 20000,
 });
 
 apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  // Resolves from the in-memory cache once hydrated (the common case); on the
+  // very first request of a cold start it awaits the one-time AsyncStorage read.
+  config.baseURL = await hydrateServerUrl();
   try {
     const token = await SecureStore.getItemAsync(TOKEN_KEY);
     if (token) {

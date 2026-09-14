@@ -186,6 +186,47 @@ export const settingsScreen = {
   footer: brand.footer,
 };
 
+export const serverScreen = {
+  title: 'Server address',
+  currentLabel: 'Current server',
+  inputLabel: 'Server address',
+  inputPlaceholder: 'https://your-api.example.com/api',
+  inputA11y: 'Server address',
+  helperTitle: 'Examples',
+  helperAndroidEmulator: 'Android emulator: http://10.0.2.2:5000/api',
+  helperLanPhone: "Phone on the same Wi-Fi: http://<your PC's LAN IP>:5000/api",
+  helperHosted: 'Hosted: https://<your-domain>/api',
+  testButton: 'Test connection',
+  testingButton: 'Testing…',
+  testButtonA11y: 'Test connection',
+  saveButton: 'Save',
+  savingButton: 'Saving…',
+  saveButtonA11y: 'Save server address',
+  resetButton: 'Reset to default',
+  resetButtonA11y: 'Reset server address to the default',
+  /** "Server: <host>" — the link shown under the login form and the row shown in Settings. */
+  linkFromLogin: (host: string) => `Server: ${host}`,
+  linkFromLoginA11y: 'Change server address',
+  settingsRowA11y: (host: string) => `Server address, ${host}. Opens server settings.`,
+  /** Shown once a save would point the app at a different server than the one
+   * currently signed in against — saving forces a fresh sign-in there. */
+  changeNote: "Saving a different server signs you out — you'll need to sign in again on the new server.",
+  signedOutNotice: 'Signed out because the server address changed. Sign in again to continue.',
+  reasons: {
+    empty: 'Enter a server address.',
+    invalid: "That doesn't look like a valid address.",
+    invalidHost: "That doesn't look like a valid host name or IP address.",
+    invalidPort: 'That port number looks wrong.',
+  },
+  test: {
+    success: (version: string, environment: string, latencyMs: number) =>
+      `Connected — v${version} · ${environment} · ${latencyMs}ms`,
+    successA11y: (version: string, environment: string, latencyMs: number) =>
+      `Connected. Version ${version}, ${environment} environment, ${latencyMs} milliseconds.`,
+    unexpectedResponse: "Connected, but that doesn't look like the Sunsea ERP API.",
+  },
+};
+
 export const crash = {
   title: 'Something went wrong',
   message:

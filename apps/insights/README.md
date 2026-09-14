@@ -18,7 +18,8 @@ agent map. Built against the contract in `../../docs/DESIGN.md` (§3.4, §3.3, �
 cd apps/insights
 npm install
 cp .env.example .env
-# edit .env: EXPO_PUBLIC_API_URL should point at your backend, e.g.
+# edit .env: EXPO_PUBLIC_API_URL is only the *initial* default (see below) —
+# it's baked in at build time, e.g.
 #   http://10.0.2.2:5000/api   (Android emulator -> host machine)
 #   http://localhost:5000/api  (iOS simulator)
 #   https://your-api.example.com/api (device / production)
@@ -26,6 +27,40 @@ npx expo start
 ```
 
 Type-check: `npx tsc --noEmit`
+
+### Changing the server address without a rebuild
+
+The backend URL is editable at runtime — no rebuild needed to point a running app at
+a different server. Reach it from the **"Server: ..."** link under the sign-in form
+(works before signing in) or the **Server address** row in the **Settings** tab
+(after signing in). The screen lets you type a new address, run **Test connection**
+against it (shows the API version, environment, and round-trip latency, or the
+error), and **Save** it — saved values persist across restarts (`AsyncStorage`).
+**Reset to default** puts the build's default address back in the field.
+
+Saving a server address different from the one you're currently signed in against
+signs you out, since a session token from one backend is meaningless on another —
+sign in again on the new server.
+
+A bare host (no `http://`/`https://`) is completed automatically: `localhost`, an IP
+address (`10.0.2.2`, `192.168.1.50`, ...) gets `http://` (plain HTTP, for local
+testing — see the cleartext-traffic note below); anything else gets `https://`. A
+missing `/api` path suffix is appended automatically. Typical values:
+
+- **Android emulator:** `http://10.0.2.2:5000/api` (emulator's alias for the host machine)
+- **Phone on the same Wi-Fi as the backend:** `http://<your PC's LAN IP>:5000/api`
+- **Hosted (e.g. Railway):** `https://<your-domain>/api`
+
+Without ever touching this screen, the app defaults to the hosted production API
+(`https://sunseaerp-production.up.railway.app/api`), or to `EXPO_PUBLIC_API_URL` if
+one was set at build time.
+
+**Plain-HTTP note:** `app.json` sets Android's `usesCleartextTraffic: true` and iOS's
+`NSAppTransportSecurity.NSAllowsArbitraryLoads: true` so the app can reach a
+`http://` backend on a local network or emulator during development/testing. Before
+a store release, tighten this back down (e.g. drop `usesCleartextTraffic` and scope
+`NSAppTransportSecurity` to specific exception domains, or remove it) once testing
+against plain HTTP is no longer needed.
 
 ## Login & permissions
 
@@ -53,12 +88,16 @@ sign-in (clearing the token) if neither is present. Ask a backend admin to grant
   Auto-refreshes every 30s while focused.
 - **Activity** — recent invoices/collections/deposits feed grouped by day, with an
   icon per activity type.
-- **Settings** — signed-in user, server URL, refresh intervals, granted permissions,
-  and logout.
+- **Settings** — signed-in user, a navigable server address row (see below),
+  refresh intervals, granted permissions, and logout.
+- **Server address** — view/edit/test/save the backend base URL; see "Changing the
+  server address without a rebuild" above. Reachable signed-out (from login) or
+  signed-in (from Settings).
 
 ## API surface consumed
 
-All requests go through `${EXPO_PUBLIC_API_URL}` (already includes `/api`):
+All requests go through the current server address (see above; already includes
+`/api`):
 
 - `POST /auth/login`, `GET /auth/me`
 - `GET /insights/overview`
@@ -74,7 +113,8 @@ being built concurrently against the same contract.
 
 ```
 src/
-  api/        axios client, typed insights API calls, react-query hooks
+  api/        axios client, runtime-configurable server URL, typed insights API
+              calls, react-query hooks
   app/        expo-router screens (login, tabs: overview/agents/activity/settings)
   charts/     hand-rolled SVG charts (trend line/area, aging stacked bar, inline bar)
   store/      auth context (login/logout/hydrate + permission gate)

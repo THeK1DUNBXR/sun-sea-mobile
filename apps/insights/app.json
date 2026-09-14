@@ -14,12 +14,16 @@
       "bundleIdentifier": "com.sunsea.insights",
       "buildNumber": "1",
       "infoPlist": {
-        "UIUserInterfaceStyle": "Automatic"
+        "UIUserInterfaceStyle": "Automatic",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       }
     },
     "android": {
       "package": "com.sunsea.insights",
       "versionCode": 1,
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#0B0E14",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

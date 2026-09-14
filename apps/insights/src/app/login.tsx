@@ -1,5 +1,5 @@
-import { Redirect } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   findNodeHandle,
@@ -14,7 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getErrorMessage } from '@/api/client';
-import { brand, login as copy } from '@/copy';
+import { getServerHostLabel, getServerUrl, hydrateServerUrl } from '@/api/serverUrl';
+import { brand, login as copy, serverScreen as serverCopy } from '@/copy';
 import { useAuth } from '@/store/auth';
 import { PressableScale } from '@/ui/PressableScale';
 import { MEASURE, MIN_TOUCH, radius, spacing, typography, usePalette } from '@/ui/theme';
@@ -28,6 +29,13 @@ const FORM_MAX_WIDTH = 440;
 export default function LoginScreen() {
   const { login, isAuthenticated, isHydrating, sessionMessage, dismissSessionMessage } = useAuth();
   const palette = usePalette();
+  const router = useRouter();
+  const [serverHost, setServerHost] = useState(getServerHostLabel(getServerUrl()));
+  useFocusEffect(
+    useCallback(() => {
+      hydrateServerUrl().then((url) => setServerHost(getServerHostLabel(url)));
+    }, [])
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -210,6 +218,18 @@ export default function LoginScreen() {
             <Text style={[typography.caption, styles.hint, { color: palette.textFaint }]} maxFontSizeMultiplier={1.6}>
               {copy.accessHint}
             </Text>
+
+            <PressableScale
+              onPress={() => router.push('/server')}
+              haptic={false}
+              accessibilityRole="button"
+              accessibilityLabel={serverCopy.linkFromLoginA11y}
+              style={styles.serverLink}
+            >
+              <Text style={[typography.bodySm, { color: palette.textMuted }]}>
+                {serverCopy.linkFromLogin(serverHost)}
+              </Text>
+            </PressableScale>
           </View>
           </View>
         </ScrollView>
@@ -258,4 +278,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   hint: { textAlign: 'center', marginTop: spacing.md },
+  serverLink: {
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+    minHeight: MIN_TOUCH,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.sm,
+  },
 });
