@@ -81,7 +81,16 @@ export default function DepositsScreen() {
   };
 
   return (
-    <Screen refreshing={query.isFetching} onRefresh={() => query.refetch()} avoidKeyboard>
+    <Screen
+      refreshing={query.isFetching}
+      onRefresh={() => query.refetch()}
+      avoidKeyboard
+      footer={
+        showForm ? (
+          <Button title={copy.deposits.submitDeposit} onPress={onSubmit} loading={submitting} />
+        ) : undefined
+      }
+    >
       <View style={styles.headerRow}>
         <Text style={styles.heading}>{copy.deposits.heading}</Text>
         <Button
@@ -98,7 +107,8 @@ export default function DepositsScreen() {
         <Card elevation="raised">
           <Input
             label={copy.deposits.amountLabel}
-            keyboardType="numeric"
+            keyboardType="decimal-pad"
+            returnKeyType="done"
             value={amount}
             onChangeText={(v) => {
               setAmount(v);
@@ -107,7 +117,13 @@ export default function DepositsScreen() {
             placeholder="5000"
             error={amountError}
           />
-          <Input label={copy.deposits.notesLabel} value={notes} onChangeText={setNotes} placeholder="Handed to accountant" />
+          <Input
+            label={copy.deposits.notesLabel}
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="Handed to accountant"
+            returnKeyType="done"
+          />
           <Button
             title={proofUri ? copy.deposits.proofPhotoAdded : copy.deposits.addProofPhoto}
             onPress={pickProof}
@@ -115,7 +131,6 @@ export default function DepositsScreen() {
             icon={<Ionicons name={proofUri ? 'checkmark-circle' : 'camera-outline'} size={18} color={colors.primary} />}
           />
           {proofUri ? <Image source={{ uri: proofUri }} style={styles.preview} accessibilityLabel="Deposit proof preview" /> : null}
-          <Button title={copy.deposits.submitDeposit} onPress={onSubmit} loading={submitting} style={{ marginTop: spacing.sm }} />
         </Card>
         </Animated.View>
       )}
@@ -169,7 +184,7 @@ function DepositRow({ deposit, index }: { deposit: AgentCashDeposit; index: numb
     >
       <Card style={styles.row}>
         <View style={styles.rowTop}>
-          <Text style={styles.amount} numberOfLines={1}>
+          <Text style={styles.amount} numberOfLines={1} maxFontSizeMultiplier={1.3}>
             {formatMoney(deposit.amount)}
           </Text>
           <Badge label={meta.label} tone={meta.tone} dot />
@@ -187,7 +202,7 @@ const styles = StyleSheet.create({
   stateArea: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
   stateButton: { alignSelf: 'stretch' },
   row: { gap: spacing.xs },
-  rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rowTop: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', rowGap: spacing.xxs },
   amount: {
     ...type.stat,
     color: colors.primaryDark,

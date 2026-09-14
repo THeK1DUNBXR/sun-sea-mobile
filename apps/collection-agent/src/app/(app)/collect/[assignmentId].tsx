@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -70,6 +70,12 @@ export default function CollectScreen() {
   const [submittedAmount, setSubmittedAmount] = useState<number | null>(null);
   const [amountHighlight, setAmountHighlight] = useState(0);
   const reduceMotion = useReducedMotion();
+  const { width, height } = useWindowDimensions();
+  // Sized to the window, not just a fixed height: landscape gives far less
+  // vertical room, so the pad trims down there instead of eating most of a
+  // short screen, while staying tall enough to actually sign in either case.
+  const isLandscape = width > height;
+  const signatureBoxHeight = isLandscape ? Math.max(120, height * 0.4) : sizes.signatureHeight;
 
   useEffect(() => {
     let cancelled = false;
@@ -152,7 +158,10 @@ export default function CollectScreen() {
   };
 
   return (
-    <Screen avoidKeyboard>
+    <Screen
+      avoidKeyboard
+      footer={<Button title={copy.collect.submit} onPress={onSubmit} loading={submitting} />}
+    >
       <Card elevation="raised" style={styles.outstandingCard}>
         <Text style={styles.outstandingLabel}>{copy.collect.outstandingPrefix} · {customerName}</Text>
         {outstandingKnown ? (
@@ -183,7 +192,8 @@ export default function CollectScreen() {
       <Step number={1} title={copy.collect.step1Title} subtitle={copy.collect.step1Guidance}>
         <Input
           label={copy.collect.amountLabel}
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
+          returnKeyType="done"
           value={amount}
           onChangeText={(v) => {
             setAmount(v);
@@ -216,7 +226,12 @@ export default function CollectScreen() {
                 <Chip key={m} label={paymentMethodLabel(m)} selected={method === m} onPress={() => setMethod(m)} />
               ))}
             </View>
-            <Input label={copy.collect.referenceNumberLabel} value={referenceNumber} onChangeText={setReferenceNumber} />
+            <Input
+              label={copy.collect.referenceNumberLabel}
+              value={referenceNumber}
+              onChangeText={setReferenceNumber}
+              returnKeyType="next"
+            />
             {method === 'CHEQUE' && (
               <>
                 <Input
@@ -227,12 +242,24 @@ export default function CollectScreen() {
                     if (chequeError) setChequeError(null);
                   }}
                   error={chequeError}
+                  returnKeyType="next"
                 />
-                <Input label={copy.collect.chequeDateLabel} value={chequeDate} onChangeText={setChequeDate} />
-                <Input label={copy.collect.bankNameLabel} value={bankName} onChangeText={setBankName} />
+                <Input
+                  label={copy.collect.chequeDateLabel}
+                  value={chequeDate}
+                  onChangeText={setChequeDate}
+                  returnKeyType="next"
+                  // No date-picker dependency in scope, so the field stays
+                  // text entry — but iOS gets its digits+punctuation keypad
+                  // (fits "YYYY-MM-DD") instead of a full QWERTY keyboard,
+                  // which Android's keyboardType vocabulary has no
+                  // equivalent for, so it keeps the default keyboard there.
+                  keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
+                />
+                <Input label={copy.collect.bankNameLabel} value={bankName} onChangeText={setBankName} returnKeyType="next" />
               </>
             )}
-            <Input label={copy.collect.payerNameLabel} value={payerName} onChangeText={setPayerName} />
+            <Input label={copy.collect.payerNameLabel} value={payerName} onChangeText={setPayerName} returnKeyType="next" />
             <Input label={copy.collect.notesLabel} value={notes} onChangeText={setNotes} multiline />
           </Step>
         </Animated.View>
@@ -267,7 +294,7 @@ export default function CollectScreen() {
       {step2Valid && (
         <Animated.View entering={reduceMotion ? undefined : FadeInDown.delay(60).duration(260)}>
           <Step number={4} title={copy.collect.step4Title} optional>
-            <View style={styles.signatureBox}>
+            <View style={[styles.signatureBox, { height: signatureBoxHeight }]}>
               <SignatureScreen
                 ref={signatureRef}
                 onOK={async (sig) => setSignatureUri(await dataUrlToFile(sig))}
@@ -323,8 +350,6 @@ export default function CollectScreen() {
           </View>
         </Card>
       )}
-
-      <Button title={copy.collect.submit} onPress={onSubmit} loading={submitting} />
 
       <SuccessOverlay
         visible={submittedAmount != null}
@@ -398,7 +423,6 @@ const styles = StyleSheet.create({
   halfBtn: { flexGrow: 1 },
   preview: { width: sizes.previewLarge, height: sizes.previewLarge, borderRadius: radius.sm, marginTop: spacing.sm },
   signatureBox: {
-    height: sizes.signatureHeight,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.sm,

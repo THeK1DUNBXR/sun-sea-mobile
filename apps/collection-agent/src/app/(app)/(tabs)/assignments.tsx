@@ -163,7 +163,10 @@ function AssignmentRow({
               </Text>
             </View>
             <View style={styles.amountBlock}>
-              <Text style={styles.amount} numberOfLines={1}>
+              {/* A figure, never truncated: name above already carries the
+                  numberOfLines={1} clip so this amount can be capped (not
+                  cut off) at large font scale instead. */}
+              <Text style={styles.amount} numberOfLines={1} maxFontSizeMultiplier={1.3}>
                 {formatMoney(assignment.invoice?.outstanding)}
               </Text>
               {typeof assignment.distanceKm === 'number' && (

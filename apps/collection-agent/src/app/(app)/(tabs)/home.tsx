@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, StyleSheet, Switch, Text, View, useWindowDimensions, type ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -33,6 +33,13 @@ export default function HomeScreen() {
   const [tracking, setTracking] = useState(false);
   const [trackingBusy, setTrackingBusy] = useState(false);
   const sync = useSyncStatus();
+  const { width, height } = useWindowDimensions();
+  // Restructure the KPI grid to the window, not just shrink it: 2 columns in
+  // the common portrait case, 4 across in landscape (or on a materially wider
+  // window — a split-screen/tablet-width surface) so the tiles don't stretch
+  // into oversized cards on a screen with room for a full row.
+  const isWideOrLandscape = width > height || width >= 700;
+  const kpiBasis: ViewStyle = { flexBasis: isWideOrLandscape ? '22%' : '47%' };
 
   const summary = useQuery({
     queryKey: ['agent-summary'],
@@ -128,17 +135,24 @@ export default function HomeScreen() {
       <View style={styles.grid}>
         {summary.isLoading ? (
           <>
-            <KpiSkeleton />
-            <KpiSkeleton />
-            <KpiSkeleton />
-            <KpiSkeleton />
+            <KpiSkeleton basis={kpiBasis} />
+            <KpiSkeleton basis={kpiBasis} />
+            <KpiSkeleton basis={kpiBasis} />
+            <KpiSkeleton basis={kpiBasis} />
           </>
         ) : (
           <>
-            <Kpi index={0} label={copy.home.kpiOpenAssignments} value={assigned} icon="briefcase-outline" />
-            <Kpi index={1} label={copy.home.kpiVisitsToday} value={s?.visitsToday ?? 0} icon="walk-outline" />
-            <Kpi index={2} label={copy.home.kpiCashInHand} value={s?.cashInHand ?? 0} icon="wallet-outline" money />
-            <Kpi index={3} label={copy.home.kpiPromiseToPayToday} value={ptpDue} icon="calendar-outline" warn={ptpDue > 0} />
+            <Kpi index={0} label={copy.home.kpiOpenAssignments} value={assigned} icon="briefcase-outline" basis={kpiBasis} />
+            <Kpi index={1} label={copy.home.kpiVisitsToday} value={s?.visitsToday ?? 0} icon="walk-outline" basis={kpiBasis} />
+            <Kpi index={2} label={copy.home.kpiCashInHand} value={s?.cashInHand ?? 0} icon="wallet-outline" money basis={kpiBasis} />
+            <Kpi
+              index={3}
+              label={copy.home.kpiPromiseToPayToday}
+              value={ptpDue}
+              icon="calendar-outline"
+              warn={ptpDue > 0}
+              basis={kpiBasis}
+            />
           </>
         )}
       </View>
@@ -288,6 +302,7 @@ function Kpi({
   icon,
   warn,
   money,
+  basis,
 }: {
   index: number;
   label: string;
@@ -295,12 +310,13 @@ function Kpi({
   icon: keyof typeof Ionicons.glyphMap;
   warn?: boolean;
   money?: boolean;
+  basis: ViewStyle;
 }) {
   const reduceMotion = useReducedMotion();
   return (
     <Animated.View
       entering={reduceMotion ? undefined : FadeInUp.delay(index * 60).duration(320)}
-      style={[styles.kpi, warn && styles.kpiWarn]}
+      style={[styles.kpi, basis, warn && styles.kpiWarn]}
     >
       <Ionicons name={icon} size={18} color={warn ? colors.warning : colors.textMuted} />
       <AnimatedNumber
@@ -315,9 +331,9 @@ function Kpi({
   );
 }
 
-function KpiSkeleton() {
+function KpiSkeleton({ basis }: { basis: ViewStyle }) {
   return (
-    <View style={styles.kpi}>
+    <View style={[styles.kpi, basis]}>
       <SkeletonBlock width={18} height={18} radius={9} />
       <SkeletonBlock width="50%" height={20} style={{ marginTop: spacing.xs }} />
       <SkeletonBlock width="70%" height={12} />
@@ -358,7 +374,6 @@ const styles = StyleSheet.create({
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   kpi: {
-    flexBasis: '47%',
     flexGrow: 1,
     backgroundColor: colors.surface,
     borderWidth: 1,

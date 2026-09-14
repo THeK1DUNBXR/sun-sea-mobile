@@ -11,7 +11,7 @@ import { Button } from '@/ui/Button';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/useReducedMotion';
-import { colors, mapPin, type, spacing } from '@/ui/theme';
+import { colors, mapPin, minTouch, type, spacing } from '@/ui/theme';
 import { assignmentStatusMeta, isOverdue } from '@/ui/format';
 import { copy } from '@/copy';
 import type { Assignment } from '@/types/models';
@@ -110,7 +110,9 @@ export default function MapScreen() {
                 }
                 style={styles.markerDot}
               >
-                <View style={[styles.markerDotInner, { backgroundColor: pinColorFor(a) }]} />
+                <View style={styles.markerDotVisible}>
+                  <View style={[styles.markerDotInner, { backgroundColor: pinColorFor(a) }]} />
+                </View>
               </Animated.View>
             </Marker>
           );
@@ -122,7 +124,18 @@ export default function MapScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  // The tappable area is this outer view's size (react-native-maps hit-tests
+  // the Marker's rendered child), so it's kept at the field-use touch-target
+  // floor even though the visible pin (markerDotInner, below) stays small —
+  // otherwise a cluster of nearby stops would be nearly impossible to tap
+  // precisely on a phone screen.
   markerDot: {
+    width: minTouch,
+    height: minTouch,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerDotVisible: {
     width: 26,
     height: 26,
     borderRadius: 13,

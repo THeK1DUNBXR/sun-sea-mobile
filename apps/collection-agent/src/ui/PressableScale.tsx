@@ -3,6 +3,7 @@ import { Pressable, type GestureResponderEvent, type PressableProps, type StyleP
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
 import { useReducedMotion } from './useReducedMotion';
+import { androidRipple, colors } from './theme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -37,6 +38,7 @@ export function PressableScale({ children, style, scaleTo = 0.98, onPressIn, onP
       {...rest}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
+      android_ripple={androidRipple(colors.primary, 0.1)}
       style={[style, animatedStyle]}
     >
       {children}

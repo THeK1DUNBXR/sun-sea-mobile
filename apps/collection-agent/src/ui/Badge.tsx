@@ -38,9 +38,10 @@ export function Badge({ label, tone = 'default', dot = false }: BadgeProps) {
         style={[styles.badge, { backgroundColor: t.bg }]}
       >
         {dot ? <View style={[styles.dot, { backgroundColor: t.fg }]} /> : null}
-        <Text style={[styles.text, { color: t.fg }]} numberOfLines={1}>
-          {label}
-        </Text>
+        {/* No numberOfLines cap: at large Android font scale / Dynamic Type
+            this wraps to a second line inside the pill instead of clipping
+            or ellipsizing status text away. */}
+        <Text style={[styles.text, { color: t.fg }]}>{label}</Text>
       </Animated.View>
     </View>
   );

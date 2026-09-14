@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -106,7 +106,10 @@ export default function VisitScreen() {
   };
 
   return (
-    <Screen avoidKeyboard>
+    <Screen
+      avoidKeyboard
+      footer={<Button title={copy.visit.submit} onPress={onSubmit} loading={submitting} />}
+    >
       <Card>
         <Text style={styles.label}>{copy.visit.outcomeLabel}</Text>
         <View style={styles.chipWrap}>
@@ -124,10 +127,13 @@ export default function VisitScreen() {
                 if (dateError) setDateError(null);
               }}
               error={dateError}
+              returnKeyType="next"
+              keyboardType={Platform.OS === 'ios' ? 'numbers-and-punctuation' : 'default'}
             />
             <Input
               label={copy.visit.promisedAmountLabel}
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
+              returnKeyType="done"
               value={promisedAmount}
               onChangeText={setPromisedAmount}
             />
@@ -159,8 +165,6 @@ export default function VisitScreen() {
           }
         />
       </Card>
-
-      <Button title={copy.visit.submit} onPress={onSubmit} loading={submitting} />
 
       <SuccessOverlay
         visible={submitted}

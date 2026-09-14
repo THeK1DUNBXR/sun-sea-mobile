@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { colors, radius, spacing, type, minTouch } from './theme';
+import { colors, radius, spacing, type, minTouch, androidRipple } from './theme';
 import { useReducedMotion } from './useReducedMotion';
 
 interface ChipProps {
@@ -26,6 +26,7 @@ export function Chip({ label, selected, onPress, color }: ChipProps) {
         accessibilityRole="button"
         accessibilityState={{ selected: active }}
         hitSlop={4}
+        android_ripple={androidRipple(active ? colors.onPrimary : tint, 0.2)}
         onPressIn={() => {
           scale.value = reduceMotion ? 1 : withSpring(0.96, { damping: 18, stiffness: 260 });
         }}

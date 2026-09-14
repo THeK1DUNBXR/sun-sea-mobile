@@ -87,7 +87,11 @@ function HistoryRow({ entry, index, onPress }: { entry: HistoryEntry; index: num
           <Text style={styles.title}>{entry.title}</Text>
           {entry.subtitle ? <Text style={styles.subtitle}>{entry.subtitle}</Text> : null}
           <View style={styles.rowBottom}>
-            {entry.amount != null && <Text style={styles.amount}>{formatMoney(entry.amount)}</Text>}
+            {entry.amount != null && (
+              <Text style={styles.amount} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+                {formatMoney(entry.amount)}
+              </Text>
+            )}
             {entry.status ? <Badge label={historyStatusLabel(entry.status)} /> : null}
           </View>
         </Card>
@@ -109,6 +113,6 @@ const styles = StyleSheet.create({
   time: { ...type.caption, color: colors.textMuted },
   title: { ...type.title, color: colors.text },
   subtitle: { ...type.body, color: colors.textMuted },
-  rowBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
+  rowBottom: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', rowGap: spacing.xs, marginTop: spacing.xs },
   amount: { ...type.stat, fontSize: 17, lineHeight: 21, color: colors.primaryDark, fontVariant: ['tabular-nums'] },
 });

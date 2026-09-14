@@ -287,3 +287,11 @@ export const elevation = {
 
 /** Minimum touch target side, per the field-use a11y floor (≥48dp). */
 export const minTouch = 48;
+
+/** Android's native ripple feedback for a Pressable's `android_ripple` prop —
+ * iOS keeps the app's scale/opacity press feedback (set elsewhere); Android
+ * gets its own platform-conventional ripple instead of a ported effect.
+ * Returns undefined on iOS so the prop is a no-op there. */
+export function androidRipple(color: string = colors.text, opacity = 0.12): { color: string; borderless?: boolean } | undefined {
+  return Platform.OS === 'android' ? { color: withAlpha(color, opacity) } : undefined;
+}

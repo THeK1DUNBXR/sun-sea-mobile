@@ -2,7 +2,7 @@ import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
-import { colors, radius, spacing, type, elevation, minTouch } from './theme';
+import { colors, radius, spacing, type, elevation, minTouch, androidRipple } from './theme';
 import { useReducedMotion } from './useReducedMotion';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
@@ -34,6 +34,9 @@ export function Button({
   const reduceMotion = useReducedMotion();
   const scale = useSharedValue(1);
   const animatedWrapperStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  // Android gets its own conventional ripple instead of the ported
+  // scale/opacity feedback; iOS keeps the scale spring below untouched.
+  const ripple = androidRipple(variant === 'primary' || variant === 'danger' ? colors.onPrimary : colors.primary, 0.2);
 
   return (
     <Animated.View style={[fullWidth && styles.fullWidth, animatedWrapperStyle, style]}>
@@ -42,6 +45,7 @@ export function Button({
         accessibilityLabel={accessibilityLabel ?? title}
         accessibilityState={{ disabled: isDisabled, busy: loading }}
         hitSlop={4}
+        android_ripple={isDisabled ? undefined : ripple}
         onPress={isDisabled ? undefined : onPress}
         onPressIn={() => {
           if (isDisabled) return;
@@ -63,9 +67,10 @@ export function Button({
         ) : (
           <View style={styles.content}>
             {icon}
-            <Text style={[styles.text, textStyles[variant]]} numberOfLines={1}>
-              {title}
-            </Text>
+            {/* No numberOfLines cap — minHeight (not a fixed height) lets the
+                button grow to fit a wrapped second line at large Android font
+                scale / Dynamic Type instead of truncating the label. */}
+            <Text style={[styles.text, textStyles[variant]]}>{title}</Text>
           </View>
         )}
       </Pressable>
@@ -83,8 +88,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   fullWidth: { alignSelf: 'stretch' },
-  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  text: { ...type.title },
+  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexShrink: 1 },
+  text: { ...type.title, flexShrink: 1, textAlign: 'center' },
   disabled: { opacity: 0.45 },
 });
 

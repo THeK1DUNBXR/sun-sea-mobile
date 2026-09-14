@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Linking, Modal, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Modal, Platform, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -75,11 +75,17 @@ export default function AssignmentDetailScreen() {
   const onWhatsApp = () =>
     phone && openUrlSafely(`https://wa.me/${phone}`, copy.assignmentDetail.noWhatsApp);
   const onNavigate = () => {
-    const geoQuery =
+    const query =
       address?.latitude != null && address?.longitude != null
         ? `${address.latitude},${address.longitude}`
         : encodeURIComponent(addressLine);
-    openUrlSafely(`geo:0,0?q=${geoQuery}`, copy.assignmentDetail.noMapsApp);
+    // iOS has no `geo:` handler — it needs Apple Maps' own `maps://` scheme.
+    // Android (and any other platform) uses the universal `geo:` intent.
+    const url = Platform.select({
+      ios: `maps://?q=${query}`,
+      default: `geo:0,0?q=${query}`,
+    });
+    openUrlSafely(url, copy.assignmentDetail.noMapsApp);
   };
 
   if (query.isError) {
@@ -279,7 +285,13 @@ function AmountBlock({ label, value, emphasize }: { label: string; value?: numbe
   return (
     <View style={styles.amountBlock}>
       <Text style={styles.muted}>{label}</Text>
-      <Text style={[styles.amountValue, emphasize && styles.amountValueEmphasis]}>{formatMoney(value)}</Text>
+      <Text
+        style={[styles.amountValue, emphasize && styles.amountValueEmphasis]}
+        numberOfLines={1}
+        maxFontSizeMultiplier={1.3}
+      >
+        {formatMoney(value)}
+      </Text>
     </View>
   );
 }
@@ -291,8 +303,8 @@ const styles = StyleSheet.create({
   mutedFaint: { ...type.body, color: colors.textFaint, marginTop: spacing.xxs, fontStyle: 'italic' },
   itemMeta: { ...type.caption, color: colors.textFaint, marginTop: spacing.xxs },
   badgeRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
-  amountRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.lg },
-  amountBlock: { alignItems: 'flex-start' },
+  amountRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: spacing.sm, marginTop: spacing.lg },
+  amountBlock: { alignItems: 'flex-start', minWidth: '30%' },
   amountValue: { ...type.title, color: colors.text, fontVariant: ['tabular-nums'] },
   amountValueEmphasis: { ...type.stat, color: colors.primaryDark, fontVariant: ['tabular-nums'] },
   sectionTitle: { ...type.title, color: colors.text, marginBottom: spacing.sm },
