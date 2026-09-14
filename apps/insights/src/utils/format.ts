@@ -35,7 +35,10 @@ export function formatRelativeTime(iso: string | null | undefined): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
   const diffMs = Date.now() - date.getTime();
-  const diffSec = Math.round(diffMs / 1000);
+  // A server/device clock can drift a few seconds apart, or the server's
+  // `generatedAt` can be stamped a beat before the response lands. Never let
+  // that read as "in the future" — floor at "just now" instead.
+  const diffSec = Math.max(0, Math.round(diffMs / 1000));
   if (diffSec < 5) return 'just now';
   if (diffSec < 60) return `${diffSec}s ago`;
   const diffMin = Math.round(diffSec / 60);
@@ -45,6 +48,22 @@ export function formatRelativeTime(iso: string | null | undefined): string {
   const diffDay = Math.round(diffHr / 24);
   if (diffDay < 7) return `${diffDay}d ago`;
   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+/** Parses a `YYYY-MM-DD` calendar-date string (the shape /insights/trends sends)
+ * as a *local* midnight, not a UTC one. Handing that string straight to `new
+ * Date()` treats it as UTC per the ISO 8601 spec, then every subsequent
+ * `toLocaleDateString`/`getDate()` call quietly reinterprets it in the
+ * device's timezone — behind UTC (most of the Americas), that shifts the
+ * displayed day back by one. There is no time-of-day here to get wrong, only
+ * a calendar date, so parse the components directly instead of round-tripping
+ * through UTC. */
+function parseDateOnly(dateStr: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
+  if (!match) return null;
+  const [, y, m, d] = match;
+  const date = new Date(Number(y), Number(m) - 1, Number(d));
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 export function formatDayLabel(iso: string): string {
@@ -60,9 +79,9 @@ export function formatDayLabel(iso: string): string {
   return date.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
 }
 
-export function formatShortDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
+export function formatShortDate(dateOnly: string): string {
+  const date = parseDateOnly(dateOnly);
+  if (!date) return dateOnly;
   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 

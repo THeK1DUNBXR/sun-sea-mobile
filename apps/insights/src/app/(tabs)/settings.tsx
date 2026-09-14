@@ -34,13 +34,13 @@ export default function SettingsScreen() {
 
         <Card style={styles.profileCard} elevation="raised">
           <View style={[styles.avatar, { backgroundColor: palette.accent }]}>
-            <Text style={[styles.avatarText, { color: palette.accentInk }]}>
-              {initials(user?.name ?? user?.email)}
+            <Text style={[styles.avatarText, { color: palette.accentInk }]} maxFontSizeMultiplier={1.4}>
+              {initials(user?.fullName ?? user?.email)}
             </Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.profileName, { color: palette.text }]} numberOfLines={1}>
-              {user?.name ?? 'Founder'}
+            <Text style={[styles.profileName, { color: palette.text }]} numberOfLines={1} maxFontSizeMultiplier={1.6}>
+              {user?.fullName?.trim() || 'Founder'}
             </Text>
             <Text style={[styles.profileEmail, { color: palette.textMuted }]} numberOfLines={1}>
               {user?.email ?? '—'}

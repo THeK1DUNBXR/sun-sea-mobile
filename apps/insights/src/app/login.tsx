@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -18,26 +18,34 @@ import { PressableScale } from '@/ui/PressableScale';
 import { radius, spacing, usePalette } from '@/ui/theme';
 
 export default function LoginScreen() {
-  const { login, isAuthenticated, isHydrating } = useAuth();
+  const { login, isAuthenticated, isHydrating, sessionMessage, dismissSessionMessage } = useAuth();
   const palette = usePalette();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   if (!isHydrating && isAuthenticated) {
     return <Redirect href="/(tabs)/overview" />;
   }
 
   const onSubmit = async () => {
-    if (!email.trim() || !password) {
+    if (submitting) return;
+    const trimmedEmail = email.trim();
+    // Password is never trimmed: a leading/trailing space can be a real
+    // character in a real password, and silently altering it would just
+    // turn a typo into a more confusing "wrong password" error.
+    if (!trimmedEmail || !password) {
       setError('Enter your email and password.');
       return;
     }
+    dismissSessionMessage();
     setSubmitting(true);
     setError(null);
     try {
-      await login(email.trim(), password);
+      await login(trimmedEmail, password);
     } catch (err) {
       setError(getErrorMessage(err, 'Unable to sign in. Please try again.'));
     } finally {
@@ -64,15 +72,31 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.form}>
+            {sessionMessage ? (
+              <View style={[styles.sessionBanner, { backgroundColor: palette.warnSoft, borderColor: palette.warn + '40' }]}>
+                <Text style={[styles.sessionBannerText, { color: palette.warn }]}>{sessionMessage}</Text>
+              </View>
+            ) : null}
+
             <Text style={[styles.fieldLabel, { color: palette.textMuted }]}>Email</Text>
             <TextInput
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(t) => {
+                setEmail(t);
+                if (error) setError(null);
+              }}
               placeholder="you@company.com"
               placeholderTextColor={palette.textFaint}
               autoCapitalize="none"
               autoCorrect={false}
+              autoComplete="email"
+              textContentType="username"
               keyboardType="email-address"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              blurOnSubmit={false}
+              editable={!submitting}
+              accessibilityLabel="Email"
               style={[
                 styles.input,
                 { color: palette.text, borderColor: palette.border, backgroundColor: palette.card },
@@ -82,26 +106,57 @@ export default function LoginScreen() {
             <Text style={[styles.fieldLabel, { color: palette.textMuted, marginTop: spacing.md }]}>
               Password
             </Text>
-            <TextInput
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••"
-              placeholderTextColor={palette.textFaint}
-              secureTextEntry
-              style={[
-                styles.input,
-                { color: palette.text, borderColor: palette.border, backgroundColor: palette.card },
-              ]}
-              onSubmitEditing={onSubmit}
-            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                ref={passwordRef}
+                value={password}
+                onChangeText={(t) => {
+                  setPassword(t);
+                  if (error) setError(null);
+                }}
+                placeholder="••••••••"
+                placeholderTextColor={palette.textFaint}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="password"
+                textContentType="password"
+                returnKeyType="go"
+                editable={!submitting}
+                accessibilityLabel="Password"
+                style={[
+                  styles.input,
+                  styles.passwordInput,
+                  { color: palette.text, borderColor: palette.border, backgroundColor: palette.card },
+                ]}
+                onSubmitEditing={onSubmit}
+              />
+              <PressableScale
+                onPress={() => setShowPassword((v) => !v)}
+                hitSlop={8}
+                haptic={false}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                style={styles.showPasswordButton}
+              >
+                <Text style={[styles.showPasswordText, { color: palette.textMuted }]}>
+                  {showPassword ? 'Hide' : 'Show'}
+                </Text>
+              </PressableScale>
+            </View>
 
             {error ? (
-              <Text style={[styles.error, { color: palette.bad }]}>{error}</Text>
+              <Text style={[styles.error, { color: palette.bad }]} accessibilityRole="alert">
+                {error}
+              </Text>
             ) : null}
 
             <PressableScale
               onPress={onSubmit}
               disabled={submitting}
+              accessibilityRole="button"
+              accessibilityLabel="Sign in"
+              accessibilityState={{ disabled: submitting, busy: submitting }}
               style={({ pressed }) => [
                 styles.button,
                 { backgroundColor: palette.accent, opacity: pressed || submitting ? 0.85 : 1 },
@@ -114,7 +169,7 @@ export default function LoginScreen() {
               )}
             </PressableScale>
 
-            <Text style={[styles.hint, { color: palette.textFaint }]}>
+            <Text style={[styles.hint, { color: palette.textFaint }]} maxFontSizeMultiplier={1.6}>
               Requires the &quot;insights-app.access&quot; permission or super admin.
             </Text>
           </View>
@@ -140,6 +195,24 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
   },
+  passwordRow: { position: 'relative', justifyContent: 'center' },
+  passwordInput: { paddingRight: 64 },
+  showPasswordButton: {
+    position: 'absolute',
+    right: spacing.sm,
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  showPasswordText: { fontSize: 12.5, fontWeight: '800', textTransform: 'uppercase' },
+  sessionBanner: {
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  sessionBannerText: { fontSize: 13, fontWeight: '700' },
   error: { fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
   button: {
     marginTop: spacing.lg,

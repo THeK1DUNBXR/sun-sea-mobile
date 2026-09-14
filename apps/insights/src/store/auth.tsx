@@ -1,12 +1,11 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
 
-import { setUnauthorizedHandler, TOKEN_KEY } from '@/api/client';
+import { getErrorMessage, setUnauthorizedHandler, TOKEN_KEY } from '@/api/client';
 import { fetchMe, login as loginRequest } from '@/api/insightsApi';
 import type { MeResponse, User } from '@/types';
 
 export const REQUIRED_PERMISSION = 'insights-app.access';
-const USER_KEY = 'insights.user';
 
 interface AuthState {
   isHydrating: boolean;
@@ -15,18 +14,22 @@ interface AuthState {
   permissions: string[];
   isSuperAdmin: boolean;
   error: string | null;
+  /** Set right after the server forcibly ends the session (expired/invalid token,
+   * account deactivated mid-session). Cleared once shown or on the next login. */
+  sessionMessage: string | null;
+  dismissSessionMessage: () => void;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
-function hasAccess(me: MeResponse | null, user: User | null): boolean {
-  const isSuperAdmin = Boolean(
-    me?.isSuperAdmin || me?.profile?.isSuperAdmin || me?.user?.isSuperAdmin || user?.isSuperAdmin
-  );
-  if (isSuperAdmin) return true;
-  return Boolean(me?.permissions?.includes(REQUIRED_PERMISSION));
+/** Permissions come only from /auth/me (login itself doesn't return them) — see
+ * auth.service.ts login()/getProfile(). A super admin bypasses every permission
+ * check server-side (requireAnyPermission), so mirror that here too. */
+function hasAccess(me: MeResponse): boolean {
+  if (me.isSuperAdmin || me.user?.isSuperAdmin) return true;
+  return me.permissions.includes(REQUIRED_PERMISSION);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -36,22 +39,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sessionMessage, setSessionMessage] = useState<string | null>(null);
+
+  // Guards against setState after unmount from the boot-time fetchMe() probe,
+  // which can resolve after the provider (and app) has already torn down.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const logout = useCallback(async () => {
-    setIsAuthenticated(false);
-    setUser(null);
-    setPermissions([]);
-    setIsSuperAdmin(false);
+    if (mountedRef.current) {
+      setIsAuthenticated(false);
+      setUser(null);
+      setPermissions([]);
+      setIsSuperAdmin(false);
+    }
     try {
       await SecureStore.deleteItemAsync(TOKEN_KEY);
-      await SecureStore.deleteItemAsync(USER_KEY);
     } catch {
       // best-effort
     }
   }, []);
 
   useEffect(() => {
-    setUnauthorizedHandler(() => {
+    setUnauthorizedHandler((reason) => {
+      if (mountedRef.current) setSessionMessage(reason);
       void logout();
     });
     return () => setUnauthorizedHandler(null);
@@ -63,20 +79,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const token = await SecureStore.getItemAsync(TOKEN_KEY);
         if (!token) return;
         const me = await fetchMe();
-        if (!hasAccess(me, me.user ?? null)) {
+        if (!hasAccess(me)) {
           await logout();
           return;
         }
-        setUser(me.user ?? null);
+        if (!mountedRef.current) return;
+        setUser(me.user);
         setPermissions(me.permissions ?? []);
-        setIsSuperAdmin(
-          Boolean(me.isSuperAdmin || me.profile?.isSuperAdmin || me.user?.isSuperAdmin)
-        );
+        setIsSuperAdmin(Boolean(me.isSuperAdmin || me.user?.isSuperAdmin));
         setIsAuthenticated(true);
       } catch {
         await logout();
       } finally {
-        setIsHydrating(false);
+        if (mountedRef.current) setIsHydrating(false);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,32 +100,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     setError(null);
     try {
-      const { tokens, user: loggedInUser } = await loginRequest(email, password);
-      if (!tokens?.accessToken) {
+      const loginResult = await loginRequest(email, password);
+      if (!loginResult?.accessToken) {
         throw new Error('Login did not return a valid session token.');
       }
-      await SecureStore.setItemAsync(TOKEN_KEY, tokens.accessToken);
+      await SecureStore.setItemAsync(TOKEN_KEY, loginResult.accessToken);
 
-      const me = await fetchMe();
-      if (!hasAccess(me, loggedInUser)) {
+      let me: MeResponse;
+      try {
+        me = await fetchMe();
+      } catch (meErr) {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        throw new Error(getErrorMessage(meErr, 'Signed in, but could not verify account access.'));
+      }
+
+      if (!hasAccess(me)) {
         await SecureStore.deleteItemAsync(TOKEN_KEY);
         throw new Error(
           'This account does not have access to the Insights app. Ask an admin to grant "insights-app.access".'
         );
       }
 
-      setUser(me.user ?? loggedInUser ?? null);
+      if (!mountedRef.current) return;
+      setUser(me.user ?? loginResult.user);
       setPermissions(me.permissions ?? []);
-      setIsSuperAdmin(
-        Boolean(me.isSuperAdmin || me.profile?.isSuperAdmin || me.user?.isSuperAdmin || loggedInUser?.isSuperAdmin)
-      );
+      setIsSuperAdmin(Boolean(me.isSuperAdmin || me.user?.isSuperAdmin || loginResult.user?.isSuperAdmin));
       setIsAuthenticated(true);
+      setSessionMessage(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to sign in. Please try again.';
-      setError(message);
-      throw err;
+      const message = err instanceof Error ? err.message : getErrorMessage(err, 'Unable to sign in. Please try again.');
+      if (mountedRef.current) setError(message);
+      throw err instanceof Error ? err : new Error(message);
     }
   }, []);
+
+  const dismissSessionMessage = useCallback(() => setSessionMessage(null), []);
 
   const value = useMemo<AuthState>(
     () => ({
@@ -120,10 +144,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       permissions,
       isSuperAdmin,
       error,
+      sessionMessage,
+      dismissSessionMessage,
       login,
       logout,
     }),
-    [isHydrating, isAuthenticated, user, permissions, isSuperAdmin, error, login, logout]
+    [isHydrating, isAuthenticated, user, permissions, isSuperAdmin, error, sessionMessage, dismissSessionMessage, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

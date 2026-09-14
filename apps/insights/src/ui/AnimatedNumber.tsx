@@ -22,6 +22,9 @@ interface AnimatedNumberProps {
   /** First-mount count-up duration. Subsequent value changes roll a bit faster. */
   duration?: number;
   adjustsFontSizeToFit?: boolean;
+  /** Caps Dynamic Type / font-scale growth so a large accessibility text size
+   * can't blow a KPI figure out of its tile. */
+  maxFontSizeMultiplier?: number;
 }
 
 /**
@@ -38,6 +41,7 @@ export function AnimatedNumber({
   numberOfLines = 1,
   duration = 700,
   adjustsFontSizeToFit,
+  maxFontSizeMultiplier,
 }: AnimatedNumberProps) {
   const reducedMotion = useReducedMotion();
   const hasValue = value !== null && value !== undefined && !Number.isNaN(value);
@@ -82,14 +86,24 @@ export function AnimatedNumber({
 
   if (!hasValue) {
     return (
-      <Text style={style} numberOfLines={numberOfLines} adjustsFontSizeToFit={adjustsFontSizeToFit}>
+      <Text
+        style={style}
+        numberOfLines={numberOfLines}
+        adjustsFontSizeToFit={adjustsFontSizeToFit}
+        maxFontSizeMultiplier={maxFontSizeMultiplier}
+      >
         {fallback}
       </Text>
     );
   }
 
   return (
-    <Text style={style} numberOfLines={numberOfLines} adjustsFontSizeToFit={adjustsFontSizeToFit}>
+    <Text
+      style={style}
+      numberOfLines={numberOfLines}
+      adjustsFontSizeToFit={adjustsFontSizeToFit}
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
+    >
       {format(display)}
     </Text>
   );

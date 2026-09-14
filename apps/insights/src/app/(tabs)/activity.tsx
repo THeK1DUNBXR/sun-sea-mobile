@@ -12,27 +12,35 @@ import { Icon, type IconName } from '@/ui/Icon';
 import { Reveal } from '@/ui/Reveal';
 import { Skeleton } from '@/ui/Skeleton';
 import { spacing, typography, usePalette, type Palette } from '@/ui/theme';
-import type { ActivityItem } from '@/types';
+import type { ActivityItem, ActivityType } from '@/types';
 import { formatDayLabel, formatMoneyCompact, formatRelativeTime } from '@/utils/format';
 
-function iconFor(activityType: string): IconName {
-  if (activityType === 'invoice') return 'invoice';
-  if (activityType === 'collection') return 'collection';
-  if (activityType === 'deposit') return 'deposit';
+function iconFor(activityType: ActivityType): IconName {
+  if (activityType === 'INVOICE') return 'invoice';
+  if (activityType === 'COLLECTION') return 'collection';
+  if (activityType === 'DEPOSIT') return 'deposit';
   return 'activity';
 }
 
-function colorFor(activityType: string, palette: Palette): string {
-  if (activityType === 'invoice') return palette.accent;
-  if (activityType === 'collection') return palette.good;
-  if (activityType === 'deposit') return palette.warn;
+function colorFor(activityType: ActivityType, palette: Palette): string {
+  if (activityType === 'INVOICE') return palette.accent;
+  if (activityType === 'COLLECTION') return palette.good;
+  if (activityType === 'DEPOSIT') return palette.warn;
   return palette.textFaint;
+}
+
+/** The backend feed (insightsService.getRecentActivity) has no stable id — it's
+ * a merge-and-sort of four different tables. Derive a key from the fields that
+ * actually distinguish a row so React doesn't misidentify rows across a
+ * refetch (which would replay entrance animations and confuse a11y focus). */
+function keyFor(item: ActivityItem, index: number): string {
+  return `${item.type}:${item.at}:${item.title}:${index}`;
 }
 
 function groupByDay(items: ActivityItem[]): { day: string; items: ActivityItem[] }[] {
   const groups = new Map<string, ActivityItem[]>();
   for (const item of items) {
-    const day = formatDayLabel(item.occurredAt);
+    const day = formatDayLabel(item.at);
     if (!groups.has(day)) groups.set(day, []);
     groups.get(day)!.push(item);
   }
@@ -62,7 +70,11 @@ export default function ActivityScreen() {
 
         {activity.error ? (
           <ErrorBanner
-            message={getErrorMessage(activity.error, 'Could not load recent activity.')}
+            message={
+              activity.data
+                ? `Showing last known activity. ${getErrorMessage(activity.error, 'Could not refresh.')}`
+                : getErrorMessage(activity.error, 'Could not load recent activity.')
+            }
             onRetry={() => activity.refetch()}
           />
         ) : null}
@@ -85,21 +97,22 @@ export default function ActivityScreen() {
                   // Groups queue in first, then rows within a group cascade quickly —
                   // capped so a long feed doesn't keep the last rows waiting.
                   const delay = Math.min(gi, 3) * 70 + Math.min(i, 6) * 35;
+                  const hasAmount = typeof item.amount === 'number' && !Number.isNaN(item.amount);
                   return (
-                    <Reveal key={item.id ?? i} delay={delay} axis="x" distance={12}>
+                    <Reveal key={keyFor(item, i)} delay={delay} axis="x" distance={12}>
                       <View
                         style={[
                           styles.row,
                           { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
                         ]}
-                        accessibilityLabel={`${item.title ?? item.type}${item.amount !== undefined ? `, ${formatMoneyCompact(item.amount)}` : ''}, ${formatRelativeTime(item.occurredAt)}`}
+                        accessibilityLabel={`${item.title || item.type}${hasAmount ? `, ${formatMoneyCompact(item.amount)}` : ''}, ${formatRelativeTime(item.at)}`}
                       >
                         <View style={[styles.iconBadge, { backgroundColor: tint + '1F' }]}>
                           <Icon name={iconFor(item.type)} color={tint} size={18} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.title, { color: palette.text }]} numberOfLines={1}>
-                            {item.title ?? item.type}
+                            {item.title || item.type}
                           </Text>
                           {item.subtitle ? (
                             <Text style={[styles.subtitle, { color: palette.textFaint }]} numberOfLines={1}>
@@ -108,13 +121,13 @@ export default function ActivityScreen() {
                           ) : null}
                         </View>
                         <View style={{ alignItems: 'flex-end' }}>
-                          {item.amount !== undefined ? (
-                            <Text style={[styles.amount, { color: palette.text }]}>
+                          {hasAmount ? (
+                            <Text style={[styles.amount, { color: palette.text }]} maxFontSizeMultiplier={1.6}>
                               {formatMoneyCompact(item.amount)}
                             </Text>
                           ) : null}
                           <Text style={[styles.time, { color: palette.textFaint }]}>
-                            {formatRelativeTime(item.occurredAt)}
+                            {formatRelativeTime(item.at)}
                           </Text>
                         </View>
                       </View>

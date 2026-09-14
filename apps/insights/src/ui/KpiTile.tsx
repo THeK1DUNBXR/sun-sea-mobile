@@ -60,7 +60,11 @@ export function KpiTile({
       accessibilityLabel={a11yLabel}
       accessibilityHint={accessibilityHint}
     >
-      <Text style={[styles.label, typography.label, { color: palette.textMuted }]} numberOfLines={1}>
+      <Text
+        style={[styles.label, typography.label, { color: palette.textMuted }]}
+        numberOfLines={1}
+        maxFontSizeMultiplier={1.8}
+      >
         {label}
       </Text>
       <AnimatedNumber
@@ -74,6 +78,7 @@ export function KpiTile({
         ]}
         numberOfLines={1}
         adjustsFontSizeToFit
+        maxFontSizeMultiplier={1.6}
         duration={isHero ? 800 : 650}
       />
       {hasDelta || caption ? (
@@ -83,18 +88,26 @@ export function KpiTile({
               entering={reducedMotion ? FadeIn.duration(180) : FadeInDown.duration(220).springify().damping(18)}
               style={[styles.deltaPill, { backgroundColor: deltaSoft }]}
             >
-              <Text style={[styles.delta, { color: deltaColor }]}>
+              <Text style={[styles.delta, { color: deltaColor }]} maxFontSizeMultiplier={1.6}>
                 {arrow} {formatPercent(Math.abs(deltaPct!)).replace('+', '')}
               </Text>
             </Animated.View>
           ) : null}
           {hasDelta && deltaLabel ? (
-            <Text style={[styles.deltaLabel, { color: palette.textFaint }]} numberOfLines={1}>
+            <Text
+              style={[styles.deltaLabel, { color: palette.textFaint }]}
+              numberOfLines={1}
+              maxFontSizeMultiplier={1.6}
+            >
               {deltaLabel}
             </Text>
           ) : null}
           {caption ? (
-            <Text style={[styles.caption, { color: palette.textFaint }]} numberOfLines={1}>
+            <Text
+              style={[styles.caption, { color: palette.textFaint }]}
+              numberOfLines={1}
+              maxFontSizeMultiplier={1.6}
+            >
               {caption}
             </Text>
           ) : null}

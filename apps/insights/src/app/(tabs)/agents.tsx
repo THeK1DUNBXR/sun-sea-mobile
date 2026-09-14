@@ -86,26 +86,26 @@ if (Platform.OS !== 'web') {
   }
 }
 
-function AgentMarker({ agent, online, markerColor, palette }: {
-  agent: LiveAgent;
-  online: boolean;
+function AgentMarker({ agent, markerColor, palette }: {
+  agent: LiveAgent & { lastLocation: NonNullable<LiveAgent['lastLocation']> };
   markerColor: string;
   palette: ReturnType<typeof usePalette>;
 }) {
   const reducedMotion = useReducedMotion();
   // Marker only needs to keep re-measuring itself while the pin is still animating.
   const settled = useSettlesAfter(400, reducedMotion);
+  const { online } = agent;
 
   return (
     <Marker
-      coordinate={{ latitude: agent.latitude!, longitude: agent.longitude! }}
-      accessibilityLabel={`${agent.name ?? 'Agent'}, ${online ? 'online' : 'offline'}`}
+      coordinate={{ latitude: agent.lastLocation.latitude, longitude: agent.lastLocation.longitude }}
+      accessibilityLabel={`${agent.fullName || 'Agent'}, ${online ? 'online' : 'offline'}`}
       tracksViewChanges={!settled}
     >
       <MarkerPin>
         <View style={[styles.markerRing, { borderColor: markerColor, backgroundColor: palette.bgElevated }]}>
           <View style={[styles.markerBubble, { backgroundColor: markerColor }]}>
-            <Text style={[styles.markerText, { color: contrastText(markerColor) }]}>{initials(agent.name)}</Text>
+            <Text style={[styles.markerText, { color: contrastText(markerColor) }]}>{initials(agent.fullName)}</Text>
           </View>
         </View>
       </MarkerPin>
@@ -116,13 +116,13 @@ function AgentMarker({ agent, online, markerColor, palette }: {
         >
           <View style={styles.calloutHeader}>
             <View style={[styles.calloutDot, { backgroundColor: online ? palette.good : palette.neutralDot }]} />
-            <Text style={[styles.calloutName, { color: palette.text }]}>{agent.name ?? 'Agent'}</Text>
+            <Text style={[styles.calloutName, { color: palette.text }]}>{agent.fullName || 'Agent'}</Text>
           </View>
           <Text style={[styles.calloutLine, { color: palette.textMuted }]}>
-            {online ? 'Online now' : `Last seen ${formatRelativeTime(agent.recordedAt)}`}
+            {online ? 'Online now' : `Last seen ${formatRelativeTime(agent.lastLocation.recordedAt)}`}
           </Text>
           <Text style={[styles.calloutLine, { color: palette.text, fontWeight: '800' }]}>
-            {formatMoneyCompact(agent.collectedToday)} collected today
+            {formatMoneyCompact(agent.today.collectedAmount)} collected today
           </Text>
           {agent.currentTask?.customerName ? (
             <Text style={[styles.calloutLine, { color: palette.textFaint }]} numberOfLines={1}>
@@ -135,10 +135,16 @@ function AgentMarker({ agent, online, markerColor, palette }: {
   );
 }
 
-function isOnline(agent: LiveAgent): boolean {
-  if (agent.online !== undefined) return agent.online;
-  if (!agent.recordedAt) return false;
-  return Date.now() - new Date(agent.recordedAt).getTime() < 5 * 60 * 1000;
+/** Guards against a bad GPS fix (missing/null, NaN, or the classic 0,0 "null
+ * island" sentinel some devices report before a real lock). */
+function hasValidLocation(agent: LiveAgent): agent is LiveAgent & { lastLocation: NonNullable<LiveAgent['lastLocation']> } {
+  const loc = agent.lastLocation;
+  if (!loc) return false;
+  const { latitude, longitude } = loc;
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) return false;
+  if (latitude === 0 && longitude === 0) return false;
+  return true;
 }
 
 const RANK_COLORS = ['#B8860B', '#8A94A6', '#A45A2A']; // gold, silver, bronze — used only for rank 1-3 accents
@@ -161,20 +167,26 @@ export default function AgentsScreen() {
     [leaderboard]
   );
 
-  const liveAgents = (agentsLive.data ?? []).filter(
-    (a) => typeof a.latitude === 'number' && typeof a.longitude === 'number'
-  );
-  const onlineCount = liveAgents.filter(isOnline).length;
-  const initialRegion = liveAgents[0]
-    ? {
-        latitude: liveAgents[0].latitude!,
-        longitude: liveAgents[0].longitude!,
-        latitudeDelta: 0.4,
-        longitudeDelta: 0.4,
-      }
-    : { latitude: 20.5937, longitude: 78.9629, latitudeDelta: 12, longitudeDelta: 12 };
+  const allLiveAgents = agentsLive.data ?? [];
+  const liveAgents = allLiveAgents.filter(hasValidLocation);
+  const onlineCount = liveAgents.filter((a) => a.online).length;
+  // A wide fallback region (roughly all of India) when no agent has reported a
+  // fix yet, and a tighter one when exactly one agent anchors the map — many
+  // markers still get a sane region from react-native-maps' own fit-to-markers
+  // default, but a single marker needs an explicit delta or it zooms to the
+  // whole world.
+  const initialRegion =
+    liveAgents.length > 0
+      ? {
+          latitude: liveAgents[0].lastLocation.latitude,
+          longitude: liveAgents[0].lastLocation.longitude,
+          latitudeDelta: 0.4,
+          longitudeDelta: 0.4,
+        }
+      : { latitude: 20.5937, longitude: 78.9629, latitudeDelta: 12, longitudeDelta: 12 };
 
   const firstError = overview.error ?? agentsLive.error;
+  const agentsMissingLocation = allLiveAgents.length - liveAgents.length;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg }]} edges={['top']}>
@@ -187,12 +199,25 @@ export default function AgentsScreen() {
         <Text style={[typography.headline, { color: palette.text }]}>Agents</Text>
 
         {firstError ? (
-          <ErrorBanner message={getErrorMessage(firstError, 'Could not load agents.')} onRetry={onRefresh} />
+          <ErrorBanner
+            message={
+              overview.data || agentsLive.data
+                ? `Showing last known data. ${getErrorMessage(firstError, 'Could not refresh agents.')}`
+                : getErrorMessage(firstError, 'Could not load agents.')
+            }
+            onRetry={onRefresh}
+          />
         ) : null}
 
         <SectionHeader
           title="Live map"
-          subtitle={`${liveAgents.length} reporting · ${onlineCount} online now`}
+          subtitle={
+            allLiveAgents.length === 0
+              ? undefined
+              : `${liveAgents.length} reporting · ${onlineCount} online now${
+                  agentsMissingLocation > 0 ? ` · ${agentsMissingLocation} without a location fix` : ''
+                }`
+          }
         />
         <Card style={{ padding: 0, overflow: 'hidden' }} elevation="raised">
           {Platform.OS === 'web' ? (
@@ -205,25 +230,28 @@ export default function AgentsScreen() {
             <View style={styles.mapFallback}>
               <EmptyState title="Map module unavailable" />
             </View>
-          ) : liveAgents.length === 0 ? (
+          ) : allLiveAgents.length === 0 ? (
             <View style={styles.mapFallback}>
               <EmptyState title="No agents reporting location" icon="agents" />
             </View>
+          ) : liveAgents.length === 0 ? (
+            <View style={styles.mapFallback}>
+              <EmptyState
+                title="No valid GPS fix yet"
+                message={`${allLiveAgents.length} agent${allLiveAgents.length === 1 ? '' : 's'} tracked, but none has reported a usable location.`}
+                icon="agents"
+              />
+            </View>
           ) : (
             <MapView style={styles.map} initialRegion={initialRegion}>
-              {liveAgents.map((agent) => {
-                const online = isOnline(agent);
-                const markerColor = online ? palette.good : palette.neutralDot;
-                return (
-                  <AgentMarker
-                    key={agent.agentUserId}
-                    agent={agent}
-                    online={online}
-                    markerColor={markerColor}
-                    palette={palette}
-                  />
-                );
-              })}
+              {liveAgents.map((agent) => (
+                <AgentMarker
+                  key={agent.agentUserId}
+                  agent={agent}
+                  markerColor={agent.online ? palette.good : palette.neutralDot}
+                  palette={palette}
+                />
+              ))}
             </MapView>
           )}
         </Card>

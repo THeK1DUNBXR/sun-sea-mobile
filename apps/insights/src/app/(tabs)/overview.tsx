@@ -88,6 +88,11 @@ export default function OverviewScreen() {
   );
 
   const firstError = overview.error ?? trends.error;
+  // react-query keeps the last good `data` around through a failed refetch, so a
+  // real error alongside data we can still show is a "stale" situation, not a
+  // hard failure — tell the founder the numbers may be behind rather than
+  // hiding a working dashboard behind a full-screen error.
+  const isShowingStaleData = Boolean(firstError && data);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg }]} edges={['top']}>
@@ -99,8 +104,8 @@ export default function OverviewScreen() {
       >
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.greeting, { color: palette.textMuted }]}>
-              {greeting()}{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
+            <Text style={[styles.greeting, { color: palette.textMuted }]} maxFontSizeMultiplier={1.6}>
+              {greeting()}{user?.fullName ? `, ${user.fullName.trim().split(/\s+/)[0]}` : ''}
             </Text>
             <Text style={[typography.headline, { color: palette.text, marginTop: 2 }]}>Business overview</Text>
           </View>
@@ -117,7 +122,14 @@ export default function OverviewScreen() {
         </View>
 
         {firstError ? (
-          <ErrorBanner message={getErrorMessage(firstError, 'Could not load insights.')} onRetry={onRefresh} />
+          <ErrorBanner
+            message={
+              isShowingStaleData
+                ? `Showing last known data. ${getErrorMessage(firstError, 'Could not refresh insights.')}`
+                : getErrorMessage(firstError, 'Could not load insights.')
+            }
+            onRetry={onRefresh}
+          />
         ) : null}
 
         {overview.isPending ? (
@@ -186,8 +198,13 @@ export default function OverviewScreen() {
               <Reveal index={7} staggerMs={40} style={styles.kpiGridItem}>
                 <KpiTile
                   label="Pending verification"
-                  value={formatMoneyCompact(data?.collections?.pendingVerification)}
-                  numericValue={data?.collections?.pendingVerification}
+                  value={formatMoneyCompact(data?.collections?.pendingVerification?.amount)}
+                  numericValue={data?.collections?.pendingVerification?.amount}
+                  caption={
+                    data?.collections?.pendingVerification?.count
+                      ? `${data.collections.pendingVerification.count} receipt${data.collections.pendingVerification.count === 1 ? '' : 's'}`
+                      : undefined
+                  }
                 />
               </Reveal>
             </View>
@@ -260,22 +277,25 @@ export default function OverviewScreen() {
                     styles.debtorRow,
                     { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
                   ]}
+                  accessibilityLabel={`Rank ${i + 1}, ${debtor.firmName || 'Unknown customer'}, ${formatMoneyCompact(debtor.netBalance)} outstanding${
+                    debtor.dueDays > 0 ? `, ${debtor.dueDays} days overdue` : ''
+                  }`}
                 >
                   <View style={[styles.debtorRank, { backgroundColor: palette.overlay }]}>
                     <Text style={[styles.debtorRankText, { color: palette.textMuted }]}>{i + 1}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.debtorName, { color: palette.text }]} numberOfLines={1}>
-                      {debtor.name ?? 'Unknown customer'}
+                      {debtor.firmName?.trim() || 'Unknown customer'}
                     </Text>
-                    {debtor.dueDays !== undefined ? (
+                    {debtor.dueDays > 0 ? (
                       <Text style={[styles.debtorMeta, { color: palette.warn }]}>
                         {debtor.dueDays}d overdue
                       </Text>
                     ) : null}
                   </View>
-                  <Text style={[styles.debtorAmount, { color: palette.text }]}>
-                    {formatMoneyCompact(debtor.outstanding)}
+                  <Text style={[styles.debtorAmount, { color: palette.text }]} maxFontSizeMultiplier={1.5}>
+                    {formatMoneyCompact(debtor.netBalance)}
                   </Text>
                 </View>
               ))
