@@ -171,6 +171,20 @@ jobs:
             echo "::warning::No ANDROID_KEYSTORE_BASE64 secret configured. This APK is signed with a throwaway keystore generated fresh for this run. A later run will use a DIFFERENT throwaway key, so Android will refuse to install it as an update over this one. Set the ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD / ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD secrets to sign with a stable key."
           fi
 
+      - name: Raise Gradle and Kotlin daemon memory
+        # Expo's template pins org.gradle.jvmargs to 2 GB heap / 512 MB
+        # Metaspace, which overflowed (OutOfMemoryError: Metaspace) while
+        # compiling this app on the 16 GB runner and left Gradle hung until
+        # the job timeout. Last definition wins in gradle.properties.
+        run: |
+          {
+            echo ""
+            echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
+            echo "kotlin.daemon.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=1g"
+            echo "org.gradle.workers.max=3"
+          } >> android/gradle.properties
+          grep -n "jvmargs\|workers.max" android/gradle.properties
+
       - name: Wire release signingConfig in build.gradle
         run: node "${GITHUB_WORKSPACE}/.github/workflows/scripts/patch-android-signing.js"
 
