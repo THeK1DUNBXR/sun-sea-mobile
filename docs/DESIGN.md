@@ -55,7 +55,7 @@ Permissions (in `permissionRegistry.ts`): `collections.{view,assign,edit,delete,
 
 Response envelope: `{ success, message, data }` (use `ApiResponse`). Errors `{ success:false, message }`.
 Mobile apps log in with the existing `POST /api/auth/login { email, password }` →
-`data.tokens.accessToken`, `data.user`. Then `GET /api/auth/me` → `data.permissions`.
+`data.accessToken`, `data.accessTokenExpiresAt`, `data.user` (flat, no `tokens` wrapper; user fields are `userId`, `fullName`, `email`, `username`, `isSuperAdmin`). Then `GET /api/auth/me` → `data.user`, `data.permissions`, `data.isSuperAdmin` (permissions are only returned here). Locked or suspended accounts receive a generic 401.
 The agent app must refuse users lacking `collection-agent-app.access` (unless super admin);
 the insights app requires `insights-app.access` (or super admin).
 
