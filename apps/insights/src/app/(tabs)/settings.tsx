@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { API_URL } from '@/api/client';
@@ -20,6 +20,7 @@ function Row({ label, value, numeric }: { label: string; value: string; numeric?
       <Text
         style={[typography.body, numeric && tabularNums, { color: palette.text, flexShrink: 1, textAlign: 'right' }]}
         numberOfLines={1}
+        maxFontSizeMultiplier={1.6}
       >
         {value}
       </Text>
@@ -34,6 +35,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll}>
+      <View style={styles.content}>
         <Text style={[typography.headline, { color: palette.text, marginBottom: spacing.lg }]}>{copy.title}</Text>
 
         <Card style={styles.profileCard} elevation="raised">
@@ -85,9 +87,11 @@ export default function SettingsScreen() {
           onPress={() => logout()}
           accessibilityRole="button"
           accessibilityLabel={copy.logOut}
+          rippleColor={palette.badSoft}
           style={({ pressed }) => [
             styles.logoutButton,
-            { borderColor: palette.bad, opacity: pressed ? 0.7 : 1 },
+            // iOS-only press dim; Android shows the Material ripple instead.
+            { borderColor: palette.bad, opacity: Platform.OS === 'ios' && pressed ? 0.7 : 1 },
           ]}
         >
           <Icon name="logout" color={palette.bad} size={18} />
@@ -99,6 +103,7 @@ export default function SettingsScreen() {
         </Text>
 
         <View style={{ height: layout.scrollEndSpacer }} />
+      </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -107,6 +112,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: layout.screenGutter },
+  content: { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' },
   profileCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   avatar: {
     width: sizes.avatarMd,

@@ -12,6 +12,14 @@ interface KpiTileProps {
   value: string;
   /** Raw amount backing `value`; when finite, the figure counts up on mount and rolls on change. */
   numericValue?: number | null;
+  /** Formats `numericValue` for the animated on-screen figure. Defaults to the
+   * app's compact money format — pass a different formatter for a tile whose
+   * figure isn't a currency amount (e.g. a plain visit count). */
+  format?: (value: number | null | undefined) => string;
+  /** Formats `numericValue` for the accessible label. Defaults to the spoken
+   * compact money format; pass alongside `format` for a non-money tile so
+   * VoiceOver/TalkBack read the same unit as the visible figure. */
+  formatSpoken?: (value: number | null | undefined) => string;
   deltaPct?: number | null;
   deltaLabel?: string;
   /** Invert semantics for metrics where a rise is bad (e.g. overdue). */
@@ -35,6 +43,8 @@ export function KpiTile({
   label,
   value,
   numericValue,
+  format = formatMoneyCompact,
+  formatSpoken = formatMoneyCompactSpoken,
   deltaPct,
   deltaLabel,
   invertColor,
@@ -56,7 +66,7 @@ export function KpiTile({
   // Screen readers get the spelled-out rupee value ("₹4.82 lakh") instead of
   // the visible compact glyph ("₹4.82L") — "L"/"Cr" read as letters, not
   // units, to VoiceOver/TalkBack.
-  const a11yValue = numericValue !== undefined ? formatMoneyCompactSpoken(numericValue) : value;
+  const a11yValue = numericValue !== undefined ? formatSpoken(numericValue) : value;
   const a11yLabel = [
     label,
     a11yValue,
@@ -111,7 +121,7 @@ export function KpiTile({
       </Text>
       <AnimatedNumber
         value={numericValue ?? null}
-        format={(v) => formatMoneyCompact(v)}
+        format={(v) => format(v)}
         fallback={value}
         style={[
           isHero ? typography.display : isWide ? typography.statCompact : typography.stat,

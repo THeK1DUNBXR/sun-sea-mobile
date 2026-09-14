@@ -1,3 +1,5 @@
+import { overview as overviewCopy } from '@/copy';
+
 /** Compact Indian-numbering currency formatter: e.g. 482000 -> "₹4.82L", 11500000 -> "₹1.15Cr" */
 export function formatMoneyCompact(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
@@ -21,6 +23,15 @@ export function formatMoneyCompactSpoken(value: number | null | undefined): stri
   if (abs >= 1_00_000) return `${sign}₹${(abs / 1_00_000).toFixed(2)} lakh`;
   if (abs >= 1_000) return `${sign}₹${(abs / 1_000).toFixed(1)} thousand`;
   return `${sign}₹${abs.toFixed(0)}`;
+}
+
+/** Plain visit count with a unit word (e.g. "3 promises") — for figures that
+ * are counts, not currency amounts (the overview screen's promise-to-pay
+ * tiles). Doubles as the accessible/spoken form since it's already plain
+ * words, unlike the compact money glyphs above. */
+export function formatPromiseCount(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '—';
+  return overviewCopy.kpi.ptpCount(Math.round(value));
 }
 
 /** Full en-IN grouped currency, e.g. ₹4,82,391 */

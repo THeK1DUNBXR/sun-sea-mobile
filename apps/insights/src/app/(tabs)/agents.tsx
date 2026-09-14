@@ -1,6 +1,6 @@
 import { useIsFocused } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Reanimated, {
   Easing,
@@ -27,11 +27,18 @@ import type { LiveAgent } from '@/types';
 import { formatMoneyCompact, formatMoneyCompactSpoken, formatRelativeTime, initials } from '@/utils/format';
 
 const MAX_LEADER_STAGGER = 8;
-// Shared by the live map, its skeleton and its empty/fallback states so the
-// card never changes height as it moves between those states — and sized as
-// roughly one leaderboard row per ~40dp, giving the map a clear but not
-// screen-dominating share of the fold above the leaderboard.
-const MAP_HEIGHT = 260;
+// The live map's height is a share of the viewport's *height*, not a fixed
+// constant — so a small phone doesn't dedicate the same fixed 260dp as a
+// tall tablet, and a landscape orientation (where height is scarce) gets a
+// visibly shorter map instead of pushing the leaderboard off-screen. Shared
+// by the map, its skeleton and its empty/fallback states so the card never
+// changes height as it moves between those states.
+function useMapHeight(): number {
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  const isLandscape = windowWidth > windowHeight;
+  const share = isLandscape ? 0.32 : 0.26;
+  return Math.round(Math.min(360, Math.max(200, windowHeight * share)));
+}
 
 /** A rank badge that pops into place just after its row settles in. */
 function RankBadgePop({ index, children }: { index: number; children: React.ReactNode }) {
@@ -112,7 +119,9 @@ function AgentMarker({ agent, markerColor, palette }: {
       <MarkerPin>
         <View style={[styles.markerRing, { borderColor: markerColor, backgroundColor: palette.bgElevated }]}>
           <View style={[styles.markerBubble, { backgroundColor: markerColor }]}>
-            <Text style={[typography.label, { color: contrastText(markerColor) }]}>{initials(agent.fullName)}</Text>
+            <Text style={[typography.label, { color: contrastText(markerColor) }]} maxFontSizeMultiplier={1.3}>
+              {initials(agent.fullName)}
+            </Text>
           </View>
         </View>
       </MarkerPin>
@@ -161,6 +170,7 @@ export default function AgentsScreen() {
   const RANK_TIER_COLORS = [palette.rankGold, palette.rankSilver, palette.rankBronze];
   const RANK_TIER_SOFT = [palette.rankGoldSoft, palette.rankSilverSoft, palette.rankBronzeSoft];
   const focused = useIsFocused();
+  const mapHeight = useMapHeight();
   const overview = useOverview(focused);
   const agentsLive = useAgentsLive(focused);
 
@@ -205,6 +215,7 @@ export default function AgentsScreen() {
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={palette.accent} />
         }
       >
+      <View style={styles.content}>
         <Text style={[typography.headline, { color: palette.text }]}>{copy.title}</Text>
 
         {firstError ? (
@@ -229,21 +240,21 @@ export default function AgentsScreen() {
         />
         <Card style={{ padding: 0, overflow: 'hidden' }} elevation="raised">
           {Platform.OS === 'web' ? (
-            <View style={styles.mapFallback}>
+            <View style={[styles.mapFallback, { height: mapHeight }]}>
               <EmptyState title={copy.liveMap.webFallbackTitle} message={copy.liveMap.webFallbackMessage} />
             </View>
           ) : agentsLive.isPending ? (
-            <Skeleton height={MAP_HEIGHT} radius={0} />
+            <Skeleton height={mapHeight} radius={0} />
           ) : !MapView ? (
-            <View style={styles.mapFallback}>
+            <View style={[styles.mapFallback, { height: mapHeight }]}>
               <EmptyState title={copy.liveMap.moduleUnavailableTitle} message={copy.liveMap.moduleUnavailableMessage} />
             </View>
           ) : allLiveAgents.length === 0 ? (
-            <View style={styles.mapFallback}>
+            <View style={[styles.mapFallback, { height: mapHeight }]}>
               <EmptyState title={copy.liveMap.noAgentsTitle} message={copy.liveMap.noAgentsMessage} icon="agents" />
             </View>
           ) : liveAgents.length === 0 ? (
-            <View style={styles.mapFallback}>
+            <View style={[styles.mapFallback, { height: mapHeight }]}>
               <EmptyState
                 title={copy.liveMap.noGpsFixTitle}
                 message={copy.liveMap.noGpsFixMessage(allLiveAgents.length)}
@@ -251,7 +262,7 @@ export default function AgentsScreen() {
               />
             </View>
           ) : (
-            <MapView style={styles.map} initialRegion={initialRegion}>
+            <MapView style={[styles.map, { height: mapHeight }]} initialRegion={initialRegion}>
               {liveAgents.map((agent) => (
                 <AgentMarker
                   key={agent.agentUserId}
@@ -296,11 +307,15 @@ export default function AgentsScreen() {
                             : { backgroundColor: palette.overlay, borderColor: 'transparent' },
                         ]}
                       >
-                        <Text style={[typography.label, { color: rankColor }]}>{i + 1}</Text>
+                        <Text style={[typography.label, { color: rankColor }]} maxFontSizeMultiplier={1.3}>
+                          {i + 1}
+                        </Text>
                       </View>
                     </RankBadgePop>
                     <View style={[styles.avatar, { backgroundColor: palette.accentSoft }]}>
-                      <Text style={[typography.label, { color: palette.accent }]}>{initials(agent.name)}</Text>
+                      <Text style={[typography.label, { color: palette.accent }]} maxFontSizeMultiplier={1.3}>
+                        {initials(agent.name)}
+                      </Text>
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
@@ -329,6 +344,7 @@ export default function AgentsScreen() {
         </Card>
 
         <View style={{ height: layout.scrollEndSpacer }} />
+      </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -337,8 +353,9 @@ export default function AgentsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: layout.screenGutter },
-  map: { width: '100%', height: MAP_HEIGHT },
-  mapFallback: { height: MAP_HEIGHT, justifyContent: 'center' },
+  content: { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' },
+  map: { width: '100%' },
+  mapFallback: { justifyContent: 'center' },
   markerRing: {
     width: sizes.mapMarkerRing,
     height: sizes.mapMarkerRing,

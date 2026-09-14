@@ -77,6 +77,7 @@ export default function ActivityScreen() {
           />
         }
       >
+      <View style={styles.content}>
         <Text style={[typography.headline, { color: palette.text, marginBottom: spacing.lg }]}>{copy.title}</Text>
 
         {activity.error ? (
@@ -152,6 +153,7 @@ export default function ActivityScreen() {
         )}
 
         <View style={{ height: layout.scrollEndSpacer }} />
+      </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -160,6 +162,7 @@ export default function ActivityScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: layout.screenGutter },
+  content: { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' },
   group: { marginBottom: spacing.lg },
   // Same row padding and column gap as the overview/agents list rows, so the
   // icon / text / number columns land on the same grid across every screen

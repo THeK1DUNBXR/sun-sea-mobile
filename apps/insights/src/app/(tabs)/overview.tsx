@@ -25,14 +25,16 @@ import { SectionHeader } from '@/ui/Section';
 import { SkeletonKpiGrid, SkeletonChart } from '@/ui/Skeleton';
 import { MIN_TOUCH, layout, radius, sizes, spacing, tabularNums, typography, useReducedMotion, usePalette } from '@/ui/theme';
 import { useAuth } from '@/store/auth';
-import { formatMoneyCompact, formatMoneyCompactSpoken, formatRelativeTime } from '@/utils/format';
+import { formatMoneyCompact, formatMoneyCompactSpoken, formatPromiseCount, formatRelativeTime } from '@/utils/format';
 
 const RANGE_OPTIONS = [7, 30, 90] as const;
-// Below this content width (landscape phones, small tablets) the 6-tile KPI
-// grid moves from 2 columns to 3 — at 2 columns a wide screen would just
-// stretch each tile instead of using the extra width. 6 divides evenly by
-// both 2 and 3, so neither breakpoint ever leaves an orphan tile.
-const KPI_GRID_WIDE_BREAKPOINT = 600;
+// Below this *content* width (the column width after gutters and the tablet
+// content cap, not the raw device width) the 6-tile KPI grid moves from 2
+// columns to 3 — at 2 columns a wide screen would just stretch each tile
+// instead of using the extra width. 6 divides evenly by both 2 and 3, so
+// neither breakpoint ever leaves an orphan tile. Set above 3 * (KpiTile's own
+// 150dp minWidth) plus 2 gaps so 3-up never violates that minimum.
+const KPI_GRID_WIDE_BREAKPOINT = 480;
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -48,7 +50,13 @@ export default function OverviewScreen() {
   const focused = useIsFocused();
   const [range, setRange] = useState<(typeof RANGE_OPTIONS)[number]>(30);
   const { width: windowWidth } = useWindowDimensions();
-  const kpiColumns = windowWidth >= KPI_GRID_WIDE_BREAKPOINT ? 3 : 2;
+  // The KPI grid's actual column width is the content column, not the raw
+  // device width: on a tablet or wide landscape phone the content caps at
+  // `layout.contentMaxWidth` and centers, so the column-count decision has to
+  // key off that same capped width or a large device would flip to 3 columns
+  // it doesn't actually have room for once the cap kicks in.
+  const contentWidth = Math.min(windowWidth - layout.screenGutter * 2, layout.contentMaxWidth);
+  const kpiColumns = contentWidth >= KPI_GRID_WIDE_BREAKPOINT ? 3 : 2;
   const kpiItemStyle = useMemo(
     () => [styles.kpiGridItem, { flexBasis: `${100 / kpiColumns}%` as const }],
     [kpiColumns]
@@ -114,6 +122,7 @@ export default function OverviewScreen() {
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={palette.accent} />
         }
       >
+      <View style={styles.content}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
             <Text style={[typography.bodySm, { color: palette.textMuted }]} maxFontSizeMultiplier={1.6}>
@@ -158,7 +167,7 @@ export default function OverviewScreen() {
           </View>
         ) : (
           <View style={styles.kpiWrap}>
-            <Reveal index={0} staggerMs={40} style={styles.heroWrap}>
+            <Reveal index={0} staggerMs={40}>
               <KpiTile
                 variant="hero"
                 label={copy.kpi.salesMtdLabel}
@@ -255,6 +264,7 @@ export default function OverviewScreen() {
                     accessibilityLabel={copy.rangeA11y(opt)}
                     hitSlop={4}
                     haptic={!isActive}
+                    rippleColor={isActive ? palette.accentSoft : palette.overlay}
                     style={[
                       styles.rangeOption,
                       {
@@ -321,7 +331,12 @@ export default function OverviewScreen() {
                         : { backgroundColor: palette.overlay },
                     ]}
                   >
-                    <Text style={[typography.label, { color: isTopDebtor ? palette.warn : palette.textMuted }]}>{i + 1}</Text>
+                    <Text
+                      style={[typography.label, { color: isTopDebtor ? palette.warn : palette.textMuted }]}
+                      maxFontSizeMultiplier={1.3}
+                    >
+                      {i + 1}
+                    </Text>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
@@ -348,15 +363,19 @@ export default function OverviewScreen() {
           <Reveal index={11} staggerMs={40} style={{ flex: 1 }}>
             <KpiTile
               label={copy.kpi.ptpDueTodayLabel}
-              value={formatMoneyCompact(data?.ptp?.dueToday)}
+              value={formatPromiseCount(data?.ptp?.dueToday)}
               numericValue={data?.ptp?.dueToday}
+              format={formatPromiseCount}
+              formatSpoken={formatPromiseCount}
             />
           </Reveal>
           <Reveal index={12} staggerMs={40} style={{ flex: 1 }}>
             <KpiTile
               label={copy.kpi.ptpOverdueLabel}
-              value={formatMoneyCompact(data?.ptp?.overdue)}
+              value={formatPromiseCount(data?.ptp?.overdue)}
               numericValue={data?.ptp?.overdue}
+              format={formatPromiseCount}
+              formatSpoken={formatPromiseCount}
               invertColor
             />
           </Reveal>
@@ -390,6 +409,7 @@ export default function OverviewScreen() {
         </Reveal>
 
         <View style={{ height: layout.scrollEndSpacer }} />
+      </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -410,6 +430,9 @@ function humanizeKey(key: string): string {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: layout.screenGutter },
+  // Caps and centers the whole screen's content on a tablet or wide landscape
+  // phone instead of stretching every row edge-to-edge.
+  content: { width: '100%', maxWidth: layout.contentMaxWidth, alignSelf: 'center' },
   header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.sm },
   updatedChip: {
     flexDirection: 'row',
@@ -422,13 +445,6 @@ const styles = StyleSheet.create({
   },
   liveDot: { width: 6, height: 6, borderRadius: 3 },
   kpiWrap: { marginTop: spacing.lg, gap: spacing.md },
-  heroWrap: {
-    // Caps the hero's width on tablets and landscape phones so a single
-    // giant stat doesn't stretch into a thin, disproportionate banner.
-    width: '100%',
-    maxWidth: 640,
-    alignSelf: 'center',
-  },
   kpiGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

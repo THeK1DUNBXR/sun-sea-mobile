@@ -190,6 +190,12 @@ export const layout = {
   gridGap: spacing.md,
   /** Breathing room at the end of every scroll view, clear of the tab bar. */
   scrollEndSpacer: spacing.xxl,
+  /** Widest a screen's content column ever grows. Phones are always narrower
+   * than this and simply fill the available width; on tablets and landscape
+   * phones past this point the content column stops stretching and centers
+   * instead, so a single-column reading layout doesn't turn into an
+   * uncomfortably wide row of tiles. */
+  contentMaxWidth: 720,
 };
 
 /**

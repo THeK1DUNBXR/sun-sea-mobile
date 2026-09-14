@@ -2,6 +2,7 @@ import { Redirect } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  findNodeHandle,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -18,6 +19,12 @@ import { useAuth } from '@/store/auth';
 import { PressableScale } from '@/ui/PressableScale';
 import { MEASURE, MIN_TOUCH, radius, spacing, typography, usePalette } from '@/ui/theme';
 
+// A login form reads best as a narrow, centered column even on a tablet or a
+// landscape phone — capping it here (much tighter than the ~720dp dashboard
+// content cap) is a deliberate rethink for this screen, not the same number
+// reused everywhere.
+const FORM_MAX_WIDTH = 440;
+
 export default function LoginScreen() {
   const { login, isAuthenticated, isHydrating, sessionMessage, dismissSessionMessage } = useAuth();
   const palette = usePalette();
@@ -26,7 +33,28 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
+
+  // Scrolls the just-focused field to a comfortable position above the
+  // keyboard. KeyboardAvoidingView handles the overall shrink of available
+  // space, but on a short screen (a small phone in landscape, or the password
+  // field sitting below the email field once the session banner/error text
+  // has pushed the form down) the focused input can still land under the
+  // keyboard without an explicit scroll.
+  const scrollToInput = (ref: React.RefObject<TextInput | null>) => {
+    const input = ref.current;
+    const scrollNode = findNodeHandle(scrollRef.current);
+    if (!input || !scrollNode) return;
+    requestAnimationFrame(() => {
+      input.measureLayout(
+        scrollNode,
+        (_x, y) => scrollRef.current?.scrollTo({ y: Math.max(y - spacing.xl, 0), animated: true }),
+        () => {}
+      );
+    });
+  };
 
   if (!isHydrating && isAuthenticated) {
     return <Redirect href="/(tabs)/overview" />;
@@ -61,9 +89,11 @@ export default function LoginScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
         >
+          <View style={styles.content}>
           <View style={styles.brandWrap}>
             <View style={[styles.logoDot, { backgroundColor: palette.accent }]} />
             <Text style={[typography.headline, { color: palette.text }]}>{brand.name}</Text>
@@ -81,11 +111,13 @@ export default function LoginScreen() {
 
             <Text style={[typography.label, { color: palette.textMuted }]}>{copy.emailLabel}</Text>
             <TextInput
+              ref={emailRef}
               value={email}
               onChangeText={(t) => {
                 setEmail(t);
                 if (error) setError(null);
               }}
+              onFocus={() => scrollToInput(emailRef)}
               placeholder={copy.emailPlaceholder}
               placeholderTextColor={palette.textFaint}
               autoCapitalize="none"
@@ -115,6 +147,7 @@ export default function LoginScreen() {
                   setPassword(t);
                   if (error) setError(null);
                 }}
+                onFocus={() => scrollToInput(passwordRef)}
                 placeholder={copy.passwordPlaceholder}
                 placeholderTextColor={palette.textFaint}
                 secureTextEntry={!showPassword}
@@ -158,9 +191,13 @@ export default function LoginScreen() {
               accessibilityRole="button"
               accessibilityLabel={submitting ? copy.signingIn : copy.signIn}
               accessibilityState={{ disabled: submitting, busy: submitting }}
+              rippleColor="rgba(255,255,255,0.25)"
               style={({ pressed }) => [
                 styles.button,
-                { backgroundColor: palette.accent, opacity: pressed || submitting ? 0.85 : 1 },
+                // The pressed-opacity dim is iOS-only feedback; Android shows the
+                // Material ripple instead (see PressableScale). The submitting dim
+                // is state, not press feedback, so it applies on both platforms.
+                { backgroundColor: palette.accent, opacity: submitting ? 0.85 : Platform.OS === 'ios' && pressed ? 0.85 : 1 },
               ]}
             >
               {submitting ? (
@@ -174,6 +211,7 @@ export default function LoginScreen() {
               {copy.accessHint}
             </Text>
           </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -182,7 +220,10 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.xxl },
+  scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl },
+  // Centers and caps the form on a tablet or landscape phone instead of
+  // stretching the inputs and button edge-to-edge.
+  content: { width: '100%', maxWidth: FORM_MAX_WIDTH, alignSelf: 'center', gap: spacing.xxl },
   brandWrap: { alignItems: 'center', gap: spacing.xs },
   logoDot: { width: 44, height: 44, borderRadius: 14, marginBottom: spacing.sm },
   tagline: { textAlign: 'center', maxWidth: MEASURE * 0.85 },

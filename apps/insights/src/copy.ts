@@ -103,6 +103,9 @@ export const overview = {
     pendingVerificationCaption: (n: number) => `${n} receipt${n === 1 ? '' : 's'} awaiting verification`,
     ptpDueTodayLabel: 'Promises due today',
     ptpOverdueLabel: 'Promises overdue',
+    // The backend counts visits with a promise-to-pay due/overdue, not an
+    // amount — plain count with a unit word, not a currency figure.
+    ptpCount: (n: number) => `${n} promise${n === 1 ? '' : 's'}`,
   },
   empty: {
     noTrendTitle: 'No sales or collections yet',
