@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
 import { colors, radius, spacing, fontSize } from './theme';
@@ -8,13 +8,28 @@ interface InputProps extends TextInputProps {
   error?: string | null;
 }
 
-export function Input({ label, error, style, ...rest }: InputProps) {
+export function Input({ label, error, style, onFocus, onBlur, ...rest }: InputProps) {
+  const [focused, setFocused] = useState(false);
   return (
     <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <TextInput
-        placeholderTextColor={colors.textMuted}
-        style={[styles.input, error && styles.inputError, style]}
+        placeholderTextColor={colors.textFaint}
+        accessibilityLabel={label ?? rest.placeholder}
+        style={[
+          styles.input,
+          focused && styles.inputFocused,
+          error && styles.inputError,
+          style,
+        ]}
+        onFocus={(e) => {
+          setFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          onBlur?.(e);
+        }}
         {...rest}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -24,7 +39,7 @@ export function Input({ label, error, style, ...rest }: InputProps) {
 
 const styles = StyleSheet.create({
   wrap: { marginBottom: spacing.md },
-  label: { fontSize: fontSize.sm, fontWeight: '600', color: colors.textMuted, marginBottom: spacing.xs },
+  label: { fontSize: fontSize.sm, fontWeight: '700', color: colors.textMuted, marginBottom: spacing.xs },
   input: {
     minHeight: 52,
     borderWidth: 1.5,
@@ -35,6 +50,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     backgroundColor: colors.surface,
   },
+  inputFocused: { borderColor: colors.primary },
   inputError: { borderColor: colors.danger },
-  error: { color: colors.danger, fontSize: fontSize.sm, marginTop: spacing.xs },
+  error: { color: colors.danger, fontSize: fontSize.sm, marginTop: spacing.xs, fontWeight: '600' },
 });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Linking, Modal, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 
@@ -8,8 +9,8 @@ import { Badge } from '@/ui/Badge';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { Screen } from '@/ui/Screen';
-import { colors, spacing, fontSize } from '@/ui/theme';
-import { formatDate, formatMoney, isOverdue } from '@/ui/format';
+import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
+import { assignmentStatusMeta, formatDate, formatMoney, isOverdue } from '@/ui/format';
 
 export default function AssignmentDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -57,23 +58,25 @@ export default function AssignmentDetailScreen() {
   if (query.isLoading || !assignment) {
     return (
       <Screen>
-        <Text>Loading…</Text>
+        <Text style={styles.muted}>Loading…</Text>
       </Screen>
     );
   }
 
+  const statusMeta = assignmentStatusMeta(assignment.status);
+
   return (
     <Screen>
-      <Card>
+      <Card elevation="raised">
         <View style={styles.rowBetween}>
           <Text style={styles.invoiceNo}>{invoice?.invoiceNo}</Text>
-          <Badge label={assignment.status} />
+          <Badge label={statusMeta.label} tone={statusMeta.tone} />
         </View>
         <Text style={styles.muted}>Due {formatDate(invoice?.dueDate)}</Text>
         <View style={styles.badgeRow}>
-          {overdue && <Badge label="Overdue" tone="danger" />}
+          {overdue && <Badge label="Overdue" tone="danger" dot />}
           {assignment.promise?.promisedDate && (
-            <Badge label={`PTP ${formatDate(assignment.promise.promisedDate)}`} tone="warning" />
+            <Badge label={`PTP ${formatDate(assignment.promise.promisedDate)}`} tone="warning" dot />
           )}
         </View>
         <View style={styles.amountRow}>
@@ -92,9 +95,30 @@ export default function AssignmentDetailScreen() {
           </Text>
         ) : null}
         <View style={styles.contactRow}>
-          <Button title="Call" onPress={onCall} variant="secondary" fullWidth={false} style={styles.contactBtn} />
-          <Button title="WhatsApp" onPress={onWhatsApp} variant="secondary" fullWidth={false} style={styles.contactBtn} />
-          <Button title="Navigate" onPress={onNavigate} variant="secondary" fullWidth={false} style={styles.contactBtn} />
+          <Button
+            title="Call"
+            onPress={onCall}
+            variant="secondary"
+            fullWidth={false}
+            style={styles.contactBtn}
+            icon={<Ionicons name="call-outline" size={18} color={colors.primary} />}
+          />
+          <Button
+            title="WhatsApp"
+            onPress={onWhatsApp}
+            variant="secondary"
+            fullWidth={false}
+            style={styles.contactBtn}
+            icon={<Ionicons name="logo-whatsapp" size={18} color={colors.primary} />}
+          />
+          <Button
+            title="Navigate"
+            onPress={onNavigate}
+            variant="secondary"
+            fullWidth={false}
+            style={styles.contactBtn}
+            icon={<Ionicons name="navigate-outline" size={18} color={colors.primary} />}
+          />
         </View>
         <Button title="Customer ledger" onPress={() => setLedgerOpen(true)} variant="ghost" />
       </Card>
@@ -131,8 +155,17 @@ export default function AssignmentDetailScreen() {
       )}
 
       <View style={styles.actionRow}>
-        <Button title="Record Collection" onPress={() => router.push(`/(app)/collect/${assignment.id}`)} />
-        <Button title="Record Visit" onPress={() => router.push(`/(app)/visit/${assignment.id}`)} variant="secondary" />
+        <Button
+          title="Record Collection"
+          onPress={() => router.push(`/(app)/collect/${assignment.id}`)}
+          icon={<Ionicons name="cash-outline" size={20} color={colors.onPrimary} />}
+        />
+        <Button
+          title="Record Visit"
+          onPress={() => router.push(`/(app)/visit/${assignment.id}`)}
+          variant="secondary"
+          icon={<Ionicons name="clipboard-outline" size={20} color={colors.primary} />}
+        />
       </View>
 
       <Modal visible={ledgerOpen} animationType="slide" onRequestClose={() => setLedgerOpen(false)}>
@@ -176,13 +209,13 @@ function AmountBlock({ label, value, emphasize }: { label: string; value?: numbe
 
 const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  invoiceNo: { fontSize: fontSize.xl, fontWeight: '800', color: colors.text },
+  invoiceNo: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
   muted: { color: colors.textMuted, fontSize: fontSize.sm, marginTop: 2 },
   badgeRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
-  amountRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md },
+  amountRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.lg },
   amountBlock: { alignItems: 'flex-start' },
-  amountValue: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },
-  amountValueEmphasis: { color: colors.primaryDark, fontSize: fontSize.lg },
+  amountValue: { fontSize: fontSize.md, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
+  amountValueEmphasis: { color: colors.primaryDark, fontSize: fontSize.xxl, fontWeight: '900' },
   sectionTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text, marginBottom: spacing.sm },
   subsectionTitle: { fontSize: fontSize.md, fontWeight: '700', color: colors.text, marginTop: spacing.md },
   contactRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },

@@ -1,3 +1,6 @@
+import { colors } from './theme';
+import type { AssignmentStatus, DepositStatus, CollectionRecordStatus } from '@/types/models';
+
 const inrFormatter = new Intl.NumberFormat('en-IN', {
   style: 'currency',
   currency: 'INR',
@@ -72,6 +75,67 @@ export function amountInWords(amount: number): string {
 
   const words = parts.join(' ');
   return `${words.charAt(0).toUpperCase()}${words.slice(1)} rupees only`;
+}
+
+export type Tone = 'default' | 'success' | 'warning' | 'danger' | 'info';
+
+interface StatusMeta {
+  label: string;
+  tone: Tone;
+  color: string;
+}
+
+/** Single source of truth for how an assignment status reads everywhere
+ * (list rows, detail header) so the vocabulary never drifts screen to screen. */
+export const ASSIGNMENT_STATUS_META: Record<AssignmentStatus, StatusMeta> = {
+  PENDING: { label: 'Pending', tone: 'default', color: colors.textMuted },
+  IN_PROGRESS: { label: 'In progress', tone: 'info', color: colors.info },
+  PARTIALLY_COLLECTED: { label: 'Partially collected', tone: 'warning', color: colors.warning },
+  COLLECTED: { label: 'Collected', tone: 'success', color: colors.success },
+  UNCOLLECTED: { label: 'Uncollected', tone: 'danger', color: colors.danger },
+  CANCELLED: { label: 'Cancelled', tone: 'default', color: colors.textFaint },
+};
+
+export function assignmentStatusMeta(status?: AssignmentStatus | string | null): StatusMeta {
+  if (status && status in ASSIGNMENT_STATUS_META) return ASSIGNMENT_STATUS_META[status as AssignmentStatus];
+  return { label: status ?? 'Unknown', tone: 'default', color: colors.textMuted };
+}
+
+export const DEPOSIT_STATUS_META: Record<DepositStatus, StatusMeta> = {
+  PENDING: { label: 'Pending', tone: 'default', color: colors.textMuted },
+  ACCEPTED: { label: 'Accepted', tone: 'success', color: colors.success },
+  REJECTED: { label: 'Rejected', tone: 'danger', color: colors.danger },
+};
+
+export const RECORD_STATUS_META: Record<CollectionRecordStatus, StatusMeta> = {
+  PENDING_VERIFICATION: { label: 'Pending review', tone: 'warning', color: colors.warning },
+  VERIFIED: { label: 'Verified', tone: 'success', color: colors.success },
+  REJECTED: { label: 'Rejected', tone: 'danger', color: colors.danger },
+};
+
+type Priority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+
+const PRIORITY_COLOR: Record<Priority, string> = {
+  LOW: colors.priorityLow,
+  NORMAL: colors.priorityNormal,
+  HIGH: colors.priorityHigh,
+  URGENT: colors.priorityUrgent,
+};
+
+/** Color for the priority marker dot — falls back to the normal brand tone
+ * for any value the server sends that isn't one of the four known levels. */
+export function priorityColor(priority?: string | null): string {
+  if (priority && priority in PRIORITY_COLOR) return PRIORITY_COLOR[priority as Priority];
+  return colors.priorityNormal;
+}
+
+/** Two-letter initials for a customer/agent avatar mark. */
+export function initials(name?: string | null): string {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
 }
 
 /** Haversine distance in km — used for "nearby" sort fallback on-device. */

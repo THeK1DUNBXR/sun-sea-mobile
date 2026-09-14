@@ -1,7 +1,7 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { colors, radius, spacing, fontSize } from './theme';
+import { colors, radius, spacing, fontSize, elevation, minTouch } from './theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
@@ -11,9 +11,10 @@ interface ButtonProps {
   variant?: ButtonVariant;
   disabled?: boolean;
   loading?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   icon?: React.ReactNode;
   fullWidth?: boolean;
+  accessibilityLabel?: string;
 }
 
 export function Button({
@@ -25,18 +26,23 @@ export function Button({
   style,
   icon,
   fullWidth = true,
+  accessibilityLabel,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      hitSlop={4}
       onPress={isDisabled ? undefined : onPress}
       style={({ pressed }) => [
         styles.base,
         variantStyles[variant],
+        variant === 'primary' && !isDisabled && elevation.card,
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
-        pressed && !isDisabled && styles.pressed,
+        pressed && !isDisabled && pressedStyles[variant],
         style,
       ]}
     >
@@ -45,7 +51,9 @@ export function Button({
       ) : (
         <View style={styles.content}>
           {icon}
-          <Text style={[styles.text, textStyles[variant]]}>{title}</Text>
+          <Text style={[styles.text, textStyles[variant]]} numberOfLines={1}>
+            {title}
+          </Text>
         </View>
       )}
     </Pressable>
@@ -54,7 +62,7 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 52,
+    minHeight: minTouch + 4,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -63,9 +71,8 @@ const styles = StyleSheet.create({
   },
   fullWidth: { alignSelf: 'stretch' },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  text: { fontSize: fontSize.lg, fontWeight: '700' },
-  disabled: { opacity: 0.5 },
-  pressed: { opacity: 0.85 },
+  text: { fontSize: fontSize.lg, fontWeight: '800' },
+  disabled: { opacity: 0.45 },
 });
 
 const variantStyles = StyleSheet.create({
@@ -73,6 +80,13 @@ const variantStyles = StyleSheet.create({
   secondary: { backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.primary },
   danger: { backgroundColor: colors.danger },
   ghost: { backgroundColor: 'transparent' },
+});
+
+const pressedStyles = StyleSheet.create({
+  primary: { backgroundColor: colors.primaryDark },
+  secondary: { backgroundColor: colors.primaryTint },
+  danger: { backgroundColor: '#9A2F23' },
+  ghost: { backgroundColor: colors.chipBg },
 });
 
 const textStyles = StyleSheet.create({

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as Crypto from 'expo-crypto';
@@ -11,6 +12,7 @@ import { Card } from '@/ui/Card';
 import { Chip } from '@/ui/Chip';
 import { Input } from '@/ui/Input';
 import { Screen } from '@/ui/Screen';
+import { SuccessOverlay } from '@/ui/SuccessOverlay';
 import { colors, spacing, fontSize, radius } from '@/ui/theme';
 
 const OUTCOMES = [
@@ -32,7 +34,8 @@ export default function VisitScreen() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [position, setPosition] = useState<CurrentPosition | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     getCurrentPosition().then(setPosition);
@@ -47,9 +50,9 @@ export default function VisitScreen() {
   };
 
   const onSubmit = async () => {
-    setError(null);
+    setDateError(null);
     if (outcome === 'PROMISED_TO_PAY' && !promisedDate) {
-      setError('Enter the promised date.');
+      setDateError('Enter the promised date.');
       return;
     }
     setSubmitting(true);
@@ -66,16 +69,14 @@ export default function VisitScreen() {
         longitude: position?.longitude,
         photoUri,
       });
-      Alert.alert('Visit recorded', 'It will sync automatically once online.', [
-        { text: 'OK', onPress: () => router.replace('/(app)/(tabs)/assignments') },
-      ]);
+      setSubmitted(true);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Screen>
+    <Screen avoidKeyboard>
       <Card>
         <Text style={styles.label}>Outcome</Text>
         <View style={styles.chipWrap}>
@@ -85,7 +86,15 @@ export default function VisitScreen() {
         </View>
         {outcome === 'PROMISED_TO_PAY' && (
           <>
-            <Input label="Promised date (YYYY-MM-DD)" value={promisedDate} onChangeText={setPromisedDate} />
+            <Input
+              label="Promised date (YYYY-MM-DD)"
+              value={promisedDate}
+              onChangeText={(v) => {
+                setPromisedDate(v);
+                if (dateError) setDateError(null);
+              }}
+              error={dateError}
+            />
             <Input
               label="Promised amount (₹, optional)"
               keyboardType="numeric"
@@ -99,19 +108,32 @@ export default function VisitScreen() {
 
       <Card>
         <Text style={styles.label}>Photo (optional)</Text>
-        <Button title={photoUri ? 'Photo added ✓' : 'Add photo'} onPress={pickPhoto} variant="secondary" fullWidth={false} />
-        {photoUri ? <Image source={{ uri: photoUri }} style={styles.preview} /> : null}
+        <Button
+          title={photoUri ? 'Photo added' : 'Add photo'}
+          onPress={pickPhoto}
+          variant="secondary"
+          fullWidth={false}
+          icon={<Ionicons name={photoUri ? 'checkmark-circle' : 'camera-outline'} size={18} color={colors.primary} />}
+        />
+        {photoUri ? <Image source={{ uri: photoUri }} style={styles.preview} accessibilityLabel="Visit photo preview" /> : null}
       </Card>
 
-      <Card>
-        <Text style={styles.label}>Location</Text>
+      <Card style={styles.locationCard}>
+        <Ionicons name="location-outline" size={18} color={colors.textMuted} />
         <Text style={styles.muted}>
           {position ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}` : 'Capturing GPS…'}
         </Text>
       </Card>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button title="Submit visit" onPress={onSubmit} loading={submitting} />
+
+      <SuccessOverlay
+        visible={submitted}
+        title="Visit recorded"
+        subtitle="It will sync automatically once online."
+        actionLabel="Back to assignments"
+        onAction={() => router.replace('/(app)/(tabs)/assignments')}
+      />
     </Screen>
   );
 }
@@ -120,6 +142,6 @@ const styles = StyleSheet.create({
   label: { fontSize: fontSize.sm, fontWeight: '700', color: colors.textMuted, marginBottom: spacing.sm },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap' },
   preview: { width: 120, height: 120, borderRadius: radius.sm, marginTop: spacing.sm },
-  muted: { color: colors.textMuted },
-  error: { color: colors.danger, fontWeight: '600' },
+  locationCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  muted: { color: colors.textMuted, flex: 1 },
 });

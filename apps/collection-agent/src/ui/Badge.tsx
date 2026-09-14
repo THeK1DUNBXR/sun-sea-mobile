@@ -1,35 +1,52 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, radius, spacing, fontSize } from './theme';
+import { colors, radius, spacing, fontSize, letterSpacing } from './theme';
+import type { Tone } from './format';
 
 interface BadgeProps {
   label: string;
-  tone?: 'default' | 'success' | 'warning' | 'danger';
+  tone?: Tone;
+  /** Small filled dot ahead of the label — the consistent way this app marks
+   * status everywhere (never a left-edge border stripe). */
+  dot?: boolean;
 }
 
-const toneColors: Record<NonNullable<BadgeProps['tone']>, { bg: string; fg: string }> = {
+const toneColors: Record<Tone, { bg: string; fg: string }> = {
   default: { bg: colors.chipBg, fg: colors.primaryDark },
-  success: { bg: '#E4F5EC', fg: colors.success },
-  warning: { bg: '#FBF0DD', fg: colors.warning },
-  danger: { bg: '#FBE7E4', fg: colors.danger },
+  success: { bg: colors.successTint, fg: colors.success },
+  warning: { bg: colors.warningTint, fg: colors.warning },
+  danger: { bg: colors.dangerTint, fg: colors.danger },
+  info: { bg: colors.infoTint, fg: colors.info },
 };
 
-export function Badge({ label, tone = 'default' }: BadgeProps) {
+export function Badge({ label, tone = 'default', dot = false }: BadgeProps) {
   const t = toneColors[tone];
   return (
-    <View style={[styles.badge, { backgroundColor: t.bg }]}>
-      <Text style={[styles.text, { color: t.fg }]}>{label}</Text>
+    <View style={[styles.badge, { backgroundColor: t.bg }]} accessibilityRole="text">
+      {dot ? <View style={[styles.dot, { backgroundColor: t.fg }]} /> : null}
+      <Text style={[styles.text, { color: t.fg }]} numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 5,
     borderRadius: radius.sm,
     alignSelf: 'flex-start',
+    gap: 5,
   },
-  text: { fontSize: fontSize.sm, fontWeight: '700' },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+  text: {
+    fontSize: fontSize.xs,
+    fontWeight: '800',
+    letterSpacing: letterSpacing.wideLabel,
+    textTransform: 'uppercase',
+  },
 });

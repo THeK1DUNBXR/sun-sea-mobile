@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import * as Print from 'expo-print';
@@ -9,7 +10,7 @@ import { fetchReceipt } from '@/api/agentApi';
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { Screen } from '@/ui/Screen';
-import { colors, spacing, fontSize } from '@/ui/theme';
+import { colors, spacing, fontSize, radius, letterSpacing } from '@/ui/theme';
 import { amountInWords, formatDateTime, formatMoney } from '@/ui/format';
 import type { Receipt } from '@/types/models';
 
@@ -48,32 +49,63 @@ export default function ReceiptScreen() {
   if (query.isLoading || !receipt) {
     return (
       <Screen>
-        <Text>Loading receipt…</Text>
+        <Text style={styles.loading}>Loading receipt…</Text>
       </Screen>
     );
   }
 
   return (
-    <Screen>
-      <Card>
-        <Text style={styles.company}>{receipt.company?.name ?? 'SunSea'}</Text>
-        <Text style={styles.muted}>{receipt.company?.address}</Text>
-        <View style={styles.divider} />
-        <Text style={styles.receiptNo}>Receipt {receipt.receiptNo}</Text>
-        <Text style={styles.muted}>{formatDateTime(receipt.collectedAt)}</Text>
-        <Text style={styles.amount}>{formatMoney(receipt.amount)}</Text>
-        <Text style={styles.muted}>{amountInWords(receipt.amount ?? 0)}</Text>
-        <View style={styles.divider} />
-        <Row label="From" value={receipt.customer?.displayName ?? receipt.customer?.firmName} />
-        <Row label="Invoice" value={receipt.invoice?.invoiceNo} />
-        <Row label="Method" value={receipt.paymentMethod} />
-        <Row label="Collected by" value={receipt.agentName} />
-      </Card>
+    <Screen style={styles.screen}>
+      <View style={styles.ticket}>
+        <Card elevation="raised" style={styles.ticketCard}>
+          <View style={styles.paidStamp}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+            <Text style={styles.paidStampText}>Paid</Text>
+          </View>
 
-      <Button title="Share as PDF" onPress={onSharePdf} loading={sharing} />
-      <Button title="Share on WhatsApp" onPress={onShareWhatsApp} variant="secondary" />
+          <Text style={styles.company}>{receipt.company?.name ?? 'SunSea'}</Text>
+          {receipt.company?.address ? <Text style={styles.muted}>{receipt.company.address}</Text> : null}
+
+          <TearLine />
+
+          <Text style={styles.amount} numberOfLines={1} adjustsFontSizeToFit>
+            {formatMoney(receipt.amount)}
+          </Text>
+          <Text style={styles.words}>{amountInWords(receipt.amount ?? 0)}</Text>
+          <Text style={styles.receiptNo}>Receipt {receipt.receiptNo}</Text>
+          <Text style={styles.muted}>{formatDateTime(receipt.collectedAt)}</Text>
+
+          <TearLine />
+
+          <Row label="From" value={receipt.customer?.displayName ?? receipt.customer?.firmName} />
+          <Row label="Invoice" value={receipt.invoice?.invoiceNo} />
+          <Row label="Method" value={receipt.paymentMethod} />
+          <Row label="Collected by" value={receipt.agentName} />
+        </Card>
+        <View style={styles.notchLeft} />
+        <View style={styles.notchRight} />
+      </View>
+
+      <View style={styles.actions}>
+        <Button
+          title="Share as PDF"
+          onPress={onSharePdf}
+          loading={sharing}
+          icon={<Ionicons name="document-text-outline" size={20} color={colors.onPrimary} />}
+        />
+        <Button
+          title="Share on WhatsApp"
+          onPress={onShareWhatsApp}
+          variant="secondary"
+          icon={<Ionicons name="logo-whatsapp" size={20} color={colors.primary} />}
+        />
+      </View>
     </Screen>
   );
+}
+
+function TearLine() {
+  return <View style={styles.tearLine} />;
 }
 
 function Row({ label, value }: { label: string; value?: string }) {
@@ -105,13 +137,65 @@ function buildReceiptHtml(receipt?: Receipt): string {
   </body></html>`;
 }
 
+const NOTCH = 18;
+
 const styles = StyleSheet.create({
-  company: { fontSize: fontSize.xl, fontWeight: '800', color: colors.text },
-  muted: { color: colors.textMuted, marginTop: 2 },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: spacing.md },
-  receiptNo: { fontSize: fontSize.md, fontWeight: '700', color: colors.text },
-  amount: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.primaryDark, marginTop: spacing.sm },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  rowLabel: { color: colors.textMuted },
-  rowValue: { color: colors.text, fontWeight: '600' },
+  screen: { backgroundColor: colors.bgAlt },
+  loading: { color: colors.textMuted, padding: spacing.lg },
+  ticket: { alignItems: 'center', paddingTop: spacing.sm },
+  ticketCard: { width: '100%', alignItems: 'center', paddingTop: spacing.xl, gap: 2 },
+  notchLeft: {
+    position: 'absolute',
+    left: -NOTCH / 2,
+    top: '50%',
+    width: NOTCH,
+    height: NOTCH,
+    borderRadius: NOTCH / 2,
+    backgroundColor: colors.bgAlt,
+  },
+  notchRight: {
+    position: 'absolute',
+    right: -NOTCH / 2,
+    top: '50%',
+    width: NOTCH,
+    height: NOTCH,
+    borderRadius: NOTCH / 2,
+    backgroundColor: colors.bgAlt,
+  },
+  paidStamp: {
+    position: 'absolute',
+    top: spacing.lg,
+    right: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.successTint,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.sm,
+    transform: [{ rotate: '4deg' }],
+  },
+  paidStampText: { color: colors.success, fontWeight: '900', fontSize: fontSize.xs, textTransform: 'uppercase', letterSpacing: letterSpacing.wideLabel },
+  company: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
+  muted: { color: colors.textMuted, marginTop: 2, textAlign: 'center' },
+  tearLine: {
+    width: '100%',
+    borderStyle: 'dashed',
+    borderBottomWidth: 1.5,
+    borderBottomColor: colors.border,
+    marginVertical: spacing.md,
+  },
+  amount: {
+    fontSize: fontSize.display,
+    fontWeight: '900',
+    color: colors.primaryDark,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: letterSpacing.tightDisplay,
+  },
+  words: { color: colors.textMuted, fontSize: fontSize.sm, textAlign: 'center', marginTop: 4, marginBottom: spacing.sm, fontStyle: 'italic' },
+  receiptNo: { fontSize: fontSize.md, fontWeight: '800', color: colors.text, fontVariant: ['tabular-nums'] },
+  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, width: '100%' },
+  rowLabel: { color: colors.textMuted, fontWeight: '600' },
+  rowValue: { color: colors.text, fontWeight: '700' },
+  actions: { gap: spacing.sm, marginTop: spacing.lg },
 });

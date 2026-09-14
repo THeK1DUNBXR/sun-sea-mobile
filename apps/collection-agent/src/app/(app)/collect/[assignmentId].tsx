@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,7 +16,8 @@ import { Card } from '@/ui/Card';
 import { Chip } from '@/ui/Chip';
 import { Input } from '@/ui/Input';
 import { Screen } from '@/ui/Screen';
-import { colors, spacing, fontSize, radius } from '@/ui/theme';
+import { SuccessOverlay } from '@/ui/SuccessOverlay';
+import { colors, spacing, fontSize, radius, letterSpacing } from '@/ui/theme';
 import { formatMoney } from '@/ui/format';
 
 const METHODS = ['CASH', 'UPI', 'CHEQUE', 'BANK_TRANSFER', 'CARD', 'OTHER'] as const;
@@ -32,6 +34,8 @@ export default function CollectScreen() {
     enabled: Boolean(assignmentId),
   });
   const outstanding = assignmentQuery.data?.invoice?.outstanding ?? 0;
+  const customerName =
+    assignmentQuery.data?.customer?.displayName ?? assignmentQuery.data?.customer?.firmName ?? 'this customer';
 
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<Method>('CASH');
@@ -44,8 +48,10 @@ export default function CollectScreen() {
   const [proofUri, setProofUri] = useState<string | null>(null);
   const [signatureUri, setSignatureUri] = useState<string | null>(null);
   const [position, setPosition] = useState<CurrentPosition | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [amountError, setAmountError] = useState<string | null>(null);
+  const [chequeError, setChequeError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submittedAmount, setSubmittedAmount] = useState<number | null>(null);
 
   useEffect(() => {
     getCurrentPosition().then(setPosition);
@@ -61,19 +67,21 @@ export default function CollectScreen() {
   };
 
   const onSubmit = async () => {
-    setError(null);
+    setAmountError(null);
+    setChequeError(null);
+    let hasError = false;
     if (!amountValue || amountValue <= 0) {
-      setError('Enter a valid amount.');
-      return;
-    }
-    if (amountValue > outstanding + 0.01) {
-      setError(`Amount cannot exceed the outstanding balance of ${formatMoney(outstanding)}.`);
-      return;
+      setAmountError('Enter a valid amount.');
+      hasError = true;
+    } else if (amountValue > outstanding + 0.01) {
+      setAmountError(`Cannot exceed the outstanding balance of ${formatMoney(outstanding)}.`);
+      hasError = true;
     }
     if (method === 'CHEQUE' && !chequeNumber) {
-      setError('Enter the cheque number.');
-      return;
+      setChequeError('Enter the cheque number.');
+      hasError = true;
     }
+    if (hasError) return;
 
     setSubmitting(true);
     try {
@@ -95,39 +103,46 @@ export default function CollectScreen() {
         proofUri,
         signatureUri,
       });
-      Alert.alert('Collection recorded', 'It will sync automatically once online.', [
-        { text: 'OK', onPress: () => router.replace('/(app)/(tabs)/assignments') },
-      ]);
+      setSubmittedAmount(amountValue);
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Screen>
-      <Card>
-        <Text style={styles.outstandingLabel}>Outstanding</Text>
-        <Text style={styles.outstandingValue}>{formatMoney(outstanding)}</Text>
+    <Screen avoidKeyboard>
+      <Card elevation="raised" style={styles.outstandingCard}>
+        <Text style={styles.outstandingLabel}>Outstanding · {customerName}</Text>
+        <Text style={styles.outstandingValue} numberOfLines={1} adjustsFontSizeToFit>
+          {formatMoney(outstanding)}
+        </Text>
       </Card>
 
-      <Card>
+      <Step number={1} title="Amount">
         <Input
           label="Amount received (₹)"
           keyboardType="numeric"
           value={amount}
-          onChangeText={setAmount}
+          onChangeText={(v) => {
+            setAmount(v);
+            if (amountError) setAmountError(null);
+          }}
           placeholder="0"
+          error={amountError}
         />
         <Button
           title="Full outstanding"
-          onPress={() => setAmount(String(outstanding))}
+          onPress={() => {
+            setAmount(String(outstanding));
+            setAmountError(null);
+          }}
           variant="secondary"
           fullWidth={false}
+          icon={<Ionicons name="checkmark-circle-outline" size={18} color={colors.primary} />}
         />
-      </Card>
+      </Step>
 
-      <Card>
-        <Text style={styles.label}>Payment method</Text>
+      <Step number={2} title="Payment method">
         <View style={styles.chipWrap}>
           {METHODS.map((m) => (
             <Chip key={m} label={m.replace('_', ' ')} selected={method === m} onPress={() => setMethod(m)} />
@@ -136,26 +151,46 @@ export default function CollectScreen() {
         <Input label="Reference number (optional)" value={referenceNumber} onChangeText={setReferenceNumber} />
         {method === 'CHEQUE' && (
           <>
-            <Input label="Cheque number" value={chequeNumber} onChangeText={setChequeNumber} />
+            <Input
+              label="Cheque number"
+              value={chequeNumber}
+              onChangeText={(v) => {
+                setChequeNumber(v);
+                if (chequeError) setChequeError(null);
+              }}
+              error={chequeError}
+            />
             <Input label="Cheque date (YYYY-MM-DD)" value={chequeDate} onChangeText={setChequeDate} />
             <Input label="Bank name" value={bankName} onChangeText={setBankName} />
           </>
         )}
         <Input label="Payer name (optional)" value={payerName} onChangeText={setPayerName} />
         <Input label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
-      </Card>
+      </Step>
 
-      <Card>
-        <Text style={styles.label}>Proof photo</Text>
+      <Step number={3} title="Proof photo" optional>
         <View style={styles.chipRowButtons}>
-          <Button title="Camera" onPress={() => pickProof(true)} variant="secondary" fullWidth={false} style={styles.halfBtn} />
-          <Button title="Gallery" onPress={() => pickProof(false)} variant="secondary" fullWidth={false} style={styles.halfBtn} />
+          <Button
+            title="Camera"
+            onPress={() => pickProof(true)}
+            variant="secondary"
+            fullWidth={false}
+            style={styles.halfBtn}
+            icon={<Ionicons name="camera-outline" size={18} color={colors.primary} />}
+          />
+          <Button
+            title="Gallery"
+            onPress={() => pickProof(false)}
+            variant="secondary"
+            fullWidth={false}
+            style={styles.halfBtn}
+            icon={<Ionicons name="images-outline" size={18} color={colors.primary} />}
+          />
         </View>
-        {proofUri ? <Image source={{ uri: proofUri }} style={styles.preview} /> : null}
-      </Card>
+        {proofUri ? <Image source={{ uri: proofUri }} style={styles.preview} accessibilityLabel="Proof photo preview" /> : null}
+      </Step>
 
-      <Card>
-        <Text style={styles.label}>Signature (optional)</Text>
+      <Step number={4} title="Signature" optional>
         <View style={styles.signatureBox}>
           <SignatureScreen
             ref={signatureRef}
@@ -169,10 +204,16 @@ export default function CollectScreen() {
           <Button title="Clear" onPress={() => signatureRef.current?.clearSignature()} variant="ghost" fullWidth={false} />
           <Button title="Save signature" onPress={() => signatureRef.current?.readSignature()} variant="ghost" fullWidth={false} />
         </View>
-      </Card>
+        {signatureUri ? (
+          <View style={styles.confirmedRow}>
+            <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+            <Text style={styles.confirmedText}>Signature saved</Text>
+          </View>
+        ) : null}
+      </Step>
 
-      <Card>
-        <Text style={styles.label}>Location</Text>
+      <Card style={styles.locationCard}>
+        <Ionicons name="location-outline" size={18} color={colors.textMuted} />
         <Text style={styles.muted}>
           {position
             ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)} (±${Math.round(position.accuracy ?? 0)}m)`
@@ -180,21 +221,74 @@ export default function CollectScreen() {
         </Text>
       </Card>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
       <Button title="Submit collection" onPress={onSubmit} loading={submitting} />
+
+      <SuccessOverlay
+        visible={submittedAmount != null}
+        title="Collection recorded"
+        subtitle={`${formatMoney(submittedAmount ?? 0)} from ${customerName} — it will sync automatically once online.`}
+        actionLabel="Back to assignments"
+        onAction={() => router.replace('/(app)/(tabs)/assignments')}
+      />
     </Screen>
   );
 }
 
+function Step({
+  number,
+  title,
+  optional,
+  children,
+}: {
+  number: number;
+  title: string;
+  optional?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card style={styles.stepCard}>
+      <View style={styles.stepHeader}>
+        <View style={styles.stepBadge}>
+          <Text style={styles.stepBadgeText}>{number}</Text>
+        </View>
+        <Text style={styles.stepTitle}>{title}</Text>
+        {optional ? <Text style={styles.stepOptional}>Optional</Text> : null}
+      </View>
+      {children}
+    </Card>
+  );
+}
+
 const styles = StyleSheet.create({
-  outstandingLabel: { color: colors.textMuted, fontSize: fontSize.sm },
-  outstandingValue: { color: colors.primaryDark, fontSize: fontSize.xxl, fontWeight: '800' },
-  label: { fontSize: fontSize.sm, fontWeight: '700', color: colors.textMuted, marginBottom: spacing.sm },
+  outstandingCard: { backgroundColor: colors.primary, borderColor: colors.primary, gap: 4 },
+  outstandingLabel: { color: colors.primaryTint, fontSize: fontSize.sm, fontWeight: '700' },
+  outstandingValue: {
+    color: colors.onPrimary,
+    fontSize: fontSize.xxxl,
+    fontWeight: '900',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: letterSpacing.tightDisplay,
+  },
+  stepCard: {},
+  stepHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  stepBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.primaryTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBadgeText: { color: colors.primaryDark, fontWeight: '900', fontSize: fontSize.sm },
+  stepTitle: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text, flex: 1 },
+  stepOptional: { fontSize: fontSize.xs, fontWeight: '700', color: colors.textFaint, textTransform: 'uppercase', letterSpacing: letterSpacing.wideLabel },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap' },
   chipRowButtons: { flexDirection: 'row', gap: spacing.sm },
   halfBtn: { flexGrow: 1 },
   preview: { width: 120, height: 120, borderRadius: radius.sm, marginTop: spacing.sm },
   signatureBox: { height: 180, borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, overflow: 'hidden' },
-  muted: { color: colors.textMuted },
-  error: { color: colors.danger, fontWeight: '600' },
+  confirmedRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs },
+  confirmedText: { color: colors.success, fontWeight: '700', fontSize: fontSize.sm },
+  locationCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  muted: { color: colors.textMuted, flex: 1 },
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, radius, spacing, fontSize } from './theme';
+import { colors, radius, spacing, fontSize, minTouch } from './theme';
 
 interface ChipProps {
   label: string;
@@ -16,10 +16,14 @@ export function Chip({ label, selected, onPress, color }: ChipProps) {
   return (
     <Pressable
       onPress={onPress}
-      style={[
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      hitSlop={4}
+      style={({ pressed }) => [
         styles.chip,
         { borderColor: tint },
         active ? { backgroundColor: tint } : { backgroundColor: colors.chipBg },
+        pressed && { opacity: 0.85 },
       ]}
     >
       <Text style={[styles.label, { color: active ? colors.onPrimary : tint }]}>{label}</Text>
@@ -29,6 +33,8 @@ export function Chip({ label, selected, onPress, color }: ChipProps) {
 
 const styles = StyleSheet.create({
   chip: {
+    minHeight: minTouch,
+    justifyContent: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
@@ -36,5 +42,5 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
     marginBottom: spacing.sm,
   },
-  label: { fontSize: fontSize.sm, fontWeight: '700' },
+  label: { fontSize: fontSize.sm, fontWeight: '800' },
 });

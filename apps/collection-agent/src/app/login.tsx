@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '@/ui/Button';
 import { Input } from '@/ui/Input';
 import { Screen } from '@/ui/Screen';
-import { colors, spacing, fontSize } from '@/ui/theme';
+import { BrandMark } from '@/ui/BrandMark';
+import { colors, spacing, fontSize, radius, letterSpacing } from '@/ui/theme';
 import { useAuth } from '@/store/auth';
 
 export default function LoginScreen() {
@@ -31,11 +33,13 @@ export default function LoginScreen() {
     }
   };
 
+  const activeError = formError ?? error;
+
   return (
-    <Screen scroll={false} style={styles.screen}>
+    <Screen scroll={false} avoidKeyboard style={styles.screen}>
       <View style={styles.center}>
         <View style={styles.logoWrap}>
-          <Text style={styles.logo}>SunSea Collect</Text>
+          <BrandMark size="lg" />
           <Text style={styles.tagline}>Field collection for SunSea agents</Text>
         </View>
 
@@ -48,6 +52,7 @@ export default function LoginScreen() {
             value={email}
             onChangeText={setEmail}
             placeholder="you@sunsea.com"
+            returnKeyType="next"
           />
           <Input
             label="Password"
@@ -56,11 +61,19 @@ export default function LoginScreen() {
             value={password}
             onChangeText={setPassword}
             placeholder="••••••••"
+            returnKeyType="go"
+            onSubmitEditing={onSubmit}
           />
-          {(formError || error) && <Text style={styles.error}>{formError ?? error}</Text>}
+          {activeError ? (
+            <View style={styles.errorBox} accessibilityRole="alert">
+              <Ionicons name="alert-circle" size={18} color={colors.danger} />
+              <Text style={styles.error}>{activeError}</Text>
+            </View>
+          ) : null}
           <Button title="Log in" onPress={onSubmit} loading={submitting} style={{ marginTop: spacing.sm }} />
         </View>
       </View>
+      <Text style={styles.footer}>SunSea ERP · Collection Agent</Text>
     </Screen>
   );
 }
@@ -68,9 +81,30 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   screen: { backgroundColor: colors.bg },
   center: { flex: 1, justifyContent: 'center', padding: spacing.xl },
-  logoWrap: { alignItems: 'center', marginBottom: spacing.xxl },
-  logo: { fontSize: fontSize.xxl, fontWeight: '800', color: colors.primaryDark },
-  tagline: { fontSize: fontSize.md, color: colors.textMuted, marginTop: spacing.xs },
+  logoWrap: { alignItems: 'flex-start', marginBottom: spacing.xxxl },
+  tagline: {
+    fontSize: fontSize.md,
+    color: colors.textMuted,
+    marginTop: spacing.md,
+    fontWeight: '500',
+  },
   form: { gap: spacing.sm },
-  error: { color: colors.danger, fontSize: fontSize.md, textAlign: 'center' },
+  errorBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.dangerTint,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  error: { color: colors.danger, fontSize: fontSize.md, fontWeight: '600', flex: 1 },
+  footer: {
+    textAlign: 'center',
+    color: colors.textFaint,
+    fontSize: fontSize.xs,
+    fontWeight: '700',
+    letterSpacing: letterSpacing.wideLabel,
+    paddingBottom: spacing.lg,
+    textTransform: 'uppercase',
+  },
 });

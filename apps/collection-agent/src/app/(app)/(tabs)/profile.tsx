@@ -1,14 +1,16 @@
 import React, { useCallback, useState } from 'react';
 import { Alert, StyleSheet, Switch, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 
 import { Button } from '@/ui/Button';
 import { Card } from '@/ui/Card';
 import { Badge } from '@/ui/Badge';
+import { Avatar } from '@/ui/Avatar';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
-import { colors, spacing, fontSize } from '@/ui/theme';
-import { formatDateTime } from '@/ui/format';
+import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
+import { formatDateTime, initials } from '@/ui/format';
 import { useAuth } from '@/store/auth';
 import { useSyncStatus } from '@/offline/useSyncStatus';
 import { retryItem, removeItem } from '@/offline/queue';
@@ -38,15 +40,26 @@ export default function ProfileScreen() {
 
   return (
     <Screen>
-      <Card>
-        <Text style={styles.name}>{user?.name ?? 'Agent'}</Text>
-        <Text style={styles.subtitle}>{user?.email ?? user?.phone ?? ''}</Text>
+      <Card elevation="raised" style={styles.identityRow}>
+        <Avatar label={initials(user?.name)} color={colors.primary} size={56} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.name}>{user?.name ?? 'Agent'}</Text>
+          <Text style={styles.subtitle}>{user?.email ?? user?.phone ?? ''}</Text>
+        </View>
       </Card>
 
       <Card>
         <View style={styles.rowBetween}>
-          <Text style={styles.cardTitle}>Location tracking</Text>
-          <Switch value={tracking} onValueChange={onToggleTracking} trackColor={{ true: colors.primary }} />
+          <View style={styles.trackingLabel}>
+            <Ionicons name="navigate" size={18} color={colors.primary} />
+            <Text style={styles.cardTitle}>Location tracking</Text>
+          </View>
+          <Switch
+            value={tracking}
+            onValueChange={onToggleTracking}
+            trackColor={{ true: colors.primary, false: colors.border }}
+            accessibilityLabel="Location tracking"
+          />
         </View>
       </Card>
 
@@ -56,7 +69,7 @@ export default function ProfileScreen() {
           <Button title="Sync now" onPress={sync.flushNow} loading={sync.syncing} fullWidth={false} variant="secondary" />
         </View>
         {sync.items.length === 0 ? (
-          <EmptyState title="Nothing pending" />
+          <EmptyState icon="cloud-done-outline" tone="success" title="Nothing pending" />
         ) : (
           <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
             {sync.items.map((item) => (
@@ -66,7 +79,7 @@ export default function ProfileScreen() {
                   <Text style={styles.subtitle}>{formatDateTime(item.createdAt)}</Text>
                   {item.lastError ? <Text style={styles.errorText}>{item.lastError}</Text> : null}
                 </View>
-                {item.lastError ? <Badge label="Failed" tone="danger" /> : <Badge label="Pending" />}
+                {item.lastError ? <Badge label="Failed" tone="danger" dot /> : <Badge label="Pending" dot />}
                 {item.lastError ? (
                   <Button title="Retry" onPress={() => retryItem(item.id)} fullWidth={false} variant="ghost" />
                 ) : null}
@@ -77,15 +90,22 @@ export default function ProfileScreen() {
         )}
       </Card>
 
-      <Button title="Log out" onPress={logout} variant="danger" />
+      <Button
+        title="Log out"
+        onPress={logout}
+        variant="danger"
+        icon={<Ionicons name="log-out-outline" size={20} color={colors.onPrimary} />}
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  name: { fontSize: fontSize.xl, fontWeight: '800', color: colors.text },
+  identityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  name: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
   subtitle: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
-  cardTitle: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
+  trackingLabel: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  cardTitle: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   queueRow: {
     flexDirection: 'row',
@@ -95,6 +115,6 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     paddingTop: spacing.sm,
   },
-  queueKind: { fontWeight: '700', color: colors.text, textTransform: 'capitalize' },
+  queueKind: { fontWeight: '800', color: colors.text, textTransform: 'capitalize' },
   errorText: { color: colors.danger, fontSize: fontSize.sm },
 });

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -11,16 +12,11 @@ import { Badge } from '@/ui/Badge';
 import { Input } from '@/ui/Input';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
-import { colors, spacing, fontSize } from '@/ui/theme';
-import { formatDateTime, formatMoney } from '@/ui/format';
+import { SuccessOverlay } from '@/ui/SuccessOverlay';
+import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
+import { DEPOSIT_STATUS_META, formatDateTime, formatMoney } from '@/ui/format';
 import * as Crypto from 'expo-crypto';
 import type { AgentCashDeposit } from '@/types/models';
-
-const toneForStatus: Record<AgentCashDeposit['status'], 'default' | 'success' | 'danger'> = {
-  PENDING: 'default',
-  ACCEPTED: 'success',
-  REJECTED: 'danger',
-};
 
 export default function DepositsScreen() {
   const queryClient = useQueryClient();
@@ -30,7 +26,9 @@ export default function DepositsScreen() {
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [proofUri, setProofUri] = useState<string | null>(null);
+  const [amountError, setAmountError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submittedAmount, setSubmittedAmount] = useState<number | null>(null);
 
   const pickProof = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -45,9 +43,10 @@ export default function DepositsScreen() {
   const onSubmit = async () => {
     const numericAmount = Number(amount);
     if (!numericAmount || numericAmount <= 0) {
-      Alert.alert('Enter a valid amount');
+      setAmountError('Enter a valid amount.');
       return;
     }
+    setAmountError(null);
     setSubmitting(true);
     try {
       await enqueue('deposit', {
@@ -58,58 +57,103 @@ export default function DepositsScreen() {
         notes: notes || undefined,
         proofUri,
       });
+      setSubmittedAmount(numericAmount);
       setAmount('');
       setNotes('');
       setProofUri(null);
       setShowForm(false);
       queryClient.invalidateQueries({ queryKey: ['deposits'] });
-      Alert.alert('Deposit queued', 'It will sync automatically once online.');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Screen refreshing={query.isFetching} onRefresh={() => query.refetch()}>
+    <Screen refreshing={query.isFetching} onRefresh={() => query.refetch()} avoidKeyboard>
       <View style={styles.headerRow}>
         <Text style={styles.heading}>Cash deposits</Text>
-        <Button title={showForm ? 'Cancel' : 'New deposit'} onPress={() => setShowForm((v) => !v)} fullWidth={false} variant="secondary" />
+        <Button
+          title={showForm ? 'Cancel' : 'New deposit'}
+          onPress={() => setShowForm((v) => !v)}
+          fullWidth={false}
+          variant="secondary"
+          icon={<Ionicons name={showForm ? 'close' : 'add'} size={18} color={colors.primary} />}
+        />
       </View>
 
       {showForm && (
-        <Card>
-          <Input label="Amount (₹)" keyboardType="numeric" value={amount} onChangeText={setAmount} placeholder="5000" />
+        <Card elevation="raised">
+          <Input
+            label="Amount (₹)"
+            keyboardType="numeric"
+            value={amount}
+            onChangeText={(v) => {
+              setAmount(v);
+              if (amountError) setAmountError(null);
+            }}
+            placeholder="5000"
+            error={amountError}
+          />
           <Input label="Notes (optional)" value={notes} onChangeText={setNotes} placeholder="Handed to accountant" />
-          <Button title={proofUri ? 'Proof photo added ✓' : 'Add proof photo'} onPress={pickProof} variant="secondary" />
-          {proofUri ? <Image source={{ uri: proofUri }} style={styles.preview} /> : null}
+          <Button
+            title={proofUri ? 'Proof photo added' : 'Add proof photo'}
+            onPress={pickProof}
+            variant="secondary"
+            icon={<Ionicons name={proofUri ? 'checkmark-circle' : 'camera-outline'} size={18} color={colors.primary} />}
+          />
+          {proofUri ? <Image source={{ uri: proofUri }} style={styles.preview} accessibilityLabel="Deposit proof preview" /> : null}
           <Button title="Submit deposit" onPress={onSubmit} loading={submitting} style={{ marginTop: spacing.sm }} />
         </Card>
       )}
 
       {(query.data ?? []).length === 0 && !query.isLoading ? (
-        <EmptyState title="No deposits yet" subtitle="Cash handed to the office will show up here." />
+        <EmptyState
+          icon="wallet-outline"
+          title="No deposits yet"
+          subtitle="Cash handed to the office will show up here."
+        />
       ) : (
-        (query.data ?? []).map((deposit) => (
-          <Card key={deposit.id} style={styles.row}>
-            <View style={styles.rowTop}>
-              <Text style={styles.amount}>{formatMoney(deposit.amount)}</Text>
-              <Badge label={deposit.status} tone={toneForStatus[deposit.status]} />
-            </View>
-            <Text style={styles.subtitle}>{formatDateTime(deposit.depositedAt)}</Text>
-            {deposit.notes ? <Text style={styles.subtitle}>{deposit.notes}</Text> : null}
-          </Card>
-        ))
+        (query.data ?? []).map((deposit) => <DepositRow key={deposit.id} deposit={deposit} />)
       )}
+
+      <SuccessOverlay
+        visible={submittedAmount != null}
+        title="Deposit queued"
+        subtitle={`${formatMoney(submittedAmount ?? 0)} will sync automatically once online.`}
+        actionLabel="Done"
+        onAction={() => setSubmittedAmount(null)}
+      />
     </Screen>
+  );
+}
+
+function DepositRow({ deposit }: { deposit: AgentCashDeposit }) {
+  const meta = DEPOSIT_STATUS_META[deposit.status];
+  return (
+    <Card style={styles.row}>
+      <View style={styles.rowTop}>
+        <Text style={styles.amount} numberOfLines={1}>
+          {formatMoney(deposit.amount)}
+        </Text>
+        <Badge label={meta.label} tone={meta.tone} dot />
+      </View>
+      <Text style={styles.subtitle}>{formatDateTime(deposit.depositedAt)}</Text>
+      {deposit.notes ? <Text style={styles.subtitle}>{deposit.notes}</Text> : null}
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  heading: { fontSize: fontSize.xl, fontWeight: '800', color: colors.text },
+  heading: { fontSize: fontSize.xl, fontWeight: '900', color: colors.text, letterSpacing: letterSpacing.tightDisplay },
   row: { gap: 4 },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  amount: { fontSize: fontSize.lg, fontWeight: '800', color: colors.primaryDark },
+  amount: {
+    fontSize: fontSize.xl,
+    fontWeight: '900',
+    color: colors.primaryDark,
+    fontVariant: ['tabular-nums'],
+  },
   subtitle: { fontSize: fontSize.sm, color: colors.textMuted },
   preview: { width: 96, height: 96, borderRadius: 8, marginTop: spacing.sm },
 });

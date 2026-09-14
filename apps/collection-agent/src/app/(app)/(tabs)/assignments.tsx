@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 
@@ -8,10 +9,11 @@ import { Card } from '@/ui/Card';
 import { Chip } from '@/ui/Chip';
 import { Input } from '@/ui/Input';
 import { Badge } from '@/ui/Badge';
+import { Avatar } from '@/ui/Avatar';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
-import { colors, spacing, fontSize } from '@/ui/theme';
-import { formatMoney, isOverdue } from '@/ui/format';
+import { colors, spacing, fontSize, letterSpacing } from '@/ui/theme';
+import { assignmentStatusMeta, formatDate, formatMoney, initials, isOverdue, priorityColor } from '@/ui/format';
 import { getCurrentPosition } from '@/location/tracking';
 import type { Assignment } from '@/types/models';
 
@@ -77,7 +79,14 @@ export default function AssignmentsScreen() {
         refreshing={query.isFetching}
         onRefresh={() => query.refetch()}
         ListEmptyComponent={
-          !query.isLoading ? <EmptyState title="No assignments" subtitle="Nothing matches these filters." /> : null
+          !query.isLoading ? (
+            <EmptyState
+              icon="checkmark-done-circle-outline"
+              tone="success"
+              title="No assignments"
+              subtitle="Nothing matches these filters."
+            />
+          ) : null
         }
         renderItem={({ item }) => (
           <AssignmentRow assignment={item} onPress={() => router.push(`/(app)/assignment/${item.id}`)} />
@@ -89,23 +98,47 @@ export default function AssignmentsScreen() {
 
 function AssignmentRow({ assignment, onPress }: { assignment: Assignment; onPress: () => void }) {
   const overdue = isOverdue(assignment.invoice?.dueDate);
+  const statusMeta = assignmentStatusMeta(assignment.status);
+  const name = assignment.customer?.displayName ?? assignment.customer?.firmName ?? 'Customer';
+  const markColor = overdue ? colors.danger : priorityColor(assignment.priority);
+
   return (
-    <Pressable onPress={onPress}>
-      <Card style={styles.row}>
-        <View style={styles.rowTop}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.customer}>{assignment.customer?.displayName ?? assignment.customer?.firmName ?? 'Customer'}</Text>
-            <Text style={styles.invoice}>{assignment.invoice?.invoiceNo ?? '—'}</Text>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${name}, ${formatMoney(assignment.invoice?.outstanding)} outstanding, ${statusMeta.label}${overdue ? ', overdue' : ''}`}
+    >
+      {({ pressed }) => (
+        <Card style={[styles.row, pressed && styles.rowPressed]}>
+          <View style={styles.rowTop}>
+            <Avatar label={initials(name)} color={markColor} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.customer} numberOfLines={1}>
+                {name}
+              </Text>
+              <Text style={styles.invoice} numberOfLines={1}>
+                {assignment.invoice?.invoiceNo ?? '—'} · Due {formatDate(assignment.invoice?.dueDate)}
+              </Text>
+            </View>
+            <View style={styles.amountBlock}>
+              <Text style={styles.amount} numberOfLines={1}>
+                {formatMoney(assignment.invoice?.outstanding)}
+              </Text>
+              {typeof assignment.distanceKm === 'number' && (
+                <View style={styles.distanceRow}>
+                  <Ionicons name="navigate-outline" size={12} color={colors.textFaint} />
+                  <Text style={styles.distance}>{assignment.distanceKm.toFixed(1)} km</Text>
+                </View>
+              )}
+            </View>
           </View>
-          <Text style={styles.amount}>{formatMoney(assignment.invoice?.outstanding)}</Text>
-        </View>
-        <View style={styles.badgeRow}>
-          <Badge label={assignment.status} />
-          {overdue && <Badge label="Overdue" tone="danger" />}
-          {assignment.promise?.promisedDate && <Badge label="PTP" tone="warning" />}
-          {typeof assignment.distanceKm === 'number' && <Badge label={`${assignment.distanceKm.toFixed(1)} km`} />}
-        </View>
-      </Card>
+          <View style={styles.badgeRow}>
+            <Badge label={statusMeta.label} tone={statusMeta.tone} />
+            {overdue && <Badge label="Overdue" tone="danger" dot />}
+            {assignment.promise?.promisedDate && <Badge label="PTP" tone="warning" dot />}
+          </View>
+        </Card>
+      )}
     </Pressable>
   );
 }
@@ -114,10 +147,20 @@ const styles = StyleSheet.create({
   filters: { padding: spacing.lg, paddingBottom: 0, backgroundColor: colors.bg },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap' },
   listContent: { padding: spacing.lg, gap: spacing.md },
-  row: { gap: spacing.sm },
+  row: { gap: spacing.md },
+  rowPressed: { backgroundColor: colors.surfaceSunk },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  customer: { fontSize: fontSize.lg, fontWeight: '700', color: colors.text },
+  customer: { fontSize: fontSize.lg, fontWeight: '800', color: colors.text },
   invoice: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: 2 },
-  amount: { fontSize: fontSize.lg, fontWeight: '800', color: colors.primaryDark },
+  amountBlock: { alignItems: 'flex-end' },
+  amount: {
+    fontSize: fontSize.lg,
+    fontWeight: '900',
+    color: colors.primaryDark,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: letterSpacing.tightDisplay,
+  },
+  distanceRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 3 },
+  distance: { fontSize: fontSize.xs, color: colors.textFaint, fontWeight: '700' },
   badgeRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
 });
