@@ -17,6 +17,10 @@ interface KpiTileProps {
   /** Invert semantics for metrics where a rise is bad (e.g. overdue). */
   invertColor?: boolean;
   caption?: string;
+  /** Overrides the caption's default (textFaint) color — e.g. the neutral
+   * "awaiting action" tone for a pending-verification tile. The caption text
+   * itself always carries the meaning; this only adds a quiet color cue. */
+  captionColor?: string;
   /**
    * 'hero' dominates the top of the screen with a much larger figure.
    * 'wide' spans a full row like hero, but at grid-tile emphasis — for a
@@ -35,6 +39,7 @@ export function KpiTile({
   deltaLabel,
   invertColor,
   caption,
+  captionColor,
   variant = 'default',
   accessibilityHint,
 }: KpiTileProps) {
@@ -81,7 +86,7 @@ export function KpiTile({
         ) : null}
         {caption ? (
           <Text
-            style={[typography.caption, isWide && styles.wideCaption, { color: palette.textFaint }]}
+            style={[typography.caption, isWide && styles.wideCaption, { color: captionColor ?? palette.textFaint }]}
             numberOfLines={isWide ? 2 : 1}
             maxFontSizeMultiplier={1.6}
           >

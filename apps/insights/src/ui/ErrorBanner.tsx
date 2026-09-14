@@ -7,16 +7,26 @@ import { MEASURE, MIN_TOUCH, radius, spacing, typography, usePalette } from './t
 interface ErrorBannerProps {
   message: string;
   onRetry?: () => void;
+  /**
+   * 'error' (default): a hard failure, nothing to show. 'stale': a refresh
+   * failed but the last known data is still on screen — a caution, not a
+   * failure, so it borrows the warning role instead of the danger one.
+   */
+  tone?: 'error' | 'stale';
 }
 
-export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
+export function ErrorBanner({ message, onRetry, tone = 'error' }: ErrorBannerProps) {
   const palette = usePalette();
+  const isStale = tone === 'stale';
+  const fg = isStale ? palette.warn : palette.bad;
+  const bg = isStale ? palette.warnSoft : palette.badSoft;
+  const border = isStale ? palette.warnBorder : palette.badBorder;
   return (
     <View
-      style={[styles.wrap, { backgroundColor: palette.badSoft, borderColor: palette.bad + '40' }]}
+      style={[styles.wrap, { backgroundColor: bg, borderColor: border }]}
       accessibilityRole="alert"
     >
-      <Text style={[styles.text, { color: palette.bad }]}>{message}</Text>
+      <Text style={[styles.text, { color: fg }]}>{message}</Text>
       {onRetry ? (
         <PressableScale
           onPress={onRetry}
@@ -25,7 +35,7 @@ export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
           accessibilityLabel="Retry"
           style={styles.retryHit}
         >
-          <Text style={[styles.retry, { color: palette.bad }]}>Retry</Text>
+          <Text style={[styles.retry, { color: fg }]}>Retry</Text>
         </PressableScale>
       ) : null}
     </View>

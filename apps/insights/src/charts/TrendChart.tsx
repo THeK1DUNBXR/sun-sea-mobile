@@ -158,8 +158,8 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
             <Svg width={width} height={height}>
               <Defs>
                 <LinearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0" stopColor={palette.accent} stopOpacity={0.25} />
-                  <Stop offset="1" stopColor={palette.accent} stopOpacity={0} />
+                  <Stop offset="0" stopColor={palette.chartSales} stopOpacity={0.25} />
+                  <Stop offset="1" stopColor={palette.chartSales} stopOpacity={0} />
                 </LinearGradient>
               </Defs>
               {/* Whisper-quiet gridlines: baseline + one midline */}
@@ -193,7 +193,7 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
               <AnimatedPath
                 d={chart.collectionsPath}
                 fill="none"
-                stroke={palette.good}
+                stroke={palette.chartCollections}
                 strokeWidth={2.5}
                 strokeDasharray={[DASH_LENGTH, DASH_LENGTH]}
                 animatedProps={collectionsLineProps}
@@ -201,7 +201,7 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
               <AnimatedPath
                 d={chart.salesPath}
                 fill="none"
-                stroke={palette.accent}
+                stroke={palette.chartSales}
                 strokeWidth={2.75}
                 strokeDasharray={[DASH_LENGTH, DASH_LENGTH]}
                 animatedProps={salesLineProps}
@@ -214,7 +214,7 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
                     <AnimatedCircle
                       cx={chart.salesPoints[latestIndex].x}
                       cy={chart.salesPoints[latestIndex].y}
-                      fill={palette.accent}
+                      fill={palette.chartSales}
                       animatedProps={pulseProps}
                     />
                   ) : null}
@@ -222,7 +222,7 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
                     cx={chart.salesPoints[latestIndex].x}
                     cy={chart.salesPoints[latestIndex].y}
                     fill={palette.bgElevated}
-                    stroke={palette.accent}
+                    stroke={palette.chartSales}
                     strokeWidth={2.5}
                     animatedProps={salesSettleProps}
                   />
@@ -230,7 +230,7 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
                     cx={chart.collectionsPoints[latestIndex].x}
                     cy={chart.collectionsPoints[latestIndex].y}
                     fill={palette.bgElevated}
-                    stroke={palette.good}
+                    stroke={palette.chartCollections}
                     strokeWidth={2.25}
                     animatedProps={collectionsSettleProps}
                   />
@@ -248,8 +248,8 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
                     strokeWidth={1}
                     strokeDasharray="3,3"
                   />
-                  <Circle cx={chart.salesPoints[activeIndex].x} cy={chart.salesPoints[activeIndex].y} r={4} fill={palette.accent} />
-                  <Circle cx={chart.collectionsPoints[activeIndex].x} cy={chart.collectionsPoints[activeIndex].y} r={4} fill={palette.good} />
+                  <Circle cx={chart.salesPoints[activeIndex].x} cy={chart.salesPoints[activeIndex].y} r={4} fill={palette.chartSales} />
+                  <Circle cx={chart.collectionsPoints[activeIndex].x} cy={chart.collectionsPoints[activeIndex].y} r={4} fill={palette.chartCollections} />
                 </>
               ) : null}
             </Svg>
@@ -258,8 +258,8 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
       </View>
 
       <View style={styles.legendRow}>
-        <LegendChip color={palette.accent} label="Sales" value={formatMoneyCompact(latest?.sales)} />
-        <LegendChip color={palette.good} label="Collections" value={formatMoneyCompact(latest?.collections)} />
+        <LegendChip color={palette.chartSales} label="Sales" value={formatMoneyCompact(latest?.sales)} />
+        <LegendChip color={palette.chartCollections} label="Collections" value={formatMoneyCompact(latest?.collections)} />
       </View>
       {data.length > 0 ? (
         <Text style={[typography.caption, { color: palette.textFaint, marginTop: spacing.xs }]}>
@@ -270,10 +270,10 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
       {active ? (
         <View style={[styles.tooltip, { borderColor: palette.border, backgroundColor: palette.bgElevated }]}>
           <Text style={[typography.caption, { color: palette.text, marginBottom: 2 }]}>{formatShortDate(active.date)}</Text>
-          <Text style={[typography.monoSm, { color: palette.accent }]}>
+          <Text style={[typography.monoSm, { color: palette.chartSales }]}>
             Sales {formatMoneyCompact(active.sales)}
           </Text>
-          <Text style={[typography.monoSm, { color: palette.good }]}>
+          <Text style={[typography.monoSm, { color: palette.chartCollections }]}>
             Collections {formatMoneyCompact(active.collections)}
           </Text>
         </View>

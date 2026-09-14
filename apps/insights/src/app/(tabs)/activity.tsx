@@ -30,6 +30,15 @@ function colorFor(activityType: ActivityType, palette: Palette): string {
   return palette.textFaint;
 }
 
+/** The icon badge's tinted background for each activity type — a matching soft
+ * fill for the row's own tint color instead of a computed opacity suffix. */
+function softFor(activityType: ActivityType, palette: Palette): string {
+  if (activityType === 'INVOICE') return palette.accentSoft;
+  if (activityType === 'COLLECTION') return palette.goodSoft;
+  if (activityType === 'DEPOSIT') return palette.warnSoft;
+  return palette.overlay;
+}
+
 /** The backend feed (insightsService.getRecentActivity) has no stable id — it's
  * a merge-and-sort of four different tables. Derive a key from the fields that
  * actually distinguish a row so React doesn't misidentify rows across a
@@ -77,6 +86,7 @@ export default function ActivityScreen() {
                 : getErrorMessage(activity.error, 'Could not load recent activity.')
             }
             onRetry={() => activity.refetch()}
+            tone={activity.data ? 'stale' : 'error'}
           />
         ) : null}
 
@@ -108,7 +118,7 @@ export default function ActivityScreen() {
                         ]}
                         accessibilityLabel={`${item.title || item.type}${hasAmount ? `, ${formatMoneyCompact(item.amount)}` : ''}, ${formatRelativeTime(item.at)}`}
                       >
-                        <View style={[styles.iconBadge, { backgroundColor: tint + '1F' }]}>
+                        <View style={[styles.iconBadge, { backgroundColor: softFor(item.type, palette) }]}>
                           <Icon name={iconFor(item.type)} color={tint} size={18} />
                         </View>
                         <View style={{ flex: 1 }}>

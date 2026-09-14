@@ -11,7 +11,7 @@ import Reanimated, {
 
 import type { AgingBuckets } from '@/types';
 import { formatMoneyCompact } from '@/utils/format';
-import { spacing, typography, useIsDark, useReducedMotion, usePalette } from '@/ui/theme';
+import { spacing, typography, useReducedMotion, usePalette } from '@/ui/theme';
 
 const AnimatedRect = Reanimated.createAnimatedComponent(Rect);
 
@@ -69,11 +69,10 @@ const BUCKET_LABELS: Record<string, string> = {
 
 export function AgingBar({ aging, height = 36 }: AgingBarProps) {
   const palette = usePalette();
-  const dark = useIsDark();
   const reducedMotion = useReducedMotion();
   const [width, setWidth] = useState(0);
-  // A deliberate green -> red severity ramp, kept visually distinct from the accent.
-  const colors = [palette.good, palette.warn, dark ? '#FB923C' : '#EA580C', palette.bad];
+  // The app's one 4-step aging ramp (theme.ts), kept visually distinct from the accent.
+  const colors = [palette.agingLow, palette.agingMedium, palette.agingHigh, palette.agingCritical];
 
   const values = BUCKET_KEYS.map((k) => aging?.[k] ?? 0);
   const total = values.reduce((a, b) => a + b, 0) || 1;

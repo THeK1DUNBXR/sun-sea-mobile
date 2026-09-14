@@ -121,7 +121,7 @@ function AgentMarker({ agent, markerColor, palette }: {
           style={[styles.callout, { backgroundColor: palette.bgElevated, borderColor: palette.border }]}
         >
           <View style={styles.calloutHeader}>
-            <View style={[styles.calloutDot, { backgroundColor: online ? palette.good : palette.neutralDot }]} />
+            <View style={[styles.calloutDot, { backgroundColor: online ? palette.markerOnline : palette.markerStale }]} />
             <Text style={[typography.bodySm, { color: palette.text }]}>{agent.fullName || 'Agent'}</Text>
           </View>
           <Text style={[typography.caption, { color: palette.textMuted }]}>
@@ -153,10 +153,12 @@ function hasValidLocation(agent: LiveAgent): agent is LiveAgent & { lastLocation
   return true;
 }
 
-const RANK_COLORS = ['#B8860B', '#8A94A6', '#A45A2A']; // gold, silver, bronze — used only for rank 1-3 accents
-
 export default function AgentsScreen() {
   const palette = usePalette();
+  // Rank 1-3 accents (gold/silver/bronze) — theme-aware so dark mode gets its
+  // own lifted, desaturated set rather than the light values pasted in as-is.
+  const RANK_TIER_COLORS = [palette.rankGold, palette.rankSilver, palette.rankBronze];
+  const RANK_TIER_SOFT = [palette.rankGoldSoft, palette.rankSilverSoft, palette.rankBronzeSoft];
   const focused = useIsFocused();
   const overview = useOverview(focused);
   const agentsLive = useAgentsLive(focused);
@@ -212,6 +214,7 @@ export default function AgentsScreen() {
                 : getErrorMessage(firstError, 'Could not load agents.')
             }
             onRetry={onRefresh}
+            tone={overview.data || agentsLive.data ? 'stale' : 'error'}
           />
         ) : null}
 
@@ -254,7 +257,7 @@ export default function AgentsScreen() {
                 <AgentMarker
                   key={agent.agentUserId}
                   agent={agent}
-                  markerColor={agent.online ? palette.good : palette.neutralDot}
+                  markerColor={agent.online ? palette.markerOnline : palette.markerStale}
                   palette={palette}
                 />
               ))}
@@ -274,7 +277,8 @@ export default function AgentsScreen() {
             <EmptyState title="No agent activity yet" />
           ) : (
             leaderboard.map((agent, i) => {
-              const rankColor = i < 3 ? RANK_COLORS[i] : palette.textFaint;
+              const rankColor = i < 3 ? RANK_TIER_COLORS[i] : palette.textFaint;
+              const rankSoft = i < 3 ? RANK_TIER_SOFT[i] : palette.overlay;
               return (
                 <Reveal key={agent.agentUserId ?? i} index={i} staggerMs={40}>
                   <View
@@ -289,7 +293,7 @@ export default function AgentsScreen() {
                         style={[
                           styles.rankBadge,
                           i < 3
-                            ? { backgroundColor: rankColor + '22', borderColor: rankColor }
+                            ? { backgroundColor: rankSoft, borderColor: rankColor }
                             : { backgroundColor: palette.overlay, borderColor: 'transparent' },
                         ]}
                       >

@@ -73,7 +73,7 @@ export default function LoginScreen() {
 
           <View style={styles.form}>
             {sessionMessage ? (
-              <View style={[styles.sessionBanner, { backgroundColor: palette.warnSoft, borderColor: palette.warn + '40' }]}>
+              <View style={[styles.sessionBanner, { backgroundColor: palette.warnSoft, borderColor: palette.warnBorder }]}>
                 <Text style={[typography.bodySm, { color: palette.warn }]}>{sessionMessage}</Text>
               </View>
             ) : null}

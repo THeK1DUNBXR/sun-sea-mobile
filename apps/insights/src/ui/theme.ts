@@ -2,30 +2,68 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, useColorScheme, type TextStyle, type ViewStyle } from 'react-native';
 
 export interface Palette {
+  /** Screen canvas — the largest, quietest surface. */
   bg: string;
+  /** A lifted surface above the canvas (tab bar, map fallback). */
   bgElevated: string;
+  /** Card / row surface, one step above canvas. */
   card: string;
   border: string;
   text: string;
   textMuted: string;
   textFaint: string;
+  /** Signature deep indigo — interactive elements, hero emphasis, brand marks. */
   accent: string;
   accentInk: string;
   accentSoft: string;
+  /** Positive deltas and collections (money coming in). */
   good: string;
   goodSoft: string;
+  /** Negative deltas and hard failures. */
   bad: string;
   badSoft: string;
+  /** A visible-but-quiet border for a bad-toned banner/callout. */
+  badBorder: string;
+  /** Caution: promise-to-pay and overdue receivables — distinct from a hard failure. */
   warn: string;
   warnSoft: string;
+  warnBorder: string;
+  /** Live/online/freshness state — kept apart from "good" so a green uptick and a
+   * blue "still connected" dot are never confused for the same kind of news. */
+  info: string;
+  infoSoft: string;
+  /** Awaiting-action states (e.g. pending verification) — deliberately quiet,
+   * neither a caution nor a result. */
+  neutral: string;
+  neutralSoft: string;
+  /** Map marker / status dot for an agent that's offline or hasn't reported recently. */
   neutralDot: string;
+  /** Receivables aging ramp, low → critical (0–30 / 31–60 / 61–90 / 90+ days). */
+  agingLow: string;
+  agingMedium: string;
+  agingHigh: string;
+  agingCritical: string;
+  /** Trend-chart series colors (sales vs collections). */
+  chartSales: string;
+  chartCollections: string;
+  /** Live-map marker fill for an agent reporting now vs one gone stale. */
+  markerOnline: string;
+  markerStale: string;
+  /** Rank 1–3 accents for leaderboards and top-debtor emphasis (gold/silver/bronze). */
+  rankGold: string;
+  rankGoldSoft: string;
+  rankSilver: string;
+  rankSilverSoft: string;
+  rankBronze: string;
+  rankBronzeSoft: string;
   overlay: string;
   shadow: string;
 }
 
 // A deliberate, disciplined signature accent (deep indigo) instead of a generic
 // admin blue — reserved for interactive elements, hero emphasis and brand marks.
-// Semantic green/red/amber stay clearly separated in hue from it.
+// Semantic green/red/amber/blue stay clearly separated in hue from it, and from
+// each other, so no two roles can be mistaken for one another.
 const light: Palette = {
   bg: '#F5F3EF',
   bgElevated: '#FFFFFF',
@@ -33,21 +71,45 @@ const light: Palette = {
   border: '#E6E1D6',
   text: '#12181F',
   textMuted: '#5B6472',
-  textFaint: '#8A93A1',
+  textFaint: '#647085',
   accent: '#3730A3',
   accentInk: '#FFFFFF',
   accentSoft: 'rgba(55,48,163,0.10)',
-  good: '#0F7A52',
-  goodSoft: 'rgba(15,122,82,0.12)',
+  good: '#0A5F3F',
+  goodSoft: 'rgba(10,95,63,0.12)',
   bad: '#B91C1C',
   badSoft: 'rgba(185,28,28,0.12)',
-  warn: '#B45309',
-  warnSoft: 'rgba(180,83,9,0.12)',
+  badBorder: 'rgba(185,28,28,0.3)',
+  warn: '#8B3F0A',
+  warnSoft: 'rgba(139,63,10,0.12)',
+  warnBorder: 'rgba(139,63,10,0.3)',
+  info: '#0A5B70',
+  infoSoft: 'rgba(10,91,112,0.12)',
+  neutral: '#4C5872',
+  neutralSoft: 'rgba(76,88,114,0.12)',
   neutralDot: '#9AA3B2',
+  agingLow: '#0A5F3F',
+  agingMedium: '#8B3F0A',
+  agingHigh: '#A63709',
+  agingCritical: '#B91C1C',
+  chartSales: '#3730A3',
+  chartCollections: '#0A5F3F',
+  markerOnline: '#0A5B70',
+  markerStale: '#9AA3B2',
+  rankGold: '#8A5F00',
+  rankGoldSoft: 'rgba(138,95,0,0.12)',
+  rankSilver: '#57687F',
+  rankSilverSoft: 'rgba(87,104,127,0.12)',
+  rankBronze: '#954D24',
+  rankBronzeSoft: 'rgba(149,77,36,0.12)',
   overlay: 'rgba(17,24,39,0.06)',
   shadow: 'rgba(19,26,38,0.16)',
 };
 
+// Dark mode is composed, not inverted: surfaces lift in discrete steps rather
+// than staying flat-black, and every hue below is deliberately desaturated-but-
+// lightened (not just the light value pasted onto a dark ground) so nothing
+// vibrates against the near-black canvas.
 const dark: Palette = {
   bg: '#0A0D12',
   bgElevated: '#12161E',
@@ -55,7 +117,7 @@ const dark: Palette = {
   border: '#242B38',
   text: '#F3F5F9',
   textMuted: '#9BA5B4',
-  textFaint: '#6C7686',
+  textFaint: '#8891A0',
   accent: '#A5B4FC',
   accentInk: '#181A3D',
   accentSoft: 'rgba(165,180,252,0.14)',
@@ -63,9 +125,29 @@ const dark: Palette = {
   goodSoft: 'rgba(52,211,153,0.14)',
   bad: '#F87171',
   badSoft: 'rgba(248,113,113,0.14)',
+  badBorder: 'rgba(248,113,113,0.35)',
   warn: '#FBBF24',
   warnSoft: 'rgba(251,191,36,0.14)',
+  warnBorder: 'rgba(251,191,36,0.35)',
+  info: '#22D3EE',
+  infoSoft: 'rgba(34,211,238,0.14)',
+  neutral: '#94A3B8',
+  neutralSoft: 'rgba(148,163,184,0.14)',
   neutralDot: '#4A5364',
+  agingLow: '#34D399',
+  agingMedium: '#FBBF24',
+  agingHigh: '#FB923C',
+  agingCritical: '#F87171',
+  chartSales: '#A5B4FC',
+  chartCollections: '#34D399',
+  markerOnline: '#22D3EE',
+  markerStale: '#4A5364',
+  rankGold: '#E8B923',
+  rankGoldSoft: 'rgba(232,185,35,0.14)',
+  rankSilver: '#B8C0CC',
+  rankSilverSoft: 'rgba(184,192,204,0.14)',
+  rankBronze: '#D98A54',
+  rankBronzeSoft: 'rgba(217,138,84,0.14)',
   overlay: 'rgba(255,255,255,0.07)',
   shadow: 'rgba(0,0,0,0.6)',
 };

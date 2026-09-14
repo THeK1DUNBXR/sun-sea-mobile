@@ -123,8 +123,13 @@ export default function OverviewScreen() {
           {data?.generatedAt ? (
             <Reanimated.View
               style={[styles.updatedChip, { backgroundColor: palette.overlay }, chipAnimatedStyle]}
+              accessibilityLabel={`Data ${isShowingStaleData ? 'may be behind' : 'up to date'}, updated ${formatRelativeTime(data.generatedAt)}`}
             >
-              <View style={[styles.liveDot, { backgroundColor: palette.good }]} />
+              {/* Info (not "good") — this dot reports live/fresh connectivity, not a
+                  financial result, so it stays out of the green/red delta vocabulary.
+                  It turns to the warning tone (paired with the banner above and the
+                  "showing last known data" copy) when the snapshot may be stale. */}
+              <View style={[styles.liveDot, { backgroundColor: isShowingStaleData ? palette.warn : palette.info }]} />
               <Text style={[typography.caption, { color: palette.textMuted }]}>
                 {formatRelativeTime(data.generatedAt)}
               </Text>
@@ -140,6 +145,7 @@ export default function OverviewScreen() {
                 : getErrorMessage(firstError, 'Could not load insights.')
             }
             onRetry={onRefresh}
+            tone={isShowingStaleData ? 'stale' : 'error'}
           />
         ) : null}
 
@@ -221,9 +227,10 @@ export default function OverviewScreen() {
                 numericValue={data?.collections?.pendingVerification?.amount}
                 caption={
                   data?.collections?.pendingVerification?.count
-                    ? `${data.collections.pendingVerification.count} receipt${data.collections.pendingVerification.count === 1 ? '' : 's'}`
+                    ? `${data.collections.pendingVerification.count} receipt${data.collections.pendingVerification.count === 1 ? '' : 's'} awaiting verification`
                     : undefined
                 }
+                captionColor={palette.neutral}
               />
             </Reveal>
           </View>
@@ -288,19 +295,32 @@ export default function OverviewScreen() {
             {topDebtors.length === 0 ? (
               <EmptyState title="No outstanding debtors" icon="check" />
             ) : (
-              topDebtors.map((debtor, i) => (
+              topDebtors.map((debtor, i) => {
+                // The single largest balance gets a deliberate warning-toned badge —
+                // a liability, so it borrows the aging/warn vocabulary rather than the
+                // leaderboard's gold (an achievement color would send the wrong signal
+                // for "owes us the most"). Every other rank stays neutral.
+                const isTopDebtor = i === 0;
+                return (
                 <View
                   key={debtor.customerId ?? i}
                   style={[
                     styles.debtorRow,
                     { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
                   ]}
-                  accessibilityLabel={`Rank ${i + 1}, ${debtor.firmName || 'Unknown customer'}, ${formatMoneyCompact(debtor.netBalance)} outstanding${
+                  accessibilityLabel={`Rank ${i + 1}${isTopDebtor ? ', largest outstanding balance' : ''}, ${debtor.firmName || 'Unknown customer'}, ${formatMoneyCompact(debtor.netBalance)} outstanding${
                     debtor.dueDays > 0 ? `, ${debtor.dueDays} days overdue` : ''
                   }`}
                 >
-                  <View style={[styles.debtorRank, { backgroundColor: palette.overlay }]}>
-                    <Text style={[typography.label, { color: palette.textMuted }]}>{i + 1}</Text>
+                  <View
+                    style={[
+                      styles.debtorRank,
+                      isTopDebtor
+                        ? { backgroundColor: palette.warnSoft, borderColor: palette.warn, borderWidth: 1.5 }
+                        : { backgroundColor: palette.overlay },
+                    ]}
+                  >
+                    <Text style={[typography.label, { color: isTopDebtor ? palette.warn : palette.textMuted }]}>{i + 1}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
@@ -316,7 +336,8 @@ export default function OverviewScreen() {
                     {formatMoneyCompact(debtor.netBalance)}
                   </Text>
                 </View>
-              ))
+                );
+              })
             )}
           </Card>
         </Reveal>
