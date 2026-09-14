@@ -144,6 +144,7 @@ jobs:
           if [ "$HAS_KEYSTORE" = "true" ]; then
             echo "$KEYSTORE_B64" | base64 -d > android/app/release.keystore
             {
+              echo ""   # gradle.properties from prebuild may lack a trailing newline
               echo "RELEASE_STORE_FILE=release.keystore"
               echo "RELEASE_STORE_PASSWORD=${KEYSTORE_PASSWORD}"
               echo "RELEASE_KEY_ALIAS=${KEY_ALIAS}"
@@ -160,6 +161,7 @@ jobs:
               -storepass ephemeral123 -keypass ephemeral123 \
               -dname "CN=SunSea CI, OU=CI, O=SunSea, L=Unknown, ST=Unknown, C=US"
             {
+              echo ""   # gradle.properties from prebuild may lack a trailing newline
               echo "RELEASE_STORE_FILE=release.keystore"
               echo "RELEASE_STORE_PASSWORD=ephemeral123"
               echo "RELEASE_KEY_ALIAS=ephemeral"
