@@ -20,6 +20,7 @@ import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, spacing, type, radius, layout, sizes } from '@/ui/theme';
 import { DEPOSIT_STATUS_META, formatDateTime, formatMoney } from '@/ui/format';
 import * as Crypto from 'expo-crypto';
+import { copy } from '@/copy';
 import type { AgentCashDeposit } from '@/types/models';
 
 const STAGGER_CAP = 8;
@@ -52,7 +53,7 @@ export default function DepositsScreen() {
     if (submittingRef.current) return;
     const numericAmount = Math.round(Number(amount) * 100) / 100;
     if (!numericAmount || numericAmount < 0.01) {
-      setAmountError('Enter a valid amount.');
+      setAmountError(copy.deposits.amountRequired);
       return;
     }
     setAmountError(null);
@@ -82,9 +83,9 @@ export default function DepositsScreen() {
   return (
     <Screen refreshing={query.isFetching} onRefresh={() => query.refetch()} avoidKeyboard>
       <View style={styles.headerRow}>
-        <Text style={styles.heading}>Cash deposits</Text>
+        <Text style={styles.heading}>{copy.deposits.heading}</Text>
         <Button
-          title={showForm ? 'Cancel' : 'New deposit'}
+          title={showForm ? copy.deposits.cancel : copy.deposits.addDeposit}
           onPress={() => setShowForm((v) => !v)}
           fullWidth={false}
           variant="secondary"
@@ -96,7 +97,7 @@ export default function DepositsScreen() {
         <Animated.View entering={FadeInDown.duration(220)}>
         <Card elevation="raised">
           <Input
-            label="Amount (₹)"
+            label={copy.deposits.amountLabel}
             keyboardType="numeric"
             value={amount}
             onChangeText={(v) => {
@@ -106,15 +107,15 @@ export default function DepositsScreen() {
             placeholder="5000"
             error={amountError}
           />
-          <Input label="Notes (optional)" value={notes} onChangeText={setNotes} placeholder="Handed to accountant" />
+          <Input label={copy.deposits.notesLabel} value={notes} onChangeText={setNotes} placeholder="Handed to accountant" />
           <Button
-            title={proofUri ? 'Proof photo added' : 'Add proof photo'}
+            title={proofUri ? copy.deposits.proofPhotoAdded : copy.deposits.addProofPhoto}
             onPress={pickProof}
             variant="secondary"
             icon={<Ionicons name={proofUri ? 'checkmark-circle' : 'camera-outline'} size={18} color={colors.primary} />}
           />
           {proofUri ? <Image source={{ uri: proofUri }} style={styles.preview} accessibilityLabel="Deposit proof preview" /> : null}
-          <Button title="Submit deposit" onPress={onSubmit} loading={submitting} style={{ marginTop: spacing.sm }} />
+          <Button title={copy.deposits.submitDeposit} onPress={onSubmit} loading={submitting} style={{ marginTop: spacing.sm }} />
         </Card>
         </Animated.View>
       )}
@@ -130,17 +131,17 @@ export default function DepositsScreen() {
           <EmptyState
             icon="cloud-offline-outline"
             tone="offline"
-            title="Couldn't load deposits"
-            subtitle="Check your connection and try again."
+            title={copy.deposits.loadErrorTitle}
+            subtitle={copy.assignments.checkConnection}
           />
-          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
+          <Button title={copy.profile.retry} onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
         </View>
       ) : (query.data ?? []).length === 0 ? (
         <View style={styles.stateArea}>
           <EmptyState
             icon="wallet-outline"
-            title="No deposits yet"
-            subtitle="Cash handed to the office will show up here."
+            title={copy.deposits.emptyTitle}
+            subtitle={copy.deposits.emptySubtitle}
           />
         </View>
       ) : (
@@ -149,9 +150,9 @@ export default function DepositsScreen() {
 
       <SuccessOverlay
         visible={submittedAmount != null}
-        title="Deposit queued"
-        subtitle={`${formatMoney(submittedAmount ?? 0)} will sync automatically once online.`}
-        actionLabel="Done"
+        title={copy.deposits.successTitle(formatMoney(submittedAmount ?? 0))}
+        subtitle={copy.deposits.successSubtitle}
+        actionLabel={copy.deposits.done}
         onAction={() => setSubmittedAmount(null)}
       />
     </Screen>

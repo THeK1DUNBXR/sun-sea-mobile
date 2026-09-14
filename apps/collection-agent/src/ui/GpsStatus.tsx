@@ -19,11 +19,16 @@ interface GpsStatusProps {
   /** null/undefined while still acquiring a fix. */
   label: string;
   locked: boolean;
+  /** Spoken alternative for TalkBack/VoiceOver — raw lat/lng digits read
+   * aloud one at a time are not useful, so callers can pass a plain-language
+   * version ("Location captured, accuracy about 12 meters") instead. Falls
+   * back to the visible label when omitted. */
+  accessibilityLabel?: string;
 }
 
 /** The location line on collection/visit forms: a soft pulse while GPS is
  * still searching, settling into a steady locked mark once a fix lands. */
-export function GpsStatus({ label, locked }: GpsStatusProps) {
+export function GpsStatus({ label, locked, accessibilityLabel }: GpsStatusProps) {
   const reduceMotion = useReducedMotion();
   const pulse = useSharedValue(1);
   const settle = useSharedValue(locked ? 1 : 0.85);
@@ -53,7 +58,7 @@ export function GpsStatus({ label, locked }: GpsStatusProps) {
   const iconStyle = useAnimatedStyle(() => ({ transform: [{ scale: settle.value }] }));
 
   return (
-    <View style={styles.row}>
+    <View style={styles.row} accessible accessibilityLabel={accessibilityLabel ?? label}>
       <View style={styles.iconSlot}>
         {locked ? (
           <Animated.View style={iconStyle}>

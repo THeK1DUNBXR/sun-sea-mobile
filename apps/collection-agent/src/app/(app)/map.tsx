@@ -13,6 +13,7 @@ import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, mapPin, type, spacing } from '@/ui/theme';
 import { assignmentStatusMeta, isOverdue } from '@/ui/format';
+import { copy } from '@/copy';
 import type { Assignment } from '@/types/models';
 
 const STAGGER_CAP = 10;
@@ -62,7 +63,7 @@ export default function MapScreen() {
   if (locating) {
     return (
       <Screen>
-        <Text style={styles.muted}>Locating you…</Text>
+        <Text style={styles.muted}>{copy.map.locating}</Text>
       </Screen>
     );
   }
@@ -70,8 +71,8 @@ export default function MapScreen() {
   if (assignments.isError) {
     return (
       <Screen>
-        <EmptyState icon="cloud-offline-outline" tone="offline" title="Couldn't load assignments" subtitle="The map needs your assignment list to plot pins." />
-        <Button title="Retry" onPress={() => assignments.refetch()} variant="secondary" />
+        <EmptyState icon="cloud-offline-outline" tone="offline" title={copy.map.loadErrorTitle} subtitle={copy.map.loadErrorSubtitle} />
+        <Button title={copy.profile.retry} onPress={() => assignments.refetch()} variant="secondary" />
       </Screen>
     );
   }
@@ -93,7 +94,7 @@ export default function MapScreen() {
           // The pin's fill carries the status at a glance, but the callout's
           // text carries the same meaning in words — color is never the
           // only signal here.
-          const flags = [statusMeta.label, overdue && 'Overdue', a.promise?.promisedDate && 'PTP'].filter(Boolean);
+          const flags = [statusMeta.label, overdue && 'Overdue', a.promise?.promisedDate && 'Promise to pay'].filter(Boolean);
           const description = [a.invoice?.invoiceNo, flags.join(' · ')].filter(Boolean).join(' — ');
           return (
             <Marker

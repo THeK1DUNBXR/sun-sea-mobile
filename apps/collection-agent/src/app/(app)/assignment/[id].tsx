@@ -11,7 +11,8 @@ import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { colors, spacing, type, fontWeight, tabularNums } from '@/ui/theme';
-import { assignmentStatusMeta, formatDate, formatMoney, isOverdue } from '@/ui/format';
+import { assignmentStatusMeta, formatDate, formatMoney, isOverdue, visitOutcomeLabel } from '@/ui/format';
+import { copy } from '@/copy';
 
 /** Normalizes an Indian mobile number for tel:/wa.me links: strips
  * formatting, drops a leading "0" trunk prefix or "+", and adds the 91
@@ -30,12 +31,12 @@ async function openUrlSafely(url: string, unavailableMessage: string) {
   try {
     const supported = await Linking.canOpenURL(url);
     if (!supported) {
-      Alert.alert('Can’t open this', unavailableMessage);
+      Alert.alert(copy.assignmentDetail.linkUnavailableTitle, unavailableMessage);
       return;
     }
     await Linking.openURL(url);
   } catch {
-    Alert.alert('Can’t open this', unavailableMessage);
+    Alert.alert(copy.assignmentDetail.linkUnavailableTitle, unavailableMessage);
   }
 }
 
@@ -70,23 +71,23 @@ export default function AssignmentDetailScreen() {
     : '';
   const hasAddress = Boolean(addressLine || (address?.latitude != null && address?.longitude != null));
 
-  const onCall = () => phone && openUrlSafely(`tel:${phone}`, 'No phone app is available to place this call.');
+  const onCall = () => phone && openUrlSafely(`tel:${phone}`, copy.assignmentDetail.noPhoneApp);
   const onWhatsApp = () =>
-    phone && openUrlSafely(`https://wa.me/${phone}`, 'WhatsApp isn’t installed on this device.');
+    phone && openUrlSafely(`https://wa.me/${phone}`, copy.assignmentDetail.noWhatsApp);
   const onNavigate = () => {
     const geoQuery =
       address?.latitude != null && address?.longitude != null
         ? `${address.latitude},${address.longitude}`
         : encodeURIComponent(addressLine);
-    openUrlSafely(`geo:0,0?q=${geoQuery}`, 'No maps app is available to navigate there.');
+    openUrlSafely(`geo:0,0?q=${geoQuery}`, copy.assignmentDetail.noMapsApp);
   };
 
   if (query.isError) {
     return (
       <Screen>
         <View style={styles.ledgerCentered}>
-          <EmptyState icon="cloud-offline-outline" tone="offline" title="Couldn't load this assignment" subtitle="Check your connection and try again." />
-          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" style={styles.retryButton} />
+          <EmptyState icon="cloud-offline-outline" tone="offline" title={copy.assignmentDetail.loadErrorTitle} subtitle={copy.assignments.checkConnection} />
+          <Button title={copy.profile.retry} onPress={() => query.refetch()} variant="secondary" style={styles.retryButton} />
         </View>
       </Screen>
     );
@@ -109,12 +110,12 @@ export default function AssignmentDetailScreen() {
       footer={
         <View style={styles.actionRow}>
           <Button
-            title="Record Collection"
+            title={copy.assignmentDetail.recordCollection}
             onPress={() => router.push(`/(app)/collect/${assignment.id}`)}
             icon={<Ionicons name="cash-outline" size={20} color={colors.onPrimary} />}
           />
           <Button
-            title="Record Visit"
+            title={copy.assignmentDetail.recordVisit}
             onPress={() => router.push(`/(app)/visit/${assignment.id}`)}
             variant="secondary"
             icon={<Ionicons name="clipboard-outline" size={20} color={colors.primary} />}
@@ -147,7 +148,7 @@ export default function AssignmentDetailScreen() {
         {addressLine ? (
           <Text style={styles.muted}>{addressLine}</Text>
         ) : (
-          <Text style={styles.mutedFaint}>No address on file</Text>
+          <Text style={styles.mutedFaint}>{copy.assignmentDetail.noAddress}</Text>
         )}
         <View style={styles.contactRow}>
           <Button
@@ -157,7 +158,7 @@ export default function AssignmentDetailScreen() {
             variant="secondary"
             fullWidth={false}
             style={styles.contactBtn}
-            accessibilityLabel={phone ? 'Call customer' : 'Call — no phone number on file'}
+            accessibilityLabel={phone ? copy.assignmentDetail.callCustomer : copy.assignmentDetail.callNoNumber}
             icon={<Ionicons name="call-outline" size={18} color={phone ? colors.primary : colors.textFaint} />}
           />
           <Button
@@ -167,7 +168,7 @@ export default function AssignmentDetailScreen() {
             variant="secondary"
             fullWidth={false}
             style={styles.contactBtn}
-            accessibilityLabel={phone ? 'Message customer on WhatsApp' : 'WhatsApp — no phone number on file'}
+            accessibilityLabel={phone ? copy.assignmentDetail.whatsAppCustomer : copy.assignmentDetail.whatsAppNoNumber}
             icon={<Ionicons name="logo-whatsapp" size={18} color={phone ? colors.primary : colors.textFaint} />}
           />
           <Button
@@ -177,23 +178,23 @@ export default function AssignmentDetailScreen() {
             variant="secondary"
             fullWidth={false}
             style={styles.contactBtn}
-            accessibilityLabel={hasAddress ? 'Navigate to customer' : 'Navigate — no address on file'}
+            accessibilityLabel={hasAddress ? copy.assignmentDetail.openInMaps : copy.assignmentDetail.openInMapsNoAddress}
             icon={<Ionicons name="navigate-outline" size={18} color={hasAddress ? colors.primary : colors.textFaint} />}
           />
         </View>
-        <Button title="Customer ledger" onPress={() => setLedgerOpen(true)} variant="ghost" />
+        <Button title={copy.assignmentDetail.customerLedger} onPress={() => setLedgerOpen(true)} variant="ghost" />
       </Card>
 
       {assignment.instructions ? (
         <Card>
-          <Text style={styles.sectionTitle}>Instructions</Text>
+          <Text style={styles.sectionTitle}>{copy.assignmentDetail.instructions}</Text>
           <Text style={styles.muted}>{assignment.instructions}</Text>
         </Card>
       ) : null}
 
       {(invoice?.items?.length ?? 0) > 0 && (
         <Card>
-          <Text style={styles.sectionTitle}>Items</Text>
+          <Text style={styles.sectionTitle}>{copy.assignmentDetail.items}</Text>
           {invoice!.items!.map((item, idx) => (
             <View key={item.id ?? idx} style={styles.itemRow}>
               <View style={{ flex: 1, marginRight: spacing.sm }}>
@@ -214,10 +215,10 @@ export default function AssignmentDetailScreen() {
 
       {(assignment.visits?.length ?? 0) > 0 && (
         <Card>
-          <Text style={styles.sectionTitle}>Previous visits</Text>
+          <Text style={styles.sectionTitle}>{copy.assignmentDetail.previousVisits}</Text>
           {assignment.visits!.map((v) => (
             <View key={v.id} style={styles.itemRow}>
-              <Text style={styles.itemDesc}>{v.outcome}</Text>
+              <Text style={styles.itemDesc}>{visitOutcomeLabel(v.outcome)}</Text>
               <Text style={styles.muted}>{formatDate(v.visitedAt)}</Text>
             </View>
           ))}
@@ -228,25 +229,25 @@ export default function AssignmentDetailScreen() {
         <Screen
           footer={
             <View style={styles.actionRow}>
-              {ledger.isError ? <Button title="Retry" onPress={() => ledger.refetch()} variant="secondary" /> : null}
+              {ledger.isError ? <Button title={copy.profile.retry} onPress={() => ledger.refetch()} variant="secondary" /> : null}
               <Button title="Close" onPress={() => setLedgerOpen(false)} variant="secondary" />
             </View>
           }
         >
-          <Text style={styles.sectionTitle}>Customer ledger</Text>
+          <Text style={styles.sectionTitle}>{copy.assignmentDetail.customerLedger}</Text>
           {ledger.isLoading ? (
             <View style={styles.ledgerCentered}>
               <Text style={styles.muted}>Loading…</Text>
             </View>
           ) : ledger.isError ? (
             <View style={styles.ledgerCentered}>
-              <EmptyState icon="cloud-offline-outline" tone="offline" title="Couldn't load the ledger" subtitle="Check your connection and try again." />
+              <EmptyState icon="cloud-offline-outline" tone="offline" title={copy.assignmentDetail.ledgerLoadErrorTitle} subtitle={copy.assignments.checkConnection} />
             </View>
           ) : (
             <>
               <Text style={styles.subsectionTitle}>Invoices</Text>
               {(ledger.data?.outstandingInvoices ?? []).length === 0 ? (
-                <Text style={styles.mutedFaint}>No invoices for this customer.</Text>
+                <Text style={styles.mutedFaint}>{copy.assignmentDetail.noInvoices}</Text>
               ) : (
                 (ledger.data?.outstandingInvoices ?? []).map((inv) => (
                   <View key={inv.id} style={styles.itemRow}>
@@ -257,7 +258,7 @@ export default function AssignmentDetailScreen() {
               )}
               <Text style={styles.subsectionTitle}>Recent receipts</Text>
               {(ledger.data?.recentReceipts ?? []).length === 0 ? (
-                <Text style={styles.mutedFaint}>No receipts yet.</Text>
+                <Text style={styles.mutedFaint}>{copy.assignmentDetail.noReceipts}</Text>
               ) : (
                 (ledger.data?.recentReceipts ?? []).map((r) => (
                   <View key={r.id} style={styles.itemRow}>

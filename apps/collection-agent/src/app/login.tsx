@@ -8,6 +8,7 @@ import { Screen } from '@/ui/Screen';
 import { BrandMark } from '@/ui/BrandMark';
 import { colors, spacing, type, radius, letterSpacing } from '@/ui/theme';
 import { useAuth } from '@/store/auth';
+import { copy } from '@/copy';
 
 export default function LoginScreen() {
   const { login, error, clearError } = useAuth();
@@ -20,14 +21,14 @@ export default function LoginScreen() {
     setFormError(null);
     clearError();
     if (!email.trim() || !password) {
-      setFormError('Enter your email and password.');
+      setFormError(copy.login.missingFields);
       return;
     }
     setSubmitting(true);
     try {
       await login(email.trim(), password);
     } catch (err: any) {
-      setFormError(err?.response?.data?.message ?? err?.message ?? 'Login failed. Check your connection.');
+      setFormError(err?.response?.data?.message ?? err?.message ?? copy.login.genericFailure);
     } finally {
       setSubmitting(false);
     }
@@ -40,12 +41,12 @@ export default function LoginScreen() {
       <View style={styles.center}>
         <View style={styles.logoWrap}>
           <BrandMark size="lg" />
-          <Text style={styles.tagline}>Field collection for SunSea agents</Text>
+          <Text style={styles.tagline}>{copy.login.tagline}</Text>
         </View>
 
         <View style={styles.form}>
           <Input
-            label="Email"
+            label={copy.login.emailLabel}
             autoCapitalize="none"
             keyboardType="email-address"
             autoComplete="email"
@@ -55,7 +56,7 @@ export default function LoginScreen() {
             returnKeyType="next"
           />
           <Input
-            label="Password"
+            label={copy.login.passwordLabel}
             secureTextEntry
             autoCapitalize="none"
             value={password}
@@ -70,10 +71,10 @@ export default function LoginScreen() {
               <Text style={styles.error}>{activeError}</Text>
             </View>
           ) : null}
-          <Button title="Log in" onPress={onSubmit} loading={submitting} style={{ marginTop: spacing.sm }} />
+          <Button title={copy.login.logIn} onPress={onSubmit} loading={submitting} style={{ marginTop: spacing.sm }} />
         </View>
       </View>
-      <Text style={styles.footer}>SunSea ERP · Collection Agent</Text>
+      <Text style={styles.footer}>{copy.login.footer}</Text>
     </Screen>
   );
 }

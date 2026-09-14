@@ -14,7 +14,8 @@ import { Screen } from '@/ui/Screen';
 import { SkeletonRow } from '@/ui/Skeleton';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, spacing, type, layout } from '@/ui/theme';
-import { formatDateTime, formatMoney } from '@/ui/format';
+import { formatDateTime, formatMoney, historyStatusLabel } from '@/ui/format';
+import { copy } from '@/copy';
 import type { HistoryEntry } from '@/types/models';
 
 const STAGGER_CAP = 8;
@@ -43,9 +44,9 @@ export default function HistoryScreen() {
             icon="cloud-offline-outline"
             tone="offline"
             title="Couldn't load history"
-            subtitle="Check your connection and try again."
+            subtitle={copy.assignments.checkConnection}
           />
-          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
+          <Button title={copy.profile.retry} onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
         </View>
       ) : (
         <FlatList
@@ -87,7 +88,7 @@ function HistoryRow({ entry, index, onPress }: { entry: HistoryEntry; index: num
           {entry.subtitle ? <Text style={styles.subtitle}>{entry.subtitle}</Text> : null}
           <View style={styles.rowBottom}>
             {entry.amount != null && <Text style={styles.amount}>{formatMoney(entry.amount)}</Text>}
-            {entry.status ? <Badge label={entry.status} /> : null}
+            {entry.status ? <Badge label={historyStatusLabel(entry.status)} /> : null}
           </View>
         </Card>
       </Pressable>

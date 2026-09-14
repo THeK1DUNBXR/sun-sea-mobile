@@ -18,18 +18,21 @@ import { PressableScale } from '@/ui/PressableScale';
 import { SkeletonRow } from '@/ui/Skeleton';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, spacing, type, layout, tabularNums } from '@/ui/theme';
-import { assignmentStatusMeta, formatDate, formatMoney, initials, isOverdue, priorityColor } from '@/ui/format';
+import { ASSIGNMENT_STATUS_META, assignmentStatusMeta, formatDate, formatMoney, initials, isOverdue, priorityColor } from '@/ui/format';
 import { getCurrentPosition } from '@/location/tracking';
-import type { Assignment } from '@/types/models';
+import { copy } from '@/copy';
+import type { Assignment, AssignmentStatus } from '@/types/models';
 
 const STAGGER_CAP = 8;
 
-const STATUS_FILTERS: { label: string; value?: string }[] = [
+// Same labels as ASSIGNMENT_STATUS_META (the one place status vocabulary is
+// defined) so a filter chip always reads exactly like the row/badge it filters.
+const STATUS_FILTERS: { label: string; value?: AssignmentStatus }[] = [
   { label: 'All' },
-  { label: 'Pending', value: 'PENDING' },
-  { label: 'In progress', value: 'IN_PROGRESS' },
-  { label: 'Partially collected', value: 'PARTIALLY_COLLECTED' },
-  { label: 'Collected', value: 'COLLECTED' },
+  { label: ASSIGNMENT_STATUS_META.PENDING.label, value: 'PENDING' },
+  { label: ASSIGNMENT_STATUS_META.IN_PROGRESS.label, value: 'IN_PROGRESS' },
+  { label: ASSIGNMENT_STATUS_META.PARTIALLY_COLLECTED.label, value: 'PARTIALLY_COLLECTED' },
+  { label: ASSIGNMENT_STATUS_META.COLLECTED.label, value: 'COLLECTED' },
 ];
 
 const SORTS: { label: string; value: AssignmentSort }[] = [
@@ -67,7 +70,7 @@ export default function AssignmentsScreen() {
   return (
     <Screen scroll={false} padded={false}>
       <View style={styles.filters}>
-        <Input placeholder="Search customer, invoice…" value={search} onChangeText={setSearch} />
+        <Input placeholder={copy.assignments.searchPlaceholder} value={search} onChangeText={setSearch} />
         <View style={styles.chipRow}>
           {STATUS_FILTERS.map((f) => (
             <Chip key={f.label} label={f.label} selected={status === f.value} onPress={() => setStatus(f.value)} />
@@ -90,10 +93,10 @@ export default function AssignmentsScreen() {
           <EmptyState
             icon="cloud-offline-outline"
             tone="offline"
-            title="Couldn't load assignments"
-            subtitle="Check your connection and try again."
+            title={copy.assignments.listLoadErrorTitle}
+            subtitle={copy.assignments.checkConnection}
           />
-          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
+          <Button title={copy.profile.retry} onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
         </View>
       ) : (
         <FlatList
@@ -107,8 +110,8 @@ export default function AssignmentsScreen() {
             <EmptyState
               icon="checkmark-done-circle-outline"
               tone="success"
-              title="No assignments"
-              subtitle="Nothing matches these filters."
+              title={copy.assignments.emptyTitle}
+              subtitle={copy.assignments.emptySubtitle}
             />
           }
           renderItem={({ item, index }) => (
@@ -174,7 +177,7 @@ function AssignmentRow({
           <View style={styles.badgeRow}>
             <Badge label={statusMeta.label} tone={statusMeta.tone} />
             {overdue && <Badge label="Overdue" tone="danger" dot />}
-            {assignment.promise?.promisedDate && <Badge label="PTP" tone="warning" dot />}
+            {assignment.promise?.promisedDate && <Badge label="Promise to pay" tone="warning" dot />}
           </View>
         </Card>
       </PressableScale>

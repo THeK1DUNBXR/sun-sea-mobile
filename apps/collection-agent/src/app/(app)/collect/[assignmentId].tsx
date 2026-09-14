@@ -23,7 +23,8 @@ import { SuccessOverlay } from '@/ui/SuccessOverlay';
 import { GpsStatus } from '@/ui/GpsStatus';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, spacing, type, radius, sizes, layout, fontWeight } from '@/ui/theme';
-import { formatMoney } from '@/ui/format';
+import { formatMoney, paymentMethodLabel } from '@/ui/format';
+import { copy } from '@/copy';
 
 const METHODS = ['CASH', 'UPI', 'CHEQUE', 'BANK_TRANSFER', 'CARD', 'OTHER'] as const;
 type Method = (typeof METHODS)[number];
@@ -110,14 +111,14 @@ export default function CollectScreen() {
     setChequeError(null);
     let hasError = false;
     if (!amountValue || amountValue < 0.01) {
-      setAmountError('Enter a valid amount.');
+      setAmountError(copy.collect.amountRequired);
       hasError = true;
     } else if (outstandingKnown && amountValue > outstanding + 0.01) {
-      setAmountError(`Cannot exceed the outstanding balance of ${formatMoney(outstanding)}.`);
+      setAmountError(copy.collect.amountOverOutstanding(formatMoney(outstanding)));
       hasError = true;
     }
     if (method === 'CHEQUE' && !chequeNumber) {
-      setChequeError('Enter the cheque number.');
+      setChequeError(copy.collect.chequeNumberRequired);
       hasError = true;
     }
     if (hasError) return;
@@ -153,7 +154,7 @@ export default function CollectScreen() {
   return (
     <Screen avoidKeyboard>
       <Card elevation="raised" style={styles.outstandingCard}>
-        <Text style={styles.outstandingLabel}>Outstanding · {customerName}</Text>
+        <Text style={styles.outstandingLabel}>{copy.collect.outstandingPrefix} · {customerName}</Text>
         {outstandingKnown ? (
           <Text
             style={styles.outstandingValue}
@@ -165,9 +166,7 @@ export default function CollectScreen() {
           </Text>
         ) : (
           <Text style={styles.outstandingUnknown} numberOfLines={2}>
-            {assignmentQuery.isFetching
-              ? 'Loading…'
-              : 'Not available offline — the amount will be checked when this syncs.'}
+            {assignmentQuery.isFetching ? copy.collect.outstandingUnknownLoading : copy.collect.outstandingUnknown}
           </Text>
         )}
       </Card>
@@ -176,17 +175,14 @@ export default function CollectScreen() {
         <Card style={styles.warnCard}>
           <View style={styles.warnRow}>
             <Ionicons name="cloud-offline-outline" size={18} color={colors.warning} />
-            <Text style={styles.warnText}>
-              Couldn't load the invoice. You can still record the collection — it will sync and be validated once you're
-              back online.
-            </Text>
+            <Text style={styles.warnText}>{copy.collect.assignmentLoadWarning}</Text>
           </View>
         </Card>
       )}
 
-      <Step number={1} title="Amount">
+      <Step number={1} title={copy.collect.step1Title} subtitle={copy.collect.step1Guidance}>
         <Input
-          label="Amount received (₹)"
+          label={copy.collect.amountLabel}
           keyboardType="numeric"
           value={amount}
           onChangeText={(v) => {
@@ -199,7 +195,7 @@ export default function CollectScreen() {
         />
         {outstandingKnown && (
         <Button
-          title="Full outstanding"
+          title={copy.collect.useFullAmount}
           onPress={() => {
             setAmount(String(outstanding));
             setAmountError(null);
@@ -214,17 +210,17 @@ export default function CollectScreen() {
 
       {step1Valid && (
         <Animated.View entering={reduceMotion ? undefined : FadeInDown.duration(260)}>
-          <Step number={2} title="Payment method">
+          <Step number={2} title={copy.collect.step2Title}>
             <View style={styles.chipWrap}>
               {METHODS.map((m) => (
-                <Chip key={m} label={m.replace('_', ' ')} selected={method === m} onPress={() => setMethod(m)} />
+                <Chip key={m} label={paymentMethodLabel(m)} selected={method === m} onPress={() => setMethod(m)} />
               ))}
             </View>
-            <Input label="Reference number (optional)" value={referenceNumber} onChangeText={setReferenceNumber} />
+            <Input label={copy.collect.referenceNumberLabel} value={referenceNumber} onChangeText={setReferenceNumber} />
             {method === 'CHEQUE' && (
               <>
                 <Input
-                  label="Cheque number"
+                  label={copy.collect.chequeNumberLabel}
                   value={chequeNumber}
                   onChangeText={(v) => {
                     setChequeNumber(v);
@@ -232,22 +228,22 @@ export default function CollectScreen() {
                   }}
                   error={chequeError}
                 />
-                <Input label="Cheque date (YYYY-MM-DD)" value={chequeDate} onChangeText={setChequeDate} />
-                <Input label="Bank name" value={bankName} onChangeText={setBankName} />
+                <Input label={copy.collect.chequeDateLabel} value={chequeDate} onChangeText={setChequeDate} />
+                <Input label={copy.collect.bankNameLabel} value={bankName} onChangeText={setBankName} />
               </>
             )}
-            <Input label="Payer name (optional)" value={payerName} onChangeText={setPayerName} />
-            <Input label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
+            <Input label={copy.collect.payerNameLabel} value={payerName} onChangeText={setPayerName} />
+            <Input label={copy.collect.notesLabel} value={notes} onChangeText={setNotes} multiline />
           </Step>
         </Animated.View>
       )}
 
       {step2Valid && (
         <Animated.View entering={reduceMotion ? undefined : FadeInDown.duration(260)}>
-          <Step number={3} title="Proof photo" optional>
+          <Step number={3} title={copy.collect.step3Title} subtitle={copy.collect.step3Guidance} optional>
             <View style={styles.chipRowButtons}>
               <Button
-                title="Camera"
+                title={copy.collect.takePhoto}
                 onPress={() => pickProof(true)}
                 variant="secondary"
                 fullWidth={false}
@@ -255,7 +251,7 @@ export default function CollectScreen() {
                 icon={<Ionicons name="camera-outline" size={18} color={colors.primary} />}
               />
               <Button
-                title="Gallery"
+                title={copy.collect.choosePhoto}
                 onPress={() => pickProof(false)}
                 variant="secondary"
                 fullWidth={false}
@@ -270,7 +266,7 @@ export default function CollectScreen() {
 
       {step2Valid && (
         <Animated.View entering={reduceMotion ? undefined : FadeInDown.delay(60).duration(260)}>
-          <Step number={4} title="Signature" optional>
+          <Step number={4} title={copy.collect.step4Title} optional>
             <View style={styles.signatureBox}>
               <SignatureScreen
                 ref={signatureRef}
@@ -287,13 +283,13 @@ export default function CollectScreen() {
               />
             </View>
             <View style={styles.chipRowButtons}>
-              <Button title="Clear" onPress={() => signatureRef.current?.clearSignature()} variant="ghost" fullWidth={false} />
-              <Button title="Save signature" onPress={() => signatureRef.current?.readSignature()} variant="ghost" fullWidth={false} />
+              <Button title={copy.collect.clearSignature} onPress={() => signatureRef.current?.clearSignature()} variant="ghost" fullWidth={false} />
+              <Button title={copy.collect.saveSignature} onPress={() => signatureRef.current?.readSignature()} variant="ghost" fullWidth={false} />
             </View>
             {signatureUri ? (
               <View style={styles.confirmedRow}>
                 <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-                <Text style={styles.confirmedText}>Signature saved</Text>
+                <Text style={styles.confirmedText}>{copy.collect.signatureSaved}</Text>
               </View>
             ) : null}
           </Step>
@@ -307,8 +303,15 @@ export default function CollectScreen() {
             position
               ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)} (±${Math.round(position.accuracy ?? 0)}m)`
               : gpsSettled
-                ? 'Location unavailable — continuing without GPS'
-                : 'Capturing GPS…'
+                ? copy.collect.gpsUnavailable
+                : copy.collect.gpsCapturing
+          }
+          accessibilityLabel={
+            position
+              ? `Location captured, accuracy about ${Math.round(position.accuracy ?? 0)} meters`
+              : gpsSettled
+                ? copy.collect.gpsUnavailable
+                : copy.collect.gpsCapturing
           }
         />
       </Card>
@@ -316,21 +319,18 @@ export default function CollectScreen() {
         <Card style={styles.warnCard}>
           <View style={styles.warnRow}>
             <Ionicons name="warning-outline" size={18} color={colors.warning} />
-            <Text style={styles.warnText}>
-              GPS accuracy is low (±{Math.round(position?.accuracy ?? 0)}m). The location on this receipt may be
-              approximate.
-            </Text>
+            <Text style={styles.warnText}>{copy.collect.gpsAccuracyWarning(Math.round(position?.accuracy ?? 0))}</Text>
           </View>
         </Card>
       )}
 
-      <Button title="Submit collection" onPress={onSubmit} loading={submitting} />
+      <Button title={copy.collect.submit} onPress={onSubmit} loading={submitting} />
 
       <SuccessOverlay
         visible={submittedAmount != null}
-        title="Collection recorded"
-        subtitle={`${formatMoney(submittedAmount ?? 0)} from ${customerName} — it will sync automatically once online.`}
-        actionLabel="Back to assignments"
+        title={copy.collect.successTitle(formatMoney(submittedAmount ?? 0))}
+        subtitle={copy.collect.successSubtitle(customerName)}
+        actionLabel={copy.collect.backToAssignments}
         onAction={() => router.replace('/(app)/(tabs)/assignments')}
       />
     </Screen>
@@ -340,11 +340,13 @@ export default function CollectScreen() {
 function Step({
   number,
   title,
+  subtitle,
   optional,
   children,
 }: {
   number: number;
   title: string;
+  subtitle?: string;
   optional?: boolean;
   children: React.ReactNode;
 }) {
@@ -355,8 +357,9 @@ function Step({
           <Text style={styles.stepBadgeText}>{number}</Text>
         </View>
         <Text style={styles.stepTitle}>{title}</Text>
-        {optional ? <Text style={styles.stepOptional}>Optional</Text> : null}
+        {optional ? <Text style={styles.stepOptional}>{copy.collect.optional}</Text> : null}
       </View>
+      {subtitle ? <Text style={styles.stepSubtitle}>{subtitle}</Text> : null}
       {children}
     </Card>
   );
@@ -387,6 +390,7 @@ const styles = StyleSheet.create({
   stepBadgeText: { ...type.label, color: colors.primaryDark, letterSpacing: 0 },
   stepTitle: { ...type.title, color: colors.text, flex: 1 },
   stepOptional: { ...type.caption, color: colors.textFaint, textTransform: 'uppercase' },
+  stepSubtitle: { ...type.body, color: colors.textMuted, marginBottom: layout.fieldGap },
   // Chip's own marginBottom (spacing.sm) plus this trailing bit brings the
   // gap before the next field up to the field rhythm (layout.fieldGap).
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: spacing.xs },

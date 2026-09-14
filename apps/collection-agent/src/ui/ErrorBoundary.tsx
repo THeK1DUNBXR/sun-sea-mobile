@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from './Button';
 import { colors, spacing, type } from './theme';
+import { copy } from '@/copy';
 
 interface Props {
   children: React.ReactNode;
@@ -40,11 +41,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
           <View style={styles.iconWrap}>
             <Ionicons name="alert-circle-outline" size={40} color={colors.danger} />
           </View>
-          <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.subtitle}>
-            SunSea Collect ran into a problem showing this screen. Your offline queue and login are safe.
-          </Text>
-          <Button title="Try again" onPress={this.reset} style={{ marginTop: spacing.lg }} />
+          <Text style={styles.title}>{copy.errorBoundary.title}</Text>
+          <Text style={styles.subtitle}>{copy.errorBoundary.subtitle}</Text>
+          <Button title={copy.errorBoundary.tryAgain} onPress={this.reset} style={{ marginTop: spacing.lg }} />
         </View>
       );
     }

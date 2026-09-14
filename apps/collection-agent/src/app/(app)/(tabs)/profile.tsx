@@ -15,6 +15,7 @@ import { useAuth } from '@/store/auth';
 import { useSyncStatus } from '@/offline/useSyncStatus';
 import { retryItem, removeItem, subscribeSyncNotes, dismissSyncNote, type SyncNote } from '@/offline/queue';
 import { startTracking, stopTracking, getTrackingPreference } from '@/location/tracking';
+import { copy } from '@/copy';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
@@ -35,12 +36,9 @@ export default function ProfileScreen() {
       const result = await startTracking();
       setTracking(result.started);
       if (!result.started) {
-        Alert.alert('Location permission required', 'Enable location access in Settings to start tracking.');
+        Alert.alert(copy.tracking.permissionTitle, copy.tracking.permissionMessage);
       } else if (!result.backgroundGranted) {
-        Alert.alert(
-          'Tracking while app is open only',
-          'Background location wasn’t granted, so your route only shares while SunSea Collect is open. Choose "Allow all the time" in Settings to keep sharing when the app is in the background.',
-        );
+        Alert.alert(copy.tracking.backgroundTitle, copy.tracking.backgroundMessage);
       }
     } else {
       await stopTracking();
@@ -62,7 +60,7 @@ export default function ProfileScreen() {
         <View style={styles.rowBetween}>
           <View style={styles.trackingLabel}>
             <Ionicons name="navigate" size={18} color={colors.primary} />
-            <Text style={styles.cardTitle}>Location tracking</Text>
+            <Text style={styles.cardTitle}>{copy.home.trackingCardTitle}</Text>
           </View>
           <Switch
             value={tracking}
@@ -75,11 +73,11 @@ export default function ProfileScreen() {
 
       <Card>
         <View style={styles.rowBetween}>
-          <Text style={styles.cardTitle}>Offline queue</Text>
-          <Button title="Sync now" onPress={sync.flushNow} loading={sync.syncing} fullWidth={false} variant="secondary" />
+          <Text style={styles.cardTitle}>{copy.profile.offlineQueueTitle}</Text>
+          <Button title={copy.profile.syncNow} onPress={sync.flushNow} loading={sync.syncing} fullWidth={false} variant="secondary" />
         </View>
         {sync.items.length === 0 ? (
-          <EmptyState icon="cloud-done-outline" tone="success" title="Nothing pending" />
+          <EmptyState icon="cloud-done-outline" tone="success" title={copy.profile.nothingPending} />
         ) : (
           <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
             {sync.items.map((item) => (
@@ -88,17 +86,18 @@ export default function ProfileScreen() {
                   <Text style={styles.queueKind}>{item.kind}</Text>
                   <Text style={styles.subtitle}>{formatDateTime(item.createdAt)}</Text>
                   {item.lastError ? <Text style={styles.errorText}>{item.lastError}</Text> : null}
+                  {item.needsAttention ? <Text style={styles.errorText}>{copy.profile.syncFailedHint}</Text> : null}
                 </View>
                 {item.needsAttention ? (
-                  <Badge label="Needs attention" tone="danger" dot />
+                  <Badge label={copy.profile.needsAttention} tone="danger" dot />
                 ) : item.lastError ? (
-                  <Badge label="Retrying" tone="warning" dot />
+                  <Badge label={copy.profile.retrying} tone="warning" dot />
                 ) : (
-                  <Badge label="Pending" dot />
+                  <Badge label={copy.profile.pending} dot />
                 )}
                 {item.needsAttention || item.lastError ? (
                   <Button
-                    title="Retry"
+                    title={copy.profile.retry}
                     onPress={() => retryItem(item.id)}
                     fullWidth={false}
                     variant="ghost"
@@ -106,11 +105,11 @@ export default function ProfileScreen() {
                   />
                 ) : null}
                 <Button
-                  title="Remove"
+                  title={copy.profile.remove}
                   onPress={() =>
-                    Alert.alert('Remove from sync queue?', 'This record has not synced yet and will be discarded permanently.', [
+                    Alert.alert(copy.profile.removeConfirmTitle, copy.profile.removeConfirmMessage, [
                       { text: 'Cancel', style: 'cancel' },
-                      { text: 'Remove', style: 'destructive', onPress: () => removeItem(item.id) },
+                      { text: copy.profile.remove, style: 'destructive', onPress: () => removeItem(item.id) },
                     ])
                   }
                   fullWidth={false}
@@ -127,7 +126,7 @@ export default function ProfileScreen() {
               <View key={note.id} style={styles.noteRow}>
                 <Ionicons name="information-circle-outline" size={16} color={colors.warning} />
                 <Text style={styles.noteText}>{note.message}</Text>
-                <Button title="Dismiss" onPress={() => dismissSyncNote(note.id)} fullWidth={false} variant="ghost" />
+                <Button title={copy.profile.dismiss} onPress={() => dismissSyncNote(note.id)} fullWidth={false} variant="ghost" />
               </View>
             ))}
           </View>
@@ -135,11 +134,11 @@ export default function ProfileScreen() {
       </Card>
 
       <Button
-        title="Log out"
+        title={copy.profile.logOut}
         onPress={() =>
-          Alert.alert('Log out?', 'Location sharing will stop and any unsynced items will remain queued until you log back in.', [
+          Alert.alert(copy.profile.logOutConfirmTitle, copy.profile.logOutConfirmMessage, [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Log out', style: 'destructive', onPress: logout },
+            { text: copy.profile.logOut, style: 'destructive', onPress: logout },
           ])
         }
         variant="danger"

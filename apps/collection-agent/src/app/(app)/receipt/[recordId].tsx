@@ -23,7 +23,8 @@ import { EmptyState } from '@/ui/EmptyState';
 import { Screen } from '@/ui/Screen';
 import { useReducedMotion } from '@/ui/useReducedMotion';
 import { colors, spacing, type, radius, sizes, monoFamily, fontWeight } from '@/ui/theme';
-import { amountInWords, formatDateTime, formatMoney } from '@/ui/format';
+import { amountInWords, formatDateTime, formatMoney, paymentMethodLabel } from '@/ui/format';
+import { copy } from '@/copy';
 import type { Receipt } from '@/types/models';
 
 export default function ReceiptScreen() {
@@ -45,31 +46,33 @@ export default function ReceiptScreen() {
       const { uri } = await Print.printToFileAsync({ html });
       const canShare = await Sharing.isAvailableAsync().catch(() => false);
       if (!canShare) {
-        Alert.alert('Sharing unavailable', 'This device can’t share files. The receipt is still saved on the app.');
+        Alert.alert(copy.receipt.sharingUnavailableTitle, copy.receipt.sharingUnavailableMessage);
         return;
       }
       await Sharing.shareAsync(uri, { mimeType: 'application/pdf' });
     } catch {
-      Alert.alert('Couldn’t create the PDF', 'Something went wrong generating the receipt. Please try again.');
+      Alert.alert(copy.receipt.pdfFailedTitle, copy.receipt.pdfFailedMessage);
     } finally {
       setSharing(false);
     }
   };
 
   const onShareWhatsApp = async () => {
-    const text = `Receipt ${receipt?.receiptNo ?? ''} for ${formatMoney(receipt?.amount)} received from ${
-      receipt?.customer?.displayName ?? receipt?.customer?.firmName ?? ''
-    }. Thank you!`;
+    const text = copy.receipt.whatsAppShareText(
+      receipt?.receiptNo ?? '',
+      formatMoney(receipt?.amount),
+      receipt?.customer?.displayName ?? receipt?.customer?.firmName ?? '',
+    );
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     try {
       const supported = await Linking.canOpenURL(url);
       if (!supported) {
-        Alert.alert('WhatsApp unavailable', 'WhatsApp isn’t installed on this device.');
+        Alert.alert(copy.receipt.whatsAppUnavailableTitle, copy.receipt.whatsAppUnavailableMessage);
         return;
       }
       await Linking.openURL(url);
     } catch {
-      Alert.alert('WhatsApp unavailable', 'WhatsApp isn’t installed on this device.');
+      Alert.alert(copy.receipt.whatsAppUnavailableTitle, copy.receipt.whatsAppUnavailableMessage);
     }
   };
 
@@ -80,10 +83,10 @@ export default function ReceiptScreen() {
           <EmptyState
             icon="cloud-offline-outline"
             tone="offline"
-            title="Couldn't load this receipt"
-            subtitle="If this collection hasn't synced yet, it will be available once it does."
+            title={copy.receipt.loadErrorTitle}
+            subtitle={copy.receipt.loadErrorSubtitle}
           />
-          <Button title="Retry" onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
+          <Button title={copy.profile.retry} onPress={() => query.refetch()} variant="secondary" style={styles.stateButton} />
         </View>
       </Screen>
     );
@@ -93,7 +96,7 @@ export default function ReceiptScreen() {
     return (
       <Screen>
         <View style={styles.stateArea}>
-          <Text style={styles.loading}>Loading receipt…</Text>
+          <Text style={styles.loading}>{copy.receipt.loading}</Text>
         </View>
       </Screen>
     );
@@ -105,13 +108,13 @@ export default function ReceiptScreen() {
 
       <View style={styles.actions}>
         <Button
-          title="Share as PDF"
+          title={copy.receipt.shareAsPdf}
           onPress={onSharePdf}
           loading={sharing}
           icon={<Ionicons name="document-text-outline" size={20} color={colors.onPrimary} />}
         />
         <Button
-          title="Share on WhatsApp"
+          title={copy.receipt.shareOnWhatsApp}
           onPress={onShareWhatsApp}
           variant="secondary"
           icon={<Ionicons name="logo-whatsapp" size={20} color={colors.primary} />}
@@ -152,7 +155,7 @@ function ReceiptTicket({ receipt }: { receipt: Receipt }) {
       <Card elevation="raised" style={styles.ticketCard}>
         <Animated.View style={[styles.paidStamp, stampStyle]}>
           <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-          <Text style={styles.paidStampText}>Paid</Text>
+          <Text style={styles.paidStampText}>{copy.receipt.paidStamp}</Text>
         </Animated.View>
 
         <Text style={styles.company}>{receipt.company?.name ?? 'SunSea'}</Text>
@@ -169,10 +172,10 @@ function ReceiptTicket({ receipt }: { receipt: Receipt }) {
 
         <TearLine />
 
-        <Row label="From" value={receipt.customer?.displayName ?? receipt.customer?.firmName} />
-        <Row label="Invoice" value={receipt.invoice?.invoiceNo} />
-        <Row label="Method" value={receipt.paymentMethod} />
-        <Row label="Collected by" value={receipt.agentName} />
+        <Row label={copy.receipt.receivedFrom} value={receipt.customer?.displayName ?? receipt.customer?.firmName} />
+        <Row label={copy.receipt.towardsInvoice} value={receipt.invoice?.invoiceNo} />
+        <Row label={copy.receipt.mode} value={receipt.paymentMethod ? paymentMethodLabel(receipt.paymentMethod) : undefined} />
+        <Row label={copy.receipt.receivedBy} value={receipt.agentName} />
       </Card>
       <View style={styles.notchLeft} />
       <View style={styles.notchRight} />
@@ -206,10 +209,10 @@ function buildReceiptHtml(receipt?: Receipt): string {
     <h1>${r.amount != null ? `₹${r.amount}` : ''}</h1>
     <p>${amountInWords(r.amount ?? 0)}</p>
     <hr/>
-    <p><b>From:</b> ${r.customer?.displayName ?? r.customer?.firmName ?? ''}</p>
-    <p><b>Invoice:</b> ${r.invoice?.invoiceNo ?? ''}</p>
-    <p><b>Method:</b> ${r.paymentMethod ?? ''}</p>
-    <p><b>Collected by:</b> ${r.agentName ?? ''}</p>
+    <p><b>Received from:</b> ${r.customer?.displayName ?? r.customer?.firmName ?? ''}</p>
+    <p><b>Towards invoice:</b> ${r.invoice?.invoiceNo ?? ''}</p>
+    <p><b>Mode:</b> ${r.paymentMethod ? paymentMethodLabel(r.paymentMethod) : ''}</p>
+    <p><b>Received by:</b> ${r.agentName ?? ''}</p>
   </body></html>`;
 }
 

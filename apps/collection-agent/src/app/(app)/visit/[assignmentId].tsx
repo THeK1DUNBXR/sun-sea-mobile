@@ -16,15 +16,18 @@ import { Screen } from '@/ui/Screen';
 import { SuccessOverlay } from '@/ui/SuccessOverlay';
 import { GpsStatus } from '@/ui/GpsStatus';
 import { colors, spacing, type, radius, sizes } from '@/ui/theme';
+import { VISIT_OUTCOME_META } from '@/ui/format';
+import { copy } from '@/copy';
+import type { VisitOutcome } from '@/types/models';
 
-const OUTCOMES = [
-  { value: 'CUSTOMER_UNAVAILABLE', label: 'Unavailable' },
-  { value: 'PROMISED_TO_PAY', label: 'Promised to pay' },
-  { value: 'REFUSED', label: 'Refused' },
-  { value: 'DISPUTE', label: 'Dispute' },
-  { value: 'WRONG_ADDRESS', label: 'Wrong address' },
-  { value: 'OTHER', label: 'Other' },
-] as const;
+// Every outcome an agent can log on a visit except "collected"/"partly
+// collected" — those are recorded through the collection form instead, not
+// picked as a visit outcome. Labels come from the single shared vocabulary
+// in ui/format.ts so this screen's chips always match how the outcome is
+// read back on the assignment detail and history screens.
+const OUTCOMES: { value: VisitOutcome; label: string }[] = (
+  ['CUSTOMER_UNAVAILABLE', 'PROMISED_TO_PAY', 'REFUSED', 'DISPUTE', 'WRONG_ADDRESS', 'OTHER'] as const
+).map((value) => ({ value, label: VISIT_OUTCOME_META[value].label }));
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -69,11 +72,11 @@ export default function VisitScreen() {
     setDateError(null);
     if (outcome === 'PROMISED_TO_PAY') {
       if (!promisedDate) {
-        setDateError('Enter the promised date.');
+        setDateError(copy.visit.promisedDateRequired);
         return;
       }
       if (!DATE_ONLY.test(promisedDate) || Number.isNaN(new Date(promisedDate).getTime())) {
-        setDateError('Use the format YYYY-MM-DD.');
+        setDateError(copy.visit.promisedDateFormat);
         return;
       }
     }
@@ -105,7 +108,7 @@ export default function VisitScreen() {
   return (
     <Screen avoidKeyboard>
       <Card>
-        <Text style={styles.label}>Outcome</Text>
+        <Text style={styles.label}>{copy.visit.outcomeLabel}</Text>
         <View style={styles.chipWrap}>
           {OUTCOMES.map((o) => (
             <Chip key={o.value} label={o.label} selected={outcome === o.value} onPress={() => setOutcome(o.value)} />
@@ -114,7 +117,7 @@ export default function VisitScreen() {
         {outcome === 'PROMISED_TO_PAY' && (
           <>
             <Input
-              label="Promised date (YYYY-MM-DD)"
+              label={copy.visit.promisedDateLabel}
               value={promisedDate}
               onChangeText={(v) => {
                 setPromisedDate(v);
@@ -123,20 +126,20 @@ export default function VisitScreen() {
               error={dateError}
             />
             <Input
-              label="Promised amount (₹, optional)"
+              label={copy.visit.promisedAmountLabel}
               keyboardType="numeric"
               value={promisedAmount}
               onChangeText={setPromisedAmount}
             />
           </>
         )}
-        <Input label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
+        <Input label={copy.visit.notesLabel} value={notes} onChangeText={setNotes} multiline />
       </Card>
 
       <Card>
-        <Text style={styles.label}>Photo (optional)</Text>
+        <Text style={styles.label}>{copy.visit.photoLabel}</Text>
         <Button
-          title={photoUri ? 'Photo added' : 'Add photo'}
+          title={photoUri ? copy.visit.photoAdded : copy.visit.addPhoto}
           onPress={pickPhoto}
           variant="secondary"
           fullWidth={false}
@@ -148,17 +151,22 @@ export default function VisitScreen() {
       <Card style={styles.locationCard}>
         <GpsStatus
           locked={Boolean(position)}
-          label={position ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}` : 'Capturing GPS…'}
+          label={position ? `${position.latitude.toFixed(5)}, ${position.longitude.toFixed(5)}` : copy.visit.gpsCapturing}
+          accessibilityLabel={
+            position
+              ? `Location captured, accuracy about ${Math.round(position.accuracy ?? 0)} meters`
+              : copy.visit.gpsCapturing
+          }
         />
       </Card>
 
-      <Button title="Submit visit" onPress={onSubmit} loading={submitting} />
+      <Button title={copy.visit.submit} onPress={onSubmit} loading={submitting} />
 
       <SuccessOverlay
         visible={submitted}
-        title="Visit recorded"
-        subtitle="It will sync automatically once online."
-        actionLabel="Back to assignments"
+        title={copy.visit.successTitle}
+        subtitle={copy.visit.successSubtitle}
+        actionLabel={copy.visit.backToAssignments}
         onAction={() => router.replace('/(app)/(tabs)/assignments')}
       />
     </Screen>

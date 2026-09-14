@@ -25,6 +25,7 @@ import { formatMoney } from '@/ui/format';
 import { useAuth } from '@/store/auth';
 import { useSyncStatus } from '@/offline/useSyncStatus';
 import { startTracking, stopTracking, getTrackingPreference } from '@/location/tracking';
+import { copy } from '@/copy';
 
 export default function HomeScreen() {
   const { user } = useAuth();
@@ -52,12 +53,9 @@ export default function HomeScreen() {
         const result = await startTracking();
         setTracking(result.started);
         if (!result.started) {
-          Alert.alert('Location permission required', 'Enable location access in Settings to start tracking.');
+          Alert.alert(copy.tracking.permissionTitle, copy.tracking.permissionMessage);
         } else if (!result.backgroundGranted) {
-          Alert.alert(
-            'Tracking while app is open only',
-            'Background location wasn’t granted, so your route only shares while SunSea Collect is open. Choose "Allow all the time" in Settings to keep sharing when the app is in the background.',
-          );
+          Alert.alert(copy.tracking.backgroundTitle, copy.tracking.backgroundMessage);
         }
       } else {
         await stopTracking();
@@ -72,12 +70,7 @@ export default function HomeScreen() {
   const ptpDue = s?.ptpDueToday ?? 0;
   const assigned = s?.assignedCount ?? 0;
 
-  const nextUpCopy =
-    ptpDue > 0
-      ? `${ptpDue} promise${ptpDue === 1 ? '' : 's'} to follow up today`
-      : assigned > 0
-        ? `${assigned} assignment${assigned === 1 ? '' : 's'} open right now`
-        : 'Nothing assigned right now';
+  const nextUpCopy = copy.home.nextUp(ptpDue, assigned);
 
   return (
     <Screen refreshing={summary.isFetching} onRefresh={() => summary.refetch()}>
@@ -94,7 +87,7 @@ export default function HomeScreen() {
           <View style={styles.trackingRow}>
             <Ionicons name="cloud-offline-outline" size={20} color={colors.danger} />
             <Text style={[styles.cardSubtitle, { flex: 1, color: colors.danger }]}>
-              Couldn't load today's numbers. Showing the last known values.
+              {copy.home.summaryLoadError}
             </Text>
             <Button title="Retry" onPress={() => summary.refetch()} variant="ghost" fullWidth={false} />
           </View>
@@ -103,7 +96,7 @@ export default function HomeScreen() {
 
       <View style={styles.heroRow}>
         <Card style={styles.heroCard} elevation="raised">
-          <Text style={styles.heroLabel}>Outstanding</Text>
+          <Text style={styles.heroLabel}>{copy.home.outstandingLabel}</Text>
           {summary.isLoading ? (
             <SkeletonBlock width="70%" height={28} style={{ marginTop: spacing.xs }} />
           ) : (
@@ -117,7 +110,7 @@ export default function HomeScreen() {
           )}
         </Card>
         <Card style={[styles.heroCard, styles.heroCardAccent]} elevation="raised">
-          <Text style={[styles.heroLabel, styles.heroLabelAccent]}>Collected today</Text>
+          <Text style={[styles.heroLabel, styles.heroLabelAccent]}>{copy.home.collectedTodayLabel}</Text>
           {summary.isLoading ? (
             <SkeletonBlock width="70%" height={28} style={{ marginTop: spacing.xs, backgroundColor: colors.primaryDark }} />
           ) : (
@@ -142,10 +135,10 @@ export default function HomeScreen() {
           </>
         ) : (
           <>
-            <Kpi index={0} label="Assigned" value={assigned} icon="briefcase-outline" />
-            <Kpi index={1} label="Visits today" value={s?.visitsToday ?? 0} icon="walk-outline" />
-            <Kpi index={2} label="Cash in hand" value={s?.cashInHand ?? 0} icon="wallet-outline" money />
-            <Kpi index={3} label="PTP due today" value={ptpDue} icon="calendar-outline" warn={ptpDue > 0} />
+            <Kpi index={0} label={copy.home.kpiOpenAssignments} value={assigned} icon="briefcase-outline" />
+            <Kpi index={1} label={copy.home.kpiVisitsToday} value={s?.visitsToday ?? 0} icon="walk-outline" />
+            <Kpi index={2} label={copy.home.kpiCashInHand} value={s?.cashInHand ?? 0} icon="wallet-outline" money />
+            <Kpi index={3} label={copy.home.kpiPromiseToPayToday} value={ptpDue} icon="calendar-outline" warn={ptpDue > 0} />
           </>
         )}
       </View>
@@ -158,8 +151,8 @@ export default function HomeScreen() {
             <Ionicons name="navigate" size={20} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cardTitle}>Location tracking</Text>
-            <Text style={styles.cardSubtitle}>{tracking ? 'Sharing your route with the office' : 'Off — turn on before you head out'}</Text>
+            <Text style={styles.cardTitle}>{copy.home.trackingCardTitle}</Text>
+            <Text style={styles.cardSubtitle}>{tracking ? copy.home.trackingOnSubtitle : copy.home.trackingOffSubtitle}</Text>
           </View>
           <Switch
             value={tracking}
@@ -172,11 +165,11 @@ export default function HomeScreen() {
       </Card>
 
       <Card>
-        <Text style={styles.cardTitle}>Quick actions</Text>
+        <Text style={styles.cardTitle}>{copy.home.quickActionsTitle}</Text>
         <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
-          <Button title="View assignments" onPress={() => router.push('/(app)/(tabs)/assignments')} variant="secondary" />
-          <Button title="New deposit" onPress={() => router.push('/(app)/(tabs)/deposits')} variant="secondary" />
-          <Button title="Map" onPress={() => router.push('/(app)/map')} variant="secondary" />
+          <Button title={copy.home.viewAssignments} onPress={() => router.push('/(app)/(tabs)/assignments')} variant="secondary" />
+          <Button title={copy.home.addDeposit} onPress={() => router.push('/(app)/(tabs)/deposits')} variant="secondary" />
+          <Button title={copy.home.openMap} onPress={() => router.push('/(app)/map')} variant="secondary" />
         </View>
       </Card>
     </Screen>
@@ -207,7 +200,7 @@ function TrackingPill({ on }: { on: boolean }) {
           out of the success-green vocabulary reserved for collected money. */}
       <View style={[styles.pillDot, { backgroundColor: on ? colors.info : colors.textFaint }]} />
       <Text style={[styles.pillText, { color: on ? colors.info : colors.textMuted }]}>
-        {on ? 'Live' : 'Not sharing'}
+        {on ? copy.home.liveLabel : copy.home.notSharingLabel}
       </Text>
     </Animated.View>
   );
@@ -263,7 +256,7 @@ function SyncCard({
         style={[styles.card, styles.syncOkCard]}
       >
         <Ionicons name="cloud-done-outline" size={18} color={colors.success} />
-        <Text style={styles.syncOkText}>All caught up — everything is synced</Text>
+        <Text style={styles.syncOkText}>{copy.sync.allSynced}</Text>
       </Animated.View>
     );
   }
@@ -280,7 +273,7 @@ function SyncCard({
       />
       <View style={{ flex: 1 }}>
         <Text style={[styles.syncText, lastError && styles.syncErrorTitle]}>
-          {syncing ? 'Syncing…' : `${pendingCount} item${pendingCount === 1 ? '' : 's'} waiting to sync`}
+          {syncing ? copy.sync.syncing : copy.sync.pending(pendingCount)}
         </Text>
         {lastError ? <Text style={styles.syncError}>{lastError}</Text> : null}
       </View>
