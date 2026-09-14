@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getErrorMessage } from '@/api/client';
+import { brand, login as copy } from '@/copy';
 import { useAuth } from '@/store/auth';
 import { PressableScale } from '@/ui/PressableScale';
 import { MEASURE, MIN_TOUCH, radius, spacing, typography, usePalette } from '@/ui/theme';
@@ -38,7 +39,7 @@ export default function LoginScreen() {
     // character in a real password, and silently altering it would just
     // turn a typo into a more confusing "wrong password" error.
     if (!trimmedEmail || !password) {
-      setError('Enter your email and password.');
+      setError(copy.missingFields);
       return;
     }
     dismissSessionMessage();
@@ -47,7 +48,7 @@ export default function LoginScreen() {
     try {
       await login(trimmedEmail, password);
     } catch (err) {
-      setError(getErrorMessage(err, 'Unable to sign in. Please try again.'));
+      setError(getErrorMessage(err, copy.signInFailed));
     } finally {
       setSubmitting(false);
     }
@@ -65,9 +66,9 @@ export default function LoginScreen() {
         >
           <View style={styles.brandWrap}>
             <View style={[styles.logoDot, { backgroundColor: palette.accent }]} />
-            <Text style={[typography.headline, { color: palette.text }]}>SunSea Insights</Text>
+            <Text style={[typography.headline, { color: palette.text }]}>{brand.name}</Text>
             <Text style={[typography.body, styles.tagline, { color: palette.textMuted }]}>
-              A founder's snapshot of sales, collections and field agents.
+              {brand.tagline}
             </Text>
           </View>
 
@@ -78,14 +79,14 @@ export default function LoginScreen() {
               </View>
             ) : null}
 
-            <Text style={[typography.label, { color: palette.textMuted }]}>Email</Text>
+            <Text style={[typography.label, { color: palette.textMuted }]}>{copy.emailLabel}</Text>
             <TextInput
               value={email}
               onChangeText={(t) => {
                 setEmail(t);
                 if (error) setError(null);
               }}
-              placeholder="you@company.com"
+              placeholder={copy.emailPlaceholder}
               placeholderTextColor={palette.textFaint}
               autoCapitalize="none"
               autoCorrect={false}
@@ -96,7 +97,7 @@ export default function LoginScreen() {
               onSubmitEditing={() => passwordRef.current?.focus()}
               blurOnSubmit={false}
               editable={!submitting}
-              accessibilityLabel="Email"
+              accessibilityLabel={copy.emailLabel}
               style={[
                 styles.input,
                 { color: palette.text, borderColor: palette.border, backgroundColor: palette.card },
@@ -104,7 +105,7 @@ export default function LoginScreen() {
             />
 
             <Text style={[typography.label, { color: palette.textMuted, marginTop: spacing.md }]}>
-              Password
+              {copy.passwordLabel}
             </Text>
             <View style={styles.passwordRow}>
               <TextInput
@@ -114,7 +115,7 @@ export default function LoginScreen() {
                   setPassword(t);
                   if (error) setError(null);
                 }}
-                placeholder="••••••••"
+                placeholder={copy.passwordPlaceholder}
                 placeholderTextColor={palette.textFaint}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
@@ -123,7 +124,7 @@ export default function LoginScreen() {
                 textContentType="password"
                 returnKeyType="go"
                 editable={!submitting}
-                accessibilityLabel="Password"
+                accessibilityLabel={copy.passwordLabel}
                 style={[
                   styles.input,
                   styles.passwordInput,
@@ -136,11 +137,11 @@ export default function LoginScreen() {
                 hitSlop={8}
                 haptic={false}
                 accessibilityRole="button"
-                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                accessibilityLabel={showPassword ? copy.hidePasswordA11y : copy.showPasswordA11y}
                 style={styles.showPasswordButton}
               >
                 <Text style={[typography.label, { color: palette.textMuted }]}>
-                  {showPassword ? 'Hide' : 'Show'}
+                  {showPassword ? copy.hidePassword : copy.showPassword}
                 </Text>
               </PressableScale>
             </View>
@@ -155,7 +156,7 @@ export default function LoginScreen() {
               onPress={onSubmit}
               disabled={submitting}
               accessibilityRole="button"
-              accessibilityLabel="Sign in"
+              accessibilityLabel={submitting ? copy.signingIn : copy.signIn}
               accessibilityState={{ disabled: submitting, busy: submitting }}
               style={({ pressed }) => [
                 styles.button,
@@ -165,12 +166,12 @@ export default function LoginScreen() {
               {submitting ? (
                 <ActivityIndicator color={palette.accentInk} />
               ) : (
-                <Text style={[typography.control, { color: palette.accentInk }]}>Sign in</Text>
+                <Text style={[typography.control, { color: palette.accentInk }]}>{copy.signIn}</Text>
               )}
             </PressableScale>
 
             <Text style={[typography.caption, styles.hint, { color: palette.textFaint }]} maxFontSizeMultiplier={1.6}>
-              Requires the &quot;insights-app.access&quot; permission or super admin.
+              {copy.accessHint}
             </Text>
           </View>
         </ScrollView>

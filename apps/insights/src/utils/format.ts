@@ -9,6 +9,20 @@ export function formatMoneyCompact(value: number | null | undefined): string {
   return `${sign}₹${abs.toFixed(0)}`;
 }
 
+/** Same magnitude as formatMoneyCompact, spelled out for screen readers —
+ * "L"/"Cr" read naturally as letters, not units, so VoiceOver/TalkBack get the
+ * word instead. Only for accessibility labels; visible text keeps the compact
+ * glyph form. */
+export function formatMoneyCompactSpoken(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return 'not available';
+  const sign = value < 0 ? 'minus ' : '';
+  const abs = Math.abs(value);
+  if (abs >= 1_00_00_000) return `${sign}₹${(abs / 1_00_00_000).toFixed(2)} crore`;
+  if (abs >= 1_00_000) return `${sign}₹${(abs / 1_00_000).toFixed(2)} lakh`;
+  if (abs >= 1_000) return `${sign}₹${(abs / 1_000).toFixed(1)} thousand`;
+  return `${sign}₹${abs.toFixed(0)}`;
+}
+
 /** Full en-IN grouped currency, e.g. ₹4,82,391 */
 export function formatMoneyFull(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
@@ -42,9 +56,11 @@ export function formatRelativeTime(iso: string | null | undefined): string {
   if (diffSec < 5) return 'just now';
   if (diffSec < 60) return `${diffSec}s ago`;
   const diffMin = Math.round(diffSec / 60);
-  if (diffMin < 60) return `${diffMin}m ago`;
+  // Spelled-out "min"/"hr" (not "m"/"h") so this can't be misread as meters or
+  // months on a business dashboard where both come up elsewhere.
+  if (diffMin < 60) return `${diffMin} min ago`;
   const diffHr = Math.round(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffHr < 24) return `${diffHr} hr ago`;
   const diffDay = Math.round(diffHr / 24);
   if (diffDay < 7) return `${diffDay}d ago`;
   return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });

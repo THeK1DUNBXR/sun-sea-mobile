@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getErrorMessage } from '@/api/client';
 import { useRecentActivity } from '@/api/hooks';
+import { activityScreen as copy } from '@/copy';
 import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { ErrorBanner } from '@/ui/ErrorBanner';
@@ -14,7 +15,7 @@ import { Skeleton } from '@/ui/Skeleton';
 import { layout, sizes, spacing, typography, usePalette, type Palette } from '@/ui/theme';
 
 import type { ActivityItem, ActivityType } from '@/types';
-import { formatDayLabel, formatMoneyCompact, formatRelativeTime } from '@/utils/format';
+import { formatDayLabel, formatMoneyCompact, formatMoneyCompactSpoken, formatRelativeTime } from '@/utils/format';
 
 function iconFor(activityType: ActivityType): IconName {
   if (activityType === 'INVOICE') return 'invoice';
@@ -76,14 +77,14 @@ export default function ActivityScreen() {
           />
         }
       >
-        <Text style={[typography.headline, { color: palette.text, marginBottom: spacing.lg }]}>Activity</Text>
+        <Text style={[typography.headline, { color: palette.text, marginBottom: spacing.lg }]}>{copy.title}</Text>
 
         {activity.error ? (
           <ErrorBanner
             message={
               activity.data
-                ? `Showing last known activity. ${getErrorMessage(activity.error, 'Could not refresh.')}`
-                : getErrorMessage(activity.error, 'Could not load recent activity.')
+                ? `${copy.stalePrefix}${getErrorMessage(activity.error, copy.refreshFailedFallback)}`
+                : getErrorMessage(activity.error, copy.loadFailedFallback)
             }
             onRetry={() => activity.refetch()}
             tone={activity.data ? 'stale' : 'error'}
@@ -97,7 +98,7 @@ export default function ActivityScreen() {
             <Skeleton height={48} />
           </Card>
         ) : grouped.length === 0 ? (
-          <EmptyState title="No recent activity" message="New invoices, collections and deposits will appear here." />
+          <EmptyState title={copy.emptyTitle} message={copy.emptyMessage} />
         ) : (
           grouped.map((group, gi) => (
             <View key={group.day} style={styles.group}>
@@ -116,7 +117,7 @@ export default function ActivityScreen() {
                           styles.row,
                           { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
                         ]}
-                        accessibilityLabel={`${item.title || item.type}${hasAmount ? `, ${formatMoneyCompact(item.amount)}` : ''}, ${formatRelativeTime(item.at)}`}
+                        accessibilityLabel={`${item.title || item.type}${hasAmount ? `, ${formatMoneyCompactSpoken(item.amount)}` : ''}, ${formatRelativeTime(item.at)}`}
                       >
                         <View style={[styles.iconBadge, { backgroundColor: softFor(item.type, palette) }]}>
                           <Icon name={iconFor(item.type)} color={tint} size={18} />

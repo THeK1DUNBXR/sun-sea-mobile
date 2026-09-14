@@ -3,9 +3,10 @@ import * as SecureStore from 'expo-secure-store';
 
 import { getErrorMessage, setUnauthorizedHandler, TOKEN_KEY } from '@/api/client';
 import { fetchMe, login as loginRequest } from '@/api/insightsApi';
+import { auth as authCopy, login as loginCopy, REQUIRED_PERMISSION } from '@/copy';
 import type { MeResponse, User } from '@/types';
 
-export const REQUIRED_PERMISSION = 'insights-app.access';
+export { REQUIRED_PERMISSION };
 
 interface AuthState {
   isHydrating: boolean;
@@ -102,7 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const loginResult = await loginRequest(email, password);
       if (!loginResult?.accessToken) {
-        throw new Error('Login did not return a valid session token.');
+        throw new Error(authCopy.noSessionToken);
       }
       await SecureStore.setItemAsync(TOKEN_KEY, loginResult.accessToken);
 
@@ -111,14 +112,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         me = await fetchMe();
       } catch (meErr) {
         await SecureStore.deleteItemAsync(TOKEN_KEY);
-        throw new Error(getErrorMessage(meErr, 'Signed in, but could not verify account access.'));
+        throw new Error(getErrorMessage(meErr, authCopy.verifyAccessFailed));
       }
 
       if (!hasAccess(me)) {
         await SecureStore.deleteItemAsync(TOKEN_KEY);
-        throw new Error(
-          'This account does not have access to the Insights app. Ask an admin to grant "insights-app.access".'
-        );
+        throw new Error(authCopy.noAccess);
       }
 
       if (!mountedRef.current) return;
@@ -128,7 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true);
       setSessionMessage(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : getErrorMessage(err, 'Unable to sign in. Please try again.');
+      const message = err instanceof Error ? err.message : getErrorMessage(err, loginCopy.signInFailed);
       if (mountedRef.current) setError(message);
       throw err instanceof Error ? err : new Error(message);
     }

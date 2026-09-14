@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
-import { formatMoneyCompact, formatPercent } from '@/utils/format';
+import { formatMoneyCompact, formatMoneyCompactSpoken, formatPercent } from '@/utils/format';
 import { AnimatedNumber } from './AnimatedNumber';
 import { Card } from './Card';
 import { radius, spacing, tabularNums, typography, useReducedMotion, usePalette } from './theme';
@@ -53,9 +53,13 @@ export function KpiTile({
   const isWide = variant === 'wide';
   const reducedMotion = useReducedMotion();
 
+  // Screen readers get the spelled-out rupee value ("₹4.82 lakh") instead of
+  // the visible compact glyph ("₹4.82L") — "L"/"Cr" read as letters, not
+  // units, to VoiceOver/TalkBack.
+  const a11yValue = numericValue !== undefined ? formatMoneyCompactSpoken(numericValue) : value;
   const a11yLabel = [
     label,
-    value,
+    a11yValue,
     hasDelta ? `${arrow === '▲' ? 'up' : 'down'} ${formatPercent(Math.abs(deltaPct!)).replace('+', '').replace('%', '')} percent${deltaLabel ? ` ${deltaLabel}` : ''}` : null,
     caption,
   ]

@@ -14,6 +14,7 @@ import { useOverview, useTrends } from '@/api/hooks';
 import { getErrorMessage } from '@/api/client';
 import { AgingBar } from '@/charts/AgingBar';
 import { TrendChart } from '@/charts/TrendChart';
+import { overview as copy } from '@/copy';
 import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { ErrorBanner } from '@/ui/ErrorBanner';
@@ -24,7 +25,7 @@ import { SectionHeader } from '@/ui/Section';
 import { SkeletonKpiGrid, SkeletonChart } from '@/ui/Skeleton';
 import { MIN_TOUCH, layout, radius, sizes, spacing, tabularNums, typography, useReducedMotion, usePalette } from '@/ui/theme';
 import { useAuth } from '@/store/auth';
-import { formatMoneyCompact, formatRelativeTime } from '@/utils/format';
+import { formatMoneyCompact, formatMoneyCompactSpoken, formatRelativeTime } from '@/utils/format';
 
 const RANGE_OPTIONS = [7, 30, 90] as const;
 // Below this content width (landscape phones, small tablets) the 6-tile KPI
@@ -35,9 +36,9 @@ const KPI_GRID_WIDE_BREAKPOINT = 600;
 
 function greeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return copy.greetingMorning;
+  if (hour < 17) return copy.greetingAfternoon;
+  return copy.greetingEvening;
 }
 
 export default function OverviewScreen() {
@@ -118,12 +119,12 @@ export default function OverviewScreen() {
             <Text style={[typography.bodySm, { color: palette.textMuted }]} maxFontSizeMultiplier={1.6}>
               {greeting()}{user?.fullName ? `, ${user.fullName.trim().split(/\s+/)[0]}` : ''}
             </Text>
-            <Text style={[typography.headline, { color: palette.text, marginTop: 2 }]}>Business overview</Text>
+            <Text style={[typography.headline, { color: palette.text, marginTop: 2 }]}>{copy.headline}</Text>
           </View>
           {data?.generatedAt ? (
             <Reanimated.View
               style={[styles.updatedChip, { backgroundColor: palette.overlay }, chipAnimatedStyle]}
-              accessibilityLabel={`Data ${isShowingStaleData ? 'may be behind' : 'up to date'}, updated ${formatRelativeTime(data.generatedAt)}`}
+              accessibilityLabel={copy.updatedA11y(formatRelativeTime(data.generatedAt), isShowingStaleData)}
             >
               {/* Info (not "good") — this dot reports live/fresh connectivity, not a
                   financial result, so it stays out of the green/red delta vocabulary.
@@ -141,8 +142,8 @@ export default function OverviewScreen() {
           <ErrorBanner
             message={
               isShowingStaleData
-                ? `Showing last known data. ${getErrorMessage(firstError, 'Could not refresh insights.')}`
-                : getErrorMessage(firstError, 'Could not load insights.')
+                ? `${copy.stalePrefix(formatRelativeTime(data?.generatedAt))}${getErrorMessage(firstError, copy.refreshFailedFallback)}`
+                : getErrorMessage(firstError, copy.loadFailedFallback)
             }
             onRetry={onRefresh}
             tone={isShowingStaleData ? 'stale' : 'error'}
@@ -160,47 +161,47 @@ export default function OverviewScreen() {
             <Reveal index={0} staggerMs={40} style={styles.heroWrap}>
               <KpiTile
                 variant="hero"
-                label="Sales, month to date"
+                label={copy.kpi.salesMtdLabel}
                 value={formatMoneyCompact(data?.sales?.mtd)}
                 numericValue={data?.sales?.mtd}
                 deltaPct={data?.sales?.pctChange ?? pctDelta(data?.sales?.mtd, data?.sales?.lastMtd)}
-                deltaLabel="vs last month"
+                deltaLabel={copy.kpi.salesMtdDelta}
               />
             </Reveal>
             <View style={styles.kpiGrid}>
               <Reveal index={1} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
-                  label="Sales today"
+                  label={copy.kpi.salesTodayLabel}
                   value={formatMoneyCompact(data?.sales?.today)}
                   numericValue={data?.sales?.today}
                   deltaPct={pctDelta(data?.sales?.today, data?.sales?.yesterday)}
-                  deltaLabel="vs yesterday"
+                  deltaLabel={copy.kpi.salesTodayDelta}
                 />
               </Reveal>
               <Reveal index={2} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
-                  label="Collections today"
+                  label={copy.kpi.agentCollectionsTodayLabel}
                   value={formatMoneyCompact(data?.collections?.today)}
                   numericValue={data?.collections?.today}
                 />
               </Reveal>
               <Reveal index={3} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
-                  label="Collections MTD"
+                  label={copy.kpi.agentCollectionsMtdLabel}
                   value={formatMoneyCompact(data?.collections?.mtd)}
                   numericValue={data?.collections?.mtd}
                 />
               </Reveal>
               <Reveal index={4} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
-                  label="Total outstanding"
+                  label={copy.kpi.totalOutstandingLabel}
                   value={formatMoneyCompact(data?.receivables?.totalOutstanding)}
                   numericValue={data?.receivables?.totalOutstanding}
                 />
               </Reveal>
               <Reveal index={5} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
-                  label="Overdue"
+                  label={copy.kpi.overdueReceivablesLabel}
                   value={formatMoneyCompact(data?.receivables?.overdue)}
                   numericValue={data?.receivables?.overdue}
                   invertColor
@@ -208,10 +209,10 @@ export default function OverviewScreen() {
               </Reveal>
               <Reveal index={6} staggerMs={40} style={kpiItemStyle}>
                 <KpiTile
-                  label="Cash in hand"
+                  label={copy.kpi.cashInHandLabel}
                   value={formatMoneyCompact(data?.collections?.cashInHand)}
                   numericValue={data?.collections?.cashInHand}
-                  caption={`${data?.agents?.active ?? 0} agents active`}
+                  caption={copy.kpi.agentsOnlineCaption(data?.agents?.active ?? 0)}
                 />
               </Reveal>
             </View>
@@ -222,12 +223,12 @@ export default function OverviewScreen() {
             <Reveal index={7} staggerMs={40}>
               <KpiTile
                 variant="wide"
-                label="Pending verification"
+                label={copy.kpi.pendingVerificationLabel}
                 value={formatMoneyCompact(data?.collections?.pendingVerification?.amount)}
                 numericValue={data?.collections?.pendingVerification?.amount}
                 caption={
                   data?.collections?.pendingVerification?.count
-                    ? `${data.collections.pendingVerification.count} receipt${data.collections.pendingVerification.count === 1 ? '' : 's'} awaiting verification`
+                    ? copy.kpi.pendingVerificationCaption(data.collections.pendingVerification.count)
                     : undefined
                 }
                 captionColor={palette.neutral}
@@ -237,7 +238,7 @@ export default function OverviewScreen() {
         )}
 
         <SectionHeader
-          title="Sales vs collections"
+          title={copy.sections.trend}
           right={
             <View
               style={[styles.rangeToggle, { backgroundColor: palette.overlay }]}
@@ -251,7 +252,7 @@ export default function OverviewScreen() {
                     onPress={() => setRange(opt)}
                     accessibilityRole="tab"
                     accessibilityState={{ selected: isActive }}
-                    accessibilityLabel={`Last ${opt} days`}
+                    accessibilityLabel={copy.rangeA11y(opt)}
                     hitSlop={4}
                     haptic={!isActive}
                     style={[
@@ -277,23 +278,23 @@ export default function OverviewScreen() {
             ) : trends.data && trends.data.length > 0 ? (
               <TrendChart data={trends.data} />
             ) : (
-              <EmptyState title="No trend data yet" message="Sales and collection history will appear here." />
+              <EmptyState title={copy.empty.noTrendTitle} message={copy.empty.noTrendMessage} />
             )}
           </Card>
         </Reveal>
 
-        <SectionHeader title="Receivables aging" />
+        <SectionHeader title={copy.sections.aging} />
         <Reveal index={9} staggerMs={40}>
           <Card>
             <AgingBar aging={data?.receivables?.aging} />
           </Card>
         </Reveal>
 
-        <SectionHeader title="Top debtors" subtitle="Highest outstanding balances" />
+        <SectionHeader title={copy.sections.topDebtors} subtitle={copy.sections.topDebtorsSubtitle} />
         <Reveal index={10} staggerMs={40}>
           <Card style={{ padding: 0 }}>
             {topDebtors.length === 0 ? (
-              <EmptyState title="No outstanding debtors" icon="check" />
+              <EmptyState title={copy.empty.noDebtorsTitle} icon="check" />
             ) : (
               topDebtors.map((debtor, i) => {
                 // The single largest balance gets a deliberate warning-toned badge —
@@ -308,8 +309,8 @@ export default function OverviewScreen() {
                     styles.debtorRow,
                     { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
                   ]}
-                  accessibilityLabel={`Rank ${i + 1}${isTopDebtor ? ', largest outstanding balance' : ''}, ${debtor.firmName || 'Unknown customer'}, ${formatMoneyCompact(debtor.netBalance)} outstanding${
-                    debtor.dueDays > 0 ? `, ${debtor.dueDays} days overdue` : ''
+                  accessibilityLabel={`${copy.debtorRow.rankA11y(i + 1)}${isTopDebtor ? copy.debtorRow.largestBalanceA11y : ''}, ${debtor.firmName || copy.debtorRow.unknownCustomer}, ${formatMoneyCompactSpoken(debtor.netBalance)} outstanding${
+                    debtor.dueDays > 0 ? copy.debtorRow.overdueDaysA11y(debtor.dueDays) : ''
                   }`}
                 >
                   <View
@@ -324,11 +325,11 @@ export default function OverviewScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
-                      {debtor.firmName?.trim() || 'Unknown customer'}
+                      {debtor.firmName?.trim() || copy.debtorRow.unknownCustomer}
                     </Text>
                     {debtor.dueDays > 0 ? (
                       <Text style={[typography.bodySm, { color: palette.warn, marginTop: 2 }]}>
-                        {debtor.dueDays}d overdue
+                        {copy.debtorRow.overdueDaysVisible(debtor.dueDays)}
                       </Text>
                     ) : null}
                   </View>
@@ -342,18 +343,18 @@ export default function OverviewScreen() {
           </Card>
         </Reveal>
 
-        <SectionHeader title="Promise to pay" />
+        <SectionHeader title={copy.sections.promiseToPay} />
         <View style={styles.ptpRow}>
           <Reveal index={11} staggerMs={40} style={{ flex: 1 }}>
             <KpiTile
-              label="Due today"
+              label={copy.kpi.ptpDueTodayLabel}
               value={formatMoneyCompact(data?.ptp?.dueToday)}
               numericValue={data?.ptp?.dueToday}
             />
           </Reveal>
           <Reveal index={12} staggerMs={40} style={{ flex: 1 }}>
             <KpiTile
-              label="Overdue"
+              label={copy.kpi.ptpOverdueLabel}
               value={formatMoneyCompact(data?.ptp?.overdue)}
               numericValue={data?.ptp?.overdue}
               invertColor
@@ -361,11 +362,11 @@ export default function OverviewScreen() {
           </Reveal>
         </View>
 
-        <SectionHeader title="Production pulse" subtitle="Live factory snapshot" />
+        <SectionHeader title={copy.sections.production} subtitle={copy.sections.productionSubtitle} />
         <Reveal index={13} staggerMs={40}>
           <Card>
             {productionEntries.length === 0 ? (
-              <EmptyState title="No production data" message="Factory metrics will show up here once available." />
+              <EmptyState title={copy.empty.noProductionTitle} message={copy.empty.noProductionMessage} />
             ) : (
               <View style={styles.productionGrid}>
                 {productionEntries.map(([key, value]) => (

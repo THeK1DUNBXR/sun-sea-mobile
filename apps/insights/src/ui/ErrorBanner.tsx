@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { errorBanner as copy } from '@/copy';
 import { PressableScale } from './PressableScale';
 import { MEASURE, MIN_TOUCH, radius, spacing, typography, usePalette } from './theme';
 
@@ -32,10 +33,10 @@ export function ErrorBanner({ message, onRetry, tone = 'error' }: ErrorBannerPro
           onPress={onRetry}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Retry"
+          accessibilityLabel={copy.retry}
           style={styles.retryHit}
         >
-          <Text style={[styles.retry, { color: fg }]}>Retry</Text>
+          <Text style={[styles.retry, { color: fg }]}>{copy.retry}</Text>
         </PressableScale>
       ) : null}
     </View>

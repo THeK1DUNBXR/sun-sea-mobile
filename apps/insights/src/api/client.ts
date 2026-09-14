@@ -1,6 +1,8 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
+import { auth as authCopy, errors as errorCopy } from '@/copy';
+
 export const TOKEN_KEY = 'insights.accessToken';
 
 export const API_URL =
@@ -40,7 +42,7 @@ apiClient.interceptors.response.use(
     // for it would be a no-op today but is a latent bug waiting for one.
     const isLoginRequest = error.config?.url?.includes('/auth/login');
     if (error.response?.status === 401 && !isLoginRequest) {
-      onUnauthorized?.(getErrorMessage(error, 'Your session has expired. Please sign in again.'));
+      onUnauthorized?.(getErrorMessage(error, authCopy.sessionExpiredFallback));
     }
     return Promise.reject(error);
   }
@@ -53,21 +55,19 @@ export function isNetworkError(error: unknown): boolean {
   return !error.response;
 }
 
-export function getErrorMessage(error: unknown, fallback = 'Something went wrong'): string {
+export function getErrorMessage(error: unknown, fallback = errorCopy.generic): string {
   if (axios.isAxiosError(error)) {
     if (isNetworkError(error)) {
-      return error.code === 'ECONNABORTED'
-        ? 'The request timed out. Check your connection and try again.'
-        : 'No connection to the server. Check your internet and try again.';
+      return error.code === 'ECONNABORTED' ? errorCopy.timeout : errorCopy.offline;
     }
     const status = error.response?.status;
     const data = error.response?.data as { message?: string } | undefined;
     const serverMessage = data?.message;
     if (serverMessage) return serverMessage;
-    if (status === 403) return "You don't have permission to view this.";
-    if (status === 404) return 'Not found.';
-    if (status === 429) return 'Too many requests. Please wait a moment and try again.';
-    if (status && status >= 500) return 'The server ran into a problem. Please try again.';
+    if (status === 403) return errorCopy.forbidden;
+    if (status === 404) return errorCopy.notFound;
+    if (status === 429) return errorCopy.rateLimited;
+    if (status && status >= 500) return errorCopy.server;
     return error.message || fallback;
   }
   if (error instanceof Error) return error.message;

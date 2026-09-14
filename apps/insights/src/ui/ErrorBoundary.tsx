@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { crash as copy } from '@/copy';
 import { PressableScale } from './PressableScale';
 import { MEASURE, MIN_TOUCH, radius, sizes, spacing, typography, usePalette, type Palette } from './theme';
 
@@ -61,19 +62,18 @@ function ErrorFallback({ onRetry }: { onRetry: () => void }) {
           </Text>
         </View>
         <Text style={styles.title} maxFontSizeMultiplier={1.8}>
-          Something went wrong
+          {copy.title}
         </Text>
         <Text style={styles.message} maxFontSizeMultiplier={1.8}>
-          Insights hit an unexpected problem. Your data is safe — try again, and if it keeps
-          happening, reopen the app.
+          {copy.message}
         </Text>
         <PressableScale
           onPress={onRetry}
           accessibilityRole="button"
-          accessibilityLabel="Try again"
+          accessibilityLabel={copy.retry}
           style={styles.button}
         >
-          <Text style={styles.buttonText}>Try again</Text>
+          <Text style={styles.buttonText}>{copy.retry}</Text>
         </PressableScale>
       </View>
     </SafeAreaView>

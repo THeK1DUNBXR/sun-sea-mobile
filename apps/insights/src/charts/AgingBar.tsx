@@ -10,7 +10,8 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import type { AgingBuckets } from '@/types';
-import { formatMoneyCompact } from '@/utils/format';
+import { charts as copy } from '@/copy';
+import { formatMoneyCompact, formatMoneyCompactSpoken } from '@/utils/format';
 import { spacing, typography, useReducedMotion, usePalette } from '@/ui/theme';
 
 const AnimatedRect = Reanimated.createAnimatedComponent(Rect);
@@ -60,12 +61,7 @@ interface AgingBarProps {
 }
 
 const BUCKET_KEYS: (keyof AgingBuckets)[] = ['0_30', '31_60', '61_90', '90_plus'];
-const BUCKET_LABELS: Record<string, string> = {
-  '0_30': '0–30 days',
-  '31_60': '31–60 days',
-  '61_90': '61–90 days',
-  '90_plus': '90+ days',
-};
+const BUCKET_LABELS = copy.aging.bucketLabels;
 
 export function AgingBar({ aging, height = 36 }: AgingBarProps) {
   const palette = usePalette();
@@ -87,7 +83,7 @@ export function AgingBar({ aging, height = 36 }: AgingBarProps) {
   });
 
   const a11yLabel = BUCKET_KEYS.map(
-    (k, i) => `${BUCKET_LABELS[k]}: ${formatMoneyCompact(values[i])}`
+    (k, i) => `${BUCKET_LABELS[k]}: ${formatMoneyCompactSpoken(values[i])}`
   ).join('. ');
 
   return (
@@ -96,7 +92,7 @@ export function AgingBar({ aging, height = 36 }: AgingBarProps) {
         style={{ height }}
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
         accessibilityRole="image"
-        accessibilityLabel={`Receivables aging. ${a11yLabel}`}
+        accessibilityLabel={`${copy.aging.a11yPrefix}. ${a11yLabel}`}
       >
         {width > 0 ? (
           <Svg width={width} height={height}>

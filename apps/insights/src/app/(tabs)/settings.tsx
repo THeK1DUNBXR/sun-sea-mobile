@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { API_URL } from '@/api/client';
+import { settingsScreen as copy } from '@/copy';
 import { useAuth } from '@/store/auth';
 import { Card } from '@/ui/Card';
 import { Icon } from '@/ui/Icon';
@@ -33,7 +34,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={[typography.headline, { color: palette.text, marginBottom: spacing.lg }]}>Settings</Text>
+        <Text style={[typography.headline, { color: palette.text, marginBottom: spacing.lg }]}>{copy.title}</Text>
 
         <Card style={styles.profileCard} elevation="raised">
           <View style={[styles.avatar, { backgroundColor: palette.accent }]}>
@@ -43,33 +44,33 @@ export default function SettingsScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[typography.title, { color: palette.text }]} numberOfLines={1} maxFontSizeMultiplier={1.6}>
-              {user?.fullName?.trim() || 'Founder'}
+              {user?.fullName?.trim() || copy.defaultName}
             </Text>
             <Text style={[typography.bodySm, { color: palette.textMuted, marginTop: 2 }]} numberOfLines={1}>
               {user?.email ?? '—'}
             </Text>
             {isSuperAdmin ? (
               <View style={[styles.badge, { backgroundColor: palette.goodSoft }]}>
-                <Text style={[typography.label, { color: palette.good }]}>Super admin</Text>
+                <Text style={[typography.label, { color: palette.good }]}>{copy.superAdminBadge}</Text>
               </View>
             ) : null}
           </View>
         </Card>
 
-        <SectionHeader title="Connection" />
+        <SectionHeader title={copy.connectionSection} />
         <Card style={{ gap: spacing.sm }}>
-          <Row label="Server" value={API_URL} />
-          <Row label="Overview refresh" value="Every 60s" />
-          <Row label="Agents refresh" value="Every 30s" />
+          <Row label={copy.serverLabel} value={API_URL} />
+          <Row label={copy.overviewRefreshLabel} value={copy.overviewRefreshValue} />
+          <Row label={copy.agentsRefreshLabel} value={copy.agentsRefreshValue} />
         </Card>
 
-        <SectionHeader title="Access" />
+        <SectionHeader title={copy.accessSection} />
         <Card>
           {permissions.length === 0 && !isSuperAdmin ? (
-            <Text style={[typography.body, { color: palette.textFaint }]}>No permissions listed.</Text>
+            <Text style={[typography.body, { color: palette.textFaint }]}>{copy.noPermissions}</Text>
           ) : isSuperAdmin ? (
             <Text style={[typography.bodySm, { color: palette.textMuted }]}>
-              Full access via super admin role.
+              {copy.superAdminNote}
             </Text>
           ) : (
             permissions.map((perm) => (
@@ -83,18 +84,18 @@ export default function SettingsScreen() {
         <PressableScale
           onPress={() => logout()}
           accessibilityRole="button"
-          accessibilityLabel="Log out"
+          accessibilityLabel={copy.logOut}
           style={({ pressed }) => [
             styles.logoutButton,
             { borderColor: palette.bad, opacity: pressed ? 0.7 : 1 },
           ]}
         >
           <Icon name="logout" color={palette.bad} size={18} />
-          <Text style={[typography.control, { color: palette.bad }]}>Log out</Text>
+          <Text style={[typography.control, { color: palette.bad }]}>{copy.logOut}</Text>
         </PressableScale>
 
         <Text style={[typography.caption, styles.footerNote, { color: palette.textFaint }]}>
-          SunSea Insights · read-only founder dashboard
+          {copy.footer}
         </Text>
 
         <View style={{ height: layout.scrollEndSpacer }} />

@@ -14,6 +14,7 @@ import Reanimated, {
 import { getErrorMessage } from '@/api/client';
 import { useAgentsLive, useOverview } from '@/api/hooks';
 import { InlineBar } from '@/charts/BarChart';
+import { agentsScreen as copy } from '@/copy';
 import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { ErrorBanner } from '@/ui/ErrorBanner';
@@ -23,7 +24,7 @@ import { Skeleton } from '@/ui/Skeleton';
 import { contrastText, layout, radius, sizes, spacing, typography, useReducedMotion, usePalette } from '@/ui/theme';
 
 import type { LiveAgent } from '@/types';
-import { formatMoneyCompact, formatRelativeTime, initials } from '@/utils/format';
+import { formatMoneyCompact, formatMoneyCompactSpoken, formatRelativeTime, initials } from '@/utils/format';
 
 const MAX_LEADER_STAGGER = 8;
 // Shared by the live map, its skeleton and its empty/fallback states so the
@@ -105,7 +106,7 @@ function AgentMarker({ agent, markerColor, palette }: {
   return (
     <Marker
       coordinate={{ latitude: agent.lastLocation.latitude, longitude: agent.lastLocation.longitude }}
-      accessibilityLabel={`${agent.fullName || 'Agent'}, ${online ? 'online' : 'offline'}`}
+      accessibilityLabel={`${agent.fullName || copy.liveMap.unnamedAgent}, ${online ? 'online' : 'offline'}`}
       tracksViewChanges={!settled}
     >
       <MarkerPin>
@@ -122,17 +123,17 @@ function AgentMarker({ agent, markerColor, palette }: {
         >
           <View style={styles.calloutHeader}>
             <View style={[styles.calloutDot, { backgroundColor: online ? palette.markerOnline : palette.markerStale }]} />
-            <Text style={[typography.bodySm, { color: palette.text }]}>{agent.fullName || 'Agent'}</Text>
+            <Text style={[typography.bodySm, { color: palette.text }]}>{agent.fullName || copy.liveMap.unnamedAgent}</Text>
           </View>
           <Text style={[typography.caption, { color: palette.textMuted }]}>
-            {online ? 'Online now' : `Last seen ${formatRelativeTime(agent.lastLocation.recordedAt)}`}
+            {online ? copy.liveMap.agentOnlineNow : copy.liveMap.agentLastSeen(formatRelativeTime(agent.lastLocation.recordedAt))}
           </Text>
           <Text style={[typography.monoSm, { color: palette.text }]}>
-            {formatMoneyCompact(agent.today.collectedAmount)} collected today
+            {copy.liveMap.agentCollectedToday(formatMoneyCompact(agent.today.collectedAmount))}
           </Text>
           {agent.currentTask?.customerName ? (
             <Text style={[typography.caption, { color: palette.textFaint }]} numberOfLines={1}>
-              Visiting {agent.currentTask.customerName}
+              {copy.liveMap.agentVisiting(agent.currentTask.customerName)}
             </Text>
           ) : null}
         </Reanimated.View>
@@ -204,14 +205,14 @@ export default function AgentsScreen() {
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={palette.accent} />
         }
       >
-        <Text style={[typography.headline, { color: palette.text }]}>Agents</Text>
+        <Text style={[typography.headline, { color: palette.text }]}>{copy.title}</Text>
 
         {firstError ? (
           <ErrorBanner
             message={
               overview.data || agentsLive.data
-                ? `Showing last known data. ${getErrorMessage(firstError, 'Could not refresh agents.')}`
-                : getErrorMessage(firstError, 'Could not load agents.')
+                ? `${copy.stalePrefix(formatRelativeTime(overview.data?.generatedAt))}${getErrorMessage(firstError, copy.refreshFailedFallback)}`
+                : getErrorMessage(firstError, copy.loadFailedFallback)
             }
             onRetry={onRefresh}
             tone={overview.data || agentsLive.data ? 'stale' : 'error'}
@@ -219,35 +220,33 @@ export default function AgentsScreen() {
         ) : null}
 
         <SectionHeader
-          title="Live map"
+          title={copy.liveMap.title}
           subtitle={
             allLiveAgents.length === 0
               ? undefined
-              : `${liveAgents.length} reporting · ${onlineCount} online now${
-                  agentsMissingLocation > 0 ? ` · ${agentsMissingLocation} without a location fix` : ''
-                }`
+              : copy.liveMap.subtitle(liveAgents.length, onlineCount, agentsMissingLocation)
           }
         />
         <Card style={{ padding: 0, overflow: 'hidden' }} elevation="raised">
           {Platform.OS === 'web' ? (
             <View style={styles.mapFallback}>
-              <EmptyState title="Map unavailable on web preview" message="Open the app on a device to see the live map." />
+              <EmptyState title={copy.liveMap.webFallbackTitle} message={copy.liveMap.webFallbackMessage} />
             </View>
           ) : agentsLive.isPending ? (
             <Skeleton height={MAP_HEIGHT} radius={0} />
           ) : !MapView ? (
             <View style={styles.mapFallback}>
-              <EmptyState title="Map module unavailable" />
+              <EmptyState title={copy.liveMap.moduleUnavailableTitle} message={copy.liveMap.moduleUnavailableMessage} />
             </View>
           ) : allLiveAgents.length === 0 ? (
             <View style={styles.mapFallback}>
-              <EmptyState title="No agents reporting location" icon="agents" />
+              <EmptyState title={copy.liveMap.noAgentsTitle} message={copy.liveMap.noAgentsMessage} icon="agents" />
             </View>
           ) : liveAgents.length === 0 ? (
             <View style={styles.mapFallback}>
               <EmptyState
-                title="No valid GPS fix yet"
-                message={`${allLiveAgents.length} agent${allLiveAgents.length === 1 ? '' : 's'} tracked, but none has reported a usable location.`}
+                title={copy.liveMap.noGpsFixTitle}
+                message={copy.liveMap.noGpsFixMessage(allLiveAgents.length)}
                 icon="agents"
               />
             </View>
@@ -265,7 +264,7 @@ export default function AgentsScreen() {
           )}
         </Card>
 
-        <SectionHeader title="Leaderboard" subtitle="Ranked by month-to-date collections" />
+        <SectionHeader title={copy.leaderboard.title} subtitle={copy.leaderboard.subtitle} />
         <Card style={{ padding: 0 }}>
           {overview.isPending ? (
             <View style={{ padding: spacing.lg, gap: spacing.md }}>
@@ -274,7 +273,7 @@ export default function AgentsScreen() {
               <Skeleton height={48} />
             </View>
           ) : leaderboard.length === 0 ? (
-            <EmptyState title="No agent activity yet" />
+            <EmptyState title={copy.leaderboard.emptyTitle} message={copy.leaderboard.emptyMessage} />
           ) : (
             leaderboard.map((agent, i) => {
               const rankColor = i < 3 ? RANK_TIER_COLORS[i] : palette.textFaint;
@@ -286,7 +285,7 @@ export default function AgentsScreen() {
                       styles.leaderRow,
                       { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
                     ]}
-                    accessibilityLabel={`Rank ${i + 1}, ${agent.name ?? 'Unknown agent'}, ${formatMoneyCompact(agent.collectedMtd)} collected this month`}
+                    accessibilityLabel={`Rank ${i + 1}, ${agent.name ?? copy.leaderboard.unknownAgent}, ${formatMoneyCompactSpoken(agent.collectedMtd)} collected this month`}
                   >
                     <RankBadgePop index={i}>
                       <View
@@ -305,12 +304,12 @@ export default function AgentsScreen() {
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[typography.titleSm, { color: palette.text }]} numberOfLines={1}>
-                        {agent.name ?? 'Unknown agent'}
+                        {agent.name ?? copy.leaderboard.unknownAgent}
                       </Text>
                       <View style={styles.leaderMetaRow}>
                         <InlineBar fraction={(agent.collectedMtd ?? 0) / maxCollected} color={i < 3 ? rankColor : undefined} />
                         <Text style={[typography.caption, { color: palette.textFaint }]}>
-                          {agent.visitsToday ?? 0} visits · {agent.pendingAssignments ?? 0} pending
+                          {copy.leaderboard.visitsAndPending(agent.visitsToday ?? 0, agent.pendingAssignments ?? 0)}
                         </Text>
                       </View>
                     </View>
@@ -319,7 +318,7 @@ export default function AgentsScreen() {
                         {formatMoneyCompact(agent.collectedMtd)}
                       </Text>
                       <Text style={[typography.caption, { color: palette.textFaint, marginTop: 2 }]}>
-                        {formatMoneyCompact(agent.collectedToday)} today
+                        {copy.leaderboard.collectedTodayCaption(formatMoneyCompact(agent.collectedToday))}
                       </Text>
                     </View>
                   </View>

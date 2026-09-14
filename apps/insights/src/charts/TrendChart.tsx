@@ -13,7 +13,8 @@ import Reanimated, {
 } from 'react-native-reanimated';
 
 import type { TrendPoint } from '@/types';
-import { formatMoneyCompact, formatShortDate } from '@/utils/format';
+import { charts as copy } from '@/copy';
+import { formatMoneyCompact, formatMoneyCompactSpoken, formatShortDate } from '@/utils/format';
 import { radius, sizes, spacing, tabularNums, typography, useReducedMotion, usePalette } from '@/ui/theme';
 
 interface TrendChartProps {
@@ -127,8 +128,13 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
 
   const a11yLabel =
     data.length > 0
-      ? `Sales versus collections trend, ${formatShortDate(data[0].date)} to ${formatShortDate(data[latestIndex].date)}. Latest: sales ${formatMoneyCompact(latest?.sales)}, collections ${formatMoneyCompact(latest?.collections)}.`
-      : 'Sales versus collections trend, no data yet.';
+      ? copy.trend.a11y(
+          formatShortDate(data[0].date),
+          formatShortDate(data[latestIndex].date),
+          formatMoneyCompactSpoken(latest?.sales),
+          formatMoneyCompactSpoken(latest?.collections)
+        )
+      : copy.trend.a11yEmpty;
 
   return (
     <View>
@@ -258,8 +264,8 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
       </View>
 
       <View style={styles.legendRow}>
-        <LegendChip color={palette.chartSales} label="Sales" value={formatMoneyCompact(latest?.sales)} />
-        <LegendChip color={palette.chartCollections} label="Collections" value={formatMoneyCompact(latest?.collections)} />
+        <LegendChip color={palette.chartSales} label={copy.trend.salesLegend} value={formatMoneyCompact(latest?.sales)} />
+        <LegendChip color={palette.chartCollections} label={copy.trend.collectionsLegend} value={formatMoneyCompact(latest?.collections)} />
       </View>
       {data.length > 0 ? (
         <Text style={[typography.caption, { color: palette.textFaint, marginTop: spacing.xs }]}>
@@ -271,10 +277,10 @@ export function TrendChart({ data, height = 216 }: TrendChartProps) {
         <View style={[styles.tooltip, { borderColor: palette.border, backgroundColor: palette.bgElevated }]}>
           <Text style={[typography.caption, { color: palette.text, marginBottom: 2 }]}>{formatShortDate(active.date)}</Text>
           <Text style={[typography.monoSm, { color: palette.chartSales }]}>
-            Sales {formatMoneyCompact(active.sales)}
+            {copy.trend.tooltipSales(formatMoneyCompact(active.sales))}
           </Text>
           <Text style={[typography.monoSm, { color: palette.chartCollections }]}>
-            Collections {formatMoneyCompact(active.collections)}
+            {copy.trend.tooltipCollections(formatMoneyCompact(active.collections))}
           </Text>
         </View>
       ) : null}
