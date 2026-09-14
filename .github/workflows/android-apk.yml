@@ -85,7 +85,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: ${{ env.APP_DIR }}/package-lock.json
 
@@ -190,13 +190,43 @@ jobs:
             echo "::warning::AndroidManifest.xml not found at $MANIFEST, skipping Google Maps key injection."
           fi
 
+      - name: Diagnose Gradle's node probes
+        # Gradle runs these node commands during configuration but swallows
+        # their stderr; run them here first so a failure explains itself.
+        run: |
+          set -uo pipefail
+          node --version
+          for expr in \
+            "require.resolve('react-native/package.json')" \
+            "require.resolve('react-native/cli')" \
+            "require.resolve('expo-modules-autolinking/package.json', { paths: [require.resolve('expo/package.json')] })" \
+            "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"; do
+            printf '%s => ' "$expr"; node --print "$expr" || echo "FAILED"
+          done
+          echo "--- expo-modules-autolinking resolve"
+          node --no-warnings --eval "require('expo/bin/autolinking')" expo-modules-autolinking resolve -p android --json > /dev/null && echo OK || echo FAILED
+          echo "--- expo-modules-autolinking react-native-config"
+          node --no-warnings --eval "require('expo/bin/autolinking')" expo-modules-autolinking react-native-config --platform android --json > /dev/null && echo OK || echo FAILED
+          echo "--- expo-modules-autolinking mirror-kotlin-inline-modules"
+          node --no-warnings --eval "require('expo/bin/autolinking')" expo-modules-autolinking mirror-kotlin-inline-modules \
+            --kotlin-files-mirror-directory "$PWD/android/app/src/main/java/inline/modules/" \
+            --inline-modules-list-directory "$PWD/android/app/build/inline/modules/" \
+            --watched-directories-serialized "[]" && echo OK || echo FAILED
+          echo "--- @expo/cli"
+          node --print "require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })" || echo FAILED
+          grep -n "cliFile\|node" android/app/build.gradle | head -20 || true
+
       - name: Build APK (${{ env.PROFILE }})
         working-directory: apps/${{ matrix.app }}/android
         run: |
-          if [ "${PROFILE}" = "debug" ]; then
-            ./gradlew assembleDebug --no-daemon --stacktrace
-          else
-            ./gradlew assembleRelease --no-daemon --stacktrace
+          set -o pipefail
+          TASK=assembleRelease
+          [ "${PROFILE}" = "debug" ] && TASK=assembleDebug
+          if ! ./gradlew "$TASK" --no-daemon --stacktrace --info 2>&1 | tee "${RUNNER_TEMP}/gradle.log" | grep -v -E "^\s*at |Caching disabled|Task .* is not up-to-date|Resolve mutations|file or directory|Skipping task|Watching|is up-to-date|Build cache" ; then
+            echo "::group::Gradle failure context (node / autolinking / error lines)"
+            grep -n -i -E "node|autolinking|error|exception|what went wrong" "${RUNNER_TEMP}/gradle.log" | grep -v -E "^\S+:\s*at " | tail -150
+            echo "::endgroup::"
+            exit 1
           fi
 
       - name: Read app metadata and rename APK
