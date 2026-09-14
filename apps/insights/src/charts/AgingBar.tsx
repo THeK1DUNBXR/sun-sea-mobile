@@ -4,7 +4,7 @@ import Svg, { Rect } from 'react-native-svg';
 
 import type { AgingBuckets } from '@/types';
 import { formatMoneyCompact } from '@/utils/format';
-import { spacing, usePalette } from '@/ui/theme';
+import { spacing, useIsDark, usePalette } from '@/ui/theme';
 
 interface AgingBarProps {
   aging: AgingBuckets | undefined;
@@ -13,19 +13,22 @@ interface AgingBarProps {
 
 const BUCKET_KEYS: (keyof AgingBuckets)[] = ['0_30', '31_60', '61_90', '90_plus'];
 const BUCKET_LABELS: Record<string, string> = {
-  '0_30': '0–30d',
-  '31_60': '31–60d',
-  '61_90': '61–90d',
-  '90_plus': '90d+',
+  '0_30': '0–30 days',
+  '31_60': '31–60 days',
+  '61_90': '61–90 days',
+  '90_plus': '90+ days',
 };
 
-export function AgingBar({ aging, height = 28 }: AgingBarProps) {
+export function AgingBar({ aging, height = 36 }: AgingBarProps) {
   const palette = usePalette();
+  const dark = useIsDark();
   const [width, setWidth] = useState(0);
-  const colors = [palette.good, palette.warn, '#E08A2C', palette.bad];
+  // A deliberate green -> red severity ramp, kept visually distinct from the accent.
+  const colors = [palette.good, palette.warn, dark ? '#FB923C' : '#EA580C', palette.bad];
 
   const values = BUCKET_KEYS.map((k) => aging?.[k] ?? 0);
   const total = values.reduce((a, b) => a + b, 0) || 1;
+  const worstIdx = values.reduce((best, v, i) => (v > values[best] && i > best ? i : best), 0);
 
   let cursor = 0;
   const segments = values.map((value, i) => {
@@ -35,20 +38,30 @@ export function AgingBar({ aging, height = 28 }: AgingBarProps) {
     return seg;
   });
 
+  const a11yLabel = BUCKET_KEYS.map(
+    (k, i) => `${BUCKET_LABELS[k]}: ${formatMoneyCompact(values[i])}`
+  ).join('. ');
+
   return (
     <View>
-      <View style={{ height }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <View
+        style={{ height }}
+        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        accessibilityRole="image"
+        accessibilityLabel={`Receivables aging. ${a11yLabel}`}
+      >
         {width > 0 ? (
           <Svg width={width} height={height}>
+            <Rect x={0} y={0} width={width} height={height} rx={height / 2} fill={palette.overlay} />
             {segments.map((seg, i) =>
               seg.width > 0 ? (
                 <Rect
                   key={i}
                   x={seg.x}
                   y={0}
-                  width={Math.max(seg.width - (i < segments.length - 1 ? 1.5 : 0), 0)}
+                  width={Math.max(seg.width - (i < segments.length - 1 ? 2 : 0), 0)}
                   height={height}
-                  rx={4}
+                  rx={height / 2}
                   fill={seg.color}
                 />
               ) : null
@@ -60,9 +73,17 @@ export function AgingBar({ aging, height = 28 }: AgingBarProps) {
         {BUCKET_KEYS.map((key, i) => (
           <View key={key} style={styles.legendItem}>
             <View style={[styles.dot, { backgroundColor: colors[i] }]} />
-            <Text style={[styles.legendLabel, { color: palette.textMuted }]}>
-              {BUCKET_LABELS[key]} · {formatMoneyCompact(aging?.[key] ?? 0)}
-            </Text>
+            <View>
+              <Text
+                style={[
+                  styles.legendAmount,
+                  { color: i === worstIdx && values[i] > 0 ? colors[i] : palette.text },
+                ]}
+              >
+                {formatMoneyCompact(values[i])}
+              </Text>
+              <Text style={[styles.legendLabel, { color: palette.textFaint }]}>{BUCKET_LABELS[key]}</Text>
+            </View>
           </View>
         ))}
       </View>
@@ -74,10 +95,12 @@ const styles = StyleSheet.create({
   legend: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
+    rowGap: spacing.md,
+    columnGap: spacing.lg,
+    marginTop: spacing.lg,
   },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5, minWidth: '45%' },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 11.5, fontWeight: '600' },
+  legendItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 7, minWidth: '42%' },
+  dot: { width: 9, height: 9, borderRadius: 5, marginTop: 4 },
+  legendAmount: { fontSize: 14, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  legendLabel: { fontSize: 11.5, fontWeight: '600', marginTop: 1 },
 });

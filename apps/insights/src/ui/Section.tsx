@@ -12,7 +12,7 @@ interface SectionHeaderProps {
 export function SectionHeader({ title, subtitle, right }: SectionHeaderProps) {
   const palette = usePalette();
   return (
-    <View style={styles.row}>
+    <View style={styles.row} accessibilityRole="header">
       <View style={{ flex: 1 }}>
         <Text style={[styles.title, { color: palette.text }]}>{title}</Text>
         {subtitle ? (
@@ -29,15 +29,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: spacing.md,
-    marginTop: spacing.lg,
+    marginTop: spacing.xl,
+    gap: spacing.sm,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: -0.2,
+    fontSize: 19,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   subtitle: {
     fontSize: 13,
+    fontWeight: '500',
     marginTop: 2,
   },
 });

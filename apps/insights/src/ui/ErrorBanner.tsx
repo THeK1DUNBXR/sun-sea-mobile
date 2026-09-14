@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { radius, spacing, usePalette } from './theme';
+import { MIN_TOUCH, radius, spacing, usePalette } from './theme';
 
 interface ErrorBannerProps {
   message: string;
@@ -11,10 +11,19 @@ interface ErrorBannerProps {
 export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
   const palette = usePalette();
   return (
-    <View style={[styles.wrap, { backgroundColor: palette.bad + '18', borderColor: palette.bad + '40' }]}>
+    <View
+      style={[styles.wrap, { backgroundColor: palette.badSoft, borderColor: palette.bad + '40' }]}
+      accessibilityRole="alert"
+    >
       <Text style={[styles.text, { color: palette.bad }]}>{message}</Text>
       {onRetry ? (
-        <Pressable onPress={onRetry} hitSlop={8}>
+        <Pressable
+          onPress={onRetry}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Retry"
+          style={styles.retryHit}
+        >
           <Text style={[styles.retry, { color: palette.bad }]}>Retry</Text>
         </Pressable>
       ) : null}
@@ -31,13 +40,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
+    marginTop: spacing.md,
     gap: spacing.md,
   },
   text: {
     flex: 1,
     fontSize: 13,
     fontWeight: '600',
+  },
+  retryHit: {
+    minHeight: MIN_TOUCH,
+    minWidth: 44,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   retry: {
     fontSize: 13,

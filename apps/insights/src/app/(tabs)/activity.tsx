@@ -8,19 +8,24 @@ import { useRecentActivity } from '@/api/hooks';
 import { Card } from '@/ui/Card';
 import { EmptyState } from '@/ui/EmptyState';
 import { ErrorBanner } from '@/ui/ErrorBanner';
+import { Icon, type IconName } from '@/ui/Icon';
 import { Skeleton } from '@/ui/Skeleton';
-import { spacing, usePalette } from '@/ui/theme';
+import { spacing, typography, usePalette, type Palette } from '@/ui/theme';
 import type { ActivityItem } from '@/types';
 import { formatDayLabel, formatMoneyCompact, formatRelativeTime } from '@/utils/format';
 
-const TYPE_ICON: Record<string, string> = {
-  invoice: '🧾',
-  collection: '💰',
-  deposit: '🏦',
-};
+function iconFor(activityType: string): IconName {
+  if (activityType === 'invoice') return 'invoice';
+  if (activityType === 'collection') return 'collection';
+  if (activityType === 'deposit') return 'deposit';
+  return 'activity';
+}
 
-function iconFor(type: string): string {
-  return TYPE_ICON[type] ?? '•';
+function colorFor(activityType: string, palette: Palette): string {
+  if (activityType === 'invoice') return palette.accent;
+  if (activityType === 'collection') return palette.good;
+  if (activityType === 'deposit') return palette.warn;
+  return palette.textFaint;
 }
 
 function groupByDay(items: ActivityItem[]): { day: string; items: ActivityItem[] }[] {
@@ -52,7 +57,7 @@ export default function ActivityScreen() {
           />
         }
       >
-        <Text style={[styles.headline, { color: palette.text }]}>Activity</Text>
+        <Text style={[typography.headline, { color: palette.text, marginBottom: spacing.lg }]}>Activity</Text>
 
         {activity.error ? (
           <ErrorBanner
@@ -63,48 +68,54 @@ export default function ActivityScreen() {
 
         {activity.isPending ? (
           <Card style={{ marginTop: spacing.lg, gap: spacing.md }}>
-            <Skeleton height={44} />
-            <Skeleton height={44} />
-            <Skeleton height={44} />
+            <Skeleton height={48} />
+            <Skeleton height={48} />
+            <Skeleton height={48} />
           </Card>
         ) : grouped.length === 0 ? (
           <EmptyState title="No recent activity" message="New invoices, collections and deposits will appear here." />
         ) : (
           grouped.map((group) => (
             <View key={group.day} style={styles.group}>
-              <Text style={[styles.groupLabel, { color: palette.textMuted }]}>{group.day}</Text>
+              <Text style={[styles.groupLabel, { color: palette.text }]}>{group.day}</Text>
               <Card style={{ padding: 0 }}>
-                {group.items.map((item, i) => (
-                  <View
-                    key={item.id ?? i}
-                    style={[
-                      styles.row,
-                      { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
-                    ]}
-                  >
-                    <Text style={styles.icon}>{iconFor(item.type)}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.title, { color: palette.text }]} numberOfLines={1}>
-                        {item.title ?? item.type}
-                      </Text>
-                      {item.subtitle ? (
-                        <Text style={[styles.subtitle, { color: palette.textFaint }]} numberOfLines={1}>
-                          {item.subtitle}
+                {group.items.map((item, i) => {
+                  const tint = colorFor(item.type, palette);
+                  return (
+                    <View
+                      key={item.id ?? i}
+                      style={[
+                        styles.row,
+                        { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
+                      ]}
+                      accessibilityLabel={`${item.title ?? item.type}${item.amount !== undefined ? `, ${formatMoneyCompact(item.amount)}` : ''}, ${formatRelativeTime(item.occurredAt)}`}
+                    >
+                      <View style={[styles.iconBadge, { backgroundColor: tint + '1F' }]}>
+                        <Icon name={iconFor(item.type)} color={tint} size={18} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.title, { color: palette.text }]} numberOfLines={1}>
+                          {item.title ?? item.type}
                         </Text>
-                      ) : null}
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                      {item.amount !== undefined ? (
-                        <Text style={[styles.amount, { color: palette.text }]}>
-                          {formatMoneyCompact(item.amount)}
+                        {item.subtitle ? (
+                          <Text style={[styles.subtitle, { color: palette.textFaint }]} numberOfLines={1}>
+                            {item.subtitle}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        {item.amount !== undefined ? (
+                          <Text style={[styles.amount, { color: palette.text }]}>
+                            {formatMoneyCompact(item.amount)}
+                          </Text>
+                        ) : null}
+                        <Text style={[styles.time, { color: palette.textFaint }]}>
+                          {formatRelativeTime(item.occurredAt)}
                         </Text>
-                      ) : null}
-                      <Text style={[styles.time, { color: palette.textFaint }]}>
-                        {formatRelativeTime(item.occurredAt)}
-                      </Text>
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  );
+                })}
               </Card>
             </View>
           ))
@@ -119,9 +130,8 @@ export default function ActivityScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg },
-  headline: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5, marginBottom: spacing.lg },
   group: { marginBottom: spacing.lg },
-  groupLabel: { fontSize: 12.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: spacing.sm },
+  groupLabel: { fontSize: 15, fontWeight: '800', letterSpacing: -0.2, marginBottom: spacing.sm },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -129,7 +139,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     gap: spacing.md,
   },
-  icon: { fontSize: 18 },
+  iconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   title: { fontSize: 14, fontWeight: '700' },
   subtitle: { fontSize: 12, marginTop: 2 },
   amount: { fontSize: 14, fontWeight: '800', fontVariant: ['tabular-nums'] },

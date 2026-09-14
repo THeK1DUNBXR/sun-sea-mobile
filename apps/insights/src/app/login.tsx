@@ -108,9 +108,9 @@ export default function LoginScreen() {
               ]}
             >
               {submitting ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={palette.accentInk} />
               ) : (
-                <Text style={styles.buttonText}>Sign in</Text>
+                <Text style={[styles.buttonText, { color: palette.accentInk }]}>Sign in</Text>
               )}
             </Pressable>
 
@@ -147,6 +147,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
   },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  buttonText: { fontSize: 16, fontWeight: '700' },
   hint: { fontSize: 12, textAlign: 'center', marginTop: spacing.md },
 });

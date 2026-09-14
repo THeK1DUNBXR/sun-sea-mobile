@@ -1,12 +1,13 @@
 import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
-import { Text, type ColorValue } from 'react-native';
+import type { ColorValue } from 'react-native';
 
 import { useAuth } from '@/store/auth';
+import { Icon, type IconName } from '@/ui/Icon';
 import { usePalette } from '@/ui/theme';
 
-function TabIcon({ symbol, color }: { symbol: string; color: ColorValue }) {
-  return <Text style={{ fontSize: 20, color }}>{symbol}</Text>;
+function TabIcon({ name, color }: { name: IconName; color: ColorValue }) {
+  return <Icon name={name} color={String(color)} size={22} strokeWidth={1.9} />;
 }
 
 export default function TabsLayout() {
@@ -27,24 +28,24 @@ export default function TabsLayout() {
           backgroundColor: palette.bgElevated,
           borderTopColor: palette.border,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
       }}
     >
       <Tabs.Screen
         name="overview"
-        options={{ title: 'Overview', tabBarIcon: ({ color }) => <TabIcon symbol="◎" color={color} /> }}
+        options={{ title: 'Overview', tabBarIcon: ({ color }) => <TabIcon name="overview" color={color} /> }}
       />
       <Tabs.Screen
         name="agents"
-        options={{ title: 'Agents', tabBarIcon: ({ color }) => <TabIcon symbol="◈" color={color} /> }}
+        options={{ title: 'Agents', tabBarIcon: ({ color }) => <TabIcon name="agents" color={color} /> }}
       />
       <Tabs.Screen
         name="activity"
-        options={{ title: 'Activity', tabBarIcon: ({ color }) => <TabIcon symbol="≣" color={color} /> }}
+        options={{ title: 'Activity', tabBarIcon: ({ color }) => <TabIcon name="activity" color={color} /> }}
       />
       <Tabs.Screen
         name="settings"
-        options={{ title: 'Settings', tabBarIcon: ({ color }) => <TabIcon symbol="⚙" color={color} /> }}
+        options={{ title: 'Settings', tabBarIcon: ({ color }) => <TabIcon name="settings" color={color} /> }}
       />
     </Tabs>
   );

@@ -11,7 +11,7 @@ import { EmptyState } from '@/ui/EmptyState';
 import { ErrorBanner } from '@/ui/ErrorBanner';
 import { SectionHeader } from '@/ui/Section';
 import { Skeleton } from '@/ui/Skeleton';
-import { spacing, usePalette } from '@/ui/theme';
+import { contrastText, radius, spacing, typography, usePalette } from '@/ui/theme';
 import type { LiveAgent } from '@/types';
 import { formatMoneyCompact, formatRelativeTime, initials } from '@/utils/format';
 
@@ -36,6 +36,8 @@ function isOnline(agent: LiveAgent): boolean {
   return Date.now() - new Date(agent.recordedAt).getTime() < 5 * 60 * 1000;
 }
 
+const RANK_COLORS = ['#B8860B', '#8A94A6', '#A45A2A']; // gold, silver, bronze — used only for rank 1-3 accents
+
 export default function AgentsScreen() {
   const palette = usePalette();
   const focused = useIsFocused();
@@ -57,6 +59,7 @@ export default function AgentsScreen() {
   const liveAgents = (agentsLive.data ?? []).filter(
     (a) => typeof a.latitude === 'number' && typeof a.longitude === 'number'
   );
+  const onlineCount = liveAgents.filter(isOnline).length;
   const initialRegion = liveAgents[0]
     ? {
         latitude: liveAgents[0].latitude!,
@@ -76,14 +79,17 @@ export default function AgentsScreen() {
           <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={palette.accent} />
         }
       >
-        <Text style={[styles.headline, { color: palette.text }]}>Agents</Text>
+        <Text style={[typography.headline, { color: palette.text }]}>Agents</Text>
 
         {firstError ? (
           <ErrorBanner message={getErrorMessage(firstError, 'Could not load agents.')} onRetry={onRefresh} />
         ) : null}
 
-        <SectionHeader title="Live map" subtitle={`${liveAgents.length} agent(s) reporting`} />
-        <Card style={{ padding: 0, overflow: 'hidden' }}>
+        <SectionHeader
+          title="Live map"
+          subtitle={`${liveAgents.length} reporting · ${onlineCount} online now`}
+        />
+        <Card style={{ padding: 0, overflow: 'hidden' }} elevation="raised">
           {Platform.OS === 'web' ? (
             <View style={styles.mapFallback}>
               <EmptyState title="Map unavailable on web preview" message="Open the app on a device to see the live map." />
@@ -96,34 +102,47 @@ export default function AgentsScreen() {
             </View>
           ) : liveAgents.length === 0 ? (
             <View style={styles.mapFallback}>
-              <EmptyState title="No agents reporting location" icon="⌖" />
+              <EmptyState title="No agents reporting location" icon="agents" />
             </View>
           ) : (
             <MapView style={styles.map} initialRegion={initialRegion}>
               {liveAgents.map((agent) => {
                 const online = isOnline(agent);
+                const markerColor = online ? palette.good : palette.neutralDot;
                 return (
                   <Marker
                     key={agent.agentUserId}
                     coordinate={{ latitude: agent.latitude!, longitude: agent.longitude! }}
+                    accessibilityLabel={`${agent.name ?? 'Agent'}, ${online ? 'online' : 'offline'}`}
                   >
                     <View
                       style={[
-                        styles.markerBubble,
-                        { backgroundColor: online ? palette.good : palette.neutralDot, borderColor: palette.bgElevated },
+                        styles.markerRing,
+                        { borderColor: markerColor, backgroundColor: palette.bgElevated },
                       ]}
                     >
-                      <Text style={styles.markerText}>{initials(agent.name)}</Text>
-                    </View>
-                    <Callout>
-                      <View style={{ minWidth: 160, padding: 4 }}>
-                        <Text style={{ fontWeight: '700', marginBottom: 2 }}>{agent.name ?? 'Agent'}</Text>
-                        <Text style={{ fontSize: 12 }}>
-                          {online ? 'Online' : `Last seen ${formatRelativeTime(agent.recordedAt)}`}
+                      <View style={[styles.markerBubble, { backgroundColor: markerColor }]}>
+                        <Text style={[styles.markerText, { color: contrastText(markerColor) }]}>
+                          {initials(agent.name)}
                         </Text>
-                        <Text style={{ fontSize: 12 }}>Today: {formatMoneyCompact(agent.collectedToday)}</Text>
+                      </View>
+                    </View>
+                    <Callout tooltip>
+                      <View style={[styles.callout, { backgroundColor: palette.bgElevated, borderColor: palette.border }]}>
+                        <View style={styles.calloutHeader}>
+                          <View style={[styles.calloutDot, { backgroundColor: online ? palette.good : palette.neutralDot }]} />
+                          <Text style={[styles.calloutName, { color: palette.text }]}>{agent.name ?? 'Agent'}</Text>
+                        </View>
+                        <Text style={[styles.calloutLine, { color: palette.textMuted }]}>
+                          {online ? 'Online now' : `Last seen ${formatRelativeTime(agent.recordedAt)}`}
+                        </Text>
+                        <Text style={[styles.calloutLine, { color: palette.text, fontWeight: '800' }]}>
+                          {formatMoneyCompact(agent.collectedToday)} collected today
+                        </Text>
                         {agent.currentTask?.customerName ? (
-                          <Text style={{ fontSize: 12 }}>Visiting: {agent.currentTask.customerName}</Text>
+                          <Text style={[styles.calloutLine, { color: palette.textFaint }]} numberOfLines={1}>
+                            Visiting {agent.currentTask.customerName}
+                          </Text>
                         ) : null}
                       </View>
                     </Callout>
@@ -138,45 +157,59 @@ export default function AgentsScreen() {
         <Card style={{ padding: 0 }}>
           {overview.isPending ? (
             <View style={{ padding: spacing.lg, gap: spacing.md }}>
-              <Skeleton height={40} />
-              <Skeleton height={40} />
-              <Skeleton height={40} />
+              <Skeleton height={48} />
+              <Skeleton height={48} />
+              <Skeleton height={48} />
             </View>
           ) : leaderboard.length === 0 ? (
             <EmptyState title="No agent activity yet" />
           ) : (
-            leaderboard.map((agent, i) => (
-              <View
-                key={agent.agentUserId ?? i}
-                style={[
-                  styles.leaderRow,
-                  { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
-                ]}
-              >
-                <Text style={[styles.rank, { color: i < 3 ? palette.accent : palette.textFaint }]}>
-                  #{i + 1}
-                </Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.leaderName, { color: palette.text }]} numberOfLines={1}>
-                    {agent.name ?? 'Unknown agent'}
-                  </Text>
-                  <View style={styles.leaderMetaRow}>
-                    <InlineBar fraction={(agent.collectedMtd ?? 0) / maxCollected} />
-                    <Text style={[styles.leaderMeta, { color: palette.textFaint }]}>
-                      {agent.visitsToday ?? 0} visits · {agent.pendingAssignments ?? 0} pending
+            leaderboard.map((agent, i) => {
+              const rankColor = i < 3 ? RANK_COLORS[i] : palette.textFaint;
+              return (
+                <View
+                  key={agent.agentUserId ?? i}
+                  style={[
+                    styles.leaderRow,
+                    { borderTopColor: palette.border, borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth },
+                  ]}
+                  accessibilityLabel={`Rank ${i + 1}, ${agent.name ?? 'Unknown agent'}, ${formatMoneyCompact(agent.collectedMtd)} collected this month`}
+                >
+                  <View
+                    style={[
+                      styles.rankBadge,
+                      i < 3
+                        ? { backgroundColor: rankColor + '22', borderColor: rankColor }
+                        : { backgroundColor: palette.overlay, borderColor: 'transparent' },
+                    ]}
+                  >
+                    <Text style={[styles.rankText, { color: rankColor }]}>{i + 1}</Text>
+                  </View>
+                  <View style={[styles.avatar, { backgroundColor: palette.accentSoft }]}>
+                    <Text style={[styles.avatarText, { color: palette.accent }]}>{initials(agent.name)}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.leaderName, { color: palette.text }]} numberOfLines={1}>
+                      {agent.name ?? 'Unknown agent'}
+                    </Text>
+                    <View style={styles.leaderMetaRow}>
+                      <InlineBar fraction={(agent.collectedMtd ?? 0) / maxCollected} color={i < 3 ? rankColor : undefined} />
+                      <Text style={[styles.leaderMeta, { color: palette.textFaint }]}>
+                        {agent.visitsToday ?? 0} visits · {agent.pendingAssignments ?? 0} pending
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={[styles.leaderAmount, { color: palette.text }]}>
+                      {formatMoneyCompact(agent.collectedMtd)}
+                    </Text>
+                    <Text style={[styles.leaderSub, { color: palette.textFaint }]}>
+                      {formatMoneyCompact(agent.collectedToday)} today
                     </Text>
                   </View>
                 </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={[styles.leaderAmount, { color: palette.text }]}>
-                    {formatMoneyCompact(agent.collectedMtd)}
-                  </Text>
-                  <Text style={[styles.leaderSub, { color: palette.textFaint }]}>
-                    {formatMoneyCompact(agent.collectedToday)} today
-                  </Text>
-                </View>
-              </View>
-            ))
+              );
+            })
           )}
         </Card>
 
@@ -189,29 +222,57 @@ export default function AgentsScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: spacing.lg },
-  headline: { fontSize: 26, fontWeight: '800', letterSpacing: -0.5 },
   map: { width: '100%', height: 260 },
   mapFallback: { height: 200, justifyContent: 'center' },
-  markerBubble: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  markerRing: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  markerText: { color: '#fff', fontSize: 11, fontWeight: '800' },
+  markerBubble: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  markerText: { fontSize: 11, fontWeight: '800' },
+  callout: {
+    minWidth: 190,
+    maxWidth: 240,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: spacing.md,
+    gap: 3,
+  },
+  calloutHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  calloutDot: { width: 8, height: 8, borderRadius: 4 },
+  calloutName: { fontWeight: '800', fontSize: 13.5 },
+  calloutLine: { fontSize: 12 },
   leaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
-  rank: { fontSize: 14, fontWeight: '800', width: 28 },
+  rankBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankText: { fontSize: 12, fontWeight: '800' },
+  avatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 11.5, fontWeight: '800' },
   leaderName: { fontSize: 14.5, fontWeight: '700' },
-  leaderMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4 },
-  leaderMeta: { fontSize: 11 },
-  leaderAmount: { fontSize: 15, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  leaderSub: { fontSize: 11, marginTop: 2 },
+  leaderMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 5 },
+  leaderMeta: { fontSize: 11, fontWeight: '600' },
+  leaderAmount: { fontSize: 15.5, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  leaderSub: { fontSize: 11, marginTop: 2, fontWeight: '600' },
 });
