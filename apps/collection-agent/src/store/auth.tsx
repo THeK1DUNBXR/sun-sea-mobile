@@ -3,6 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { fetchMe, login as loginRequest } from '@/api/agentApi';
 import { setStoredToken, setUnauthorizedHandler } from '@/api/client';
+import { hydrateDemoMode, setDemoMode } from '@/demo/demoMode';
+import { resetDemoStore } from '@/demo/demoStore';
+import { demoUser } from '@/demo/fixtures';
 import { stopTracking } from '@/location/tracking';
 import type { User } from '@/types/models';
 
@@ -14,11 +17,16 @@ interface AuthState {
   user: User | null;
   permissions: string[];
   isSuperAdmin: boolean;
+  /** True while exploring the seeded demo dataset instead of a real session —
+   * see demo/fixtures.ts and demo/demoStore.ts. */
+  isDemo: boolean;
   error: string | null;
 }
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
+  /** Enters the seeded demo dataset with no server involved — see demo/. */
+  enterDemo: () => Promise<void>;
   logout: () => Promise<void>;
   /** Signs out because the server address changed, not because the agent
    * chose to log out — same effect (stop tracking, clear the token), kept
@@ -32,11 +40,12 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>({
+  const [state, setState] = useState<AuthState & { isDemo: boolean }>({
     status: 'loading',
     user: null,
     permissions: [],
     isSuperAdmin: false,
+    isDemo: false,
     error: null,
   });
 
@@ -48,8 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // didn't ask for. Best-effort — a stop failure must never block sign-out.
     await stopTracking().catch(() => {});
     await setStoredToken(null);
+    await setDemoMode(false);
     await AsyncStorage.removeItem(CACHED_USER_KEY).catch(() => {});
-    setState({ status: 'signedOut', user: null, permissions: [], isSuperAdmin: false, error: null });
+    setState({ status: 'signedOut', user: null, permissions: [], isSuperAdmin: false, isDemo: false, error: null });
   }, []);
 
   useEffect(() => {
@@ -59,9 +69,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => setUnauthorizedHandler(null);
   }, [signOut]);
 
-  // Hydrate: if a token is stored, revalidate against /auth/me.
+  // Hydrate: demo mode first (no server involved), else if a token is
+  // stored, revalidate against /auth/me.
   useEffect(() => {
     (async () => {
+      const demo = await hydrateDemoMode();
+      if (demo) {
+        setState({ status: 'signedIn', user: demoUser, permissions: [AGENT_PERMISSION], isSuperAdmin: false, isDemo: true, error: null });
+        return;
+      }
       const { getStoredToken } = await import('@/api/client');
       const token = await getStoredToken();
       if (!token) {
@@ -85,6 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           user: me.user ?? null,
           permissions: me.permissions,
           isSuperAdmin: me.isSuperAdmin,
+          isDemo: false,
           error: null,
         });
       } catch {
@@ -110,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user: null,
         permissions: [],
         isSuperAdmin: false,
+        isDemo: false,
         error: 'This account is not a collection agent.',
       });
       return;
@@ -119,8 +137,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user: me.user ?? user ?? null,
       permissions: me.permissions,
       isSuperAdmin: me.isSuperAdmin,
+      isDemo: false,
       error: null,
     });
+  }, []);
+
+  const enterDemo = useCallback(async () => {
+    resetDemoStore();
+    await setDemoMode(true);
+    setState({ status: 'signedIn', user: demoUser, permissions: [AGENT_PERMISSION], isSuperAdmin: false, isDemo: true, error: null });
   }, []);
 
   const clearError = useCallback(() => setState((s) => ({ ...s, error: null })), []);
@@ -129,12 +154,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       ...state,
       login,
+      enterDemo,
       logout: signOut,
       signOutForServerChange: signOut,
       clearError,
       isAuthenticated: state.status === 'signedIn',
     }),
-    [state, login, signOut, clearError],
+    [state, login, enterDemo, signOut, clearError],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

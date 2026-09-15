@@ -2,6 +2,8 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 import { auth as authCopy, errors as errorCopy } from '@/copy';
+import { demoAdapter } from '@/demo/demoAdapter';
+import { isDemoMode } from '@/demo/demoMode';
 import { hydrateServerUrl } from './serverUrl';
 
 export const TOKEN_KEY = 'insights.accessToken';
@@ -26,6 +28,12 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
   // Resolves from the in-memory cache once hydrated (the common case); on the
   // very first request of a cold start it awaits the one-time AsyncStorage read.
   config.baseURL = await hydrateServerUrl();
+  // Demo mode never touches the network — every request is answered from
+  // the seeded dataset by a per-request adapter override (see demo/demoAdapter.ts).
+  if (isDemoMode()) {
+    config.adapter = demoAdapter;
+    return config;
+  }
   try {
     const token = await SecureStore.getItemAsync(TOKEN_KEY);
     if (token) {

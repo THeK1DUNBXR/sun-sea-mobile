@@ -33,6 +33,10 @@ export const login = {
   missingFields: 'Enter your email and password.',
   signInFailed: 'Unable to sign in. Please try again.',
   accessHint: `Founder access only — needs the "${REQUIRED_PERMISSION}" permission, or a super admin account.`,
+  orDivider: 'OR',
+  exploreDemo: 'Explore demo data',
+  exploreDemoA11y: 'Explore demo data, no sign-in needed',
+  exploreDemoHint: 'Walk through every screen with a seeded dataset. Nothing is sent anywhere.',
 };
 
 export const auth = {
@@ -66,6 +70,8 @@ export const overview = {
   greetingEvening: 'Good evening',
   /** The "updated Xm ago" chip's accessible name. */
   updatedA11y: (age: string, isStale: boolean) => `Data ${isStale ? 'may be behind' : 'up to date'}, updated ${age}`,
+  demoChipLabel: 'Demo data',
+  demoChipA11y: 'Showing seeded demo data, not a live server',
   loadFailedFallback: 'Could not load your business overview.',
   refreshFailedFallback: 'Could not refresh your business overview.',
   /** Prefixed to the refresh-failure reason so the founder knows how old the
@@ -174,6 +180,8 @@ export const settingsScreen = {
   defaultName: 'Founder',
   superAdminBadge: 'Super admin',
   superAdminNote: 'Full access via the super admin role — every permission is granted automatically.',
+  demoBadge: 'Demo data',
+  demoNote: 'Exploring a seeded dataset — nothing here is sent anywhere. Log out to sign in to a real server.',
   connectionSection: 'Connection',
   serverLabel: 'Server address',
   overviewRefreshLabel: 'Business overview refreshes',
@@ -183,6 +191,7 @@ export const settingsScreen = {
   accessSection: 'Access',
   noPermissions: 'No permissions are listed for this account.',
   logOut: 'Log out',
+  exitDemo: 'Exit demo',
   footer: brand.footer,
 };
 

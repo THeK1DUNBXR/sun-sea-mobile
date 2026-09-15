@@ -15,10 +15,11 @@ import { copy } from '@/copy';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, error, clearError } = useAuth();
+  const { login, enterDemo, error, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [serverHost, setServerHost] = useState(getServerHostLabel(getServerUrl()));
 
@@ -42,6 +43,18 @@ export default function LoginScreen() {
       setFormError(err?.response?.data?.message ?? err?.message ?? copy.login.genericFailure);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onExploreDemo = async () => {
+    if (demoBusy) return;
+    setFormError(null);
+    clearError();
+    setDemoBusy(true);
+    try {
+      await enterDemo();
+    } finally {
+      setDemoBusy(false);
     }
   };
 
@@ -85,6 +98,20 @@ export default function LoginScreen() {
           <Button title={copy.login.logIn} onPress={onSubmit} loading={submitting} style={{ marginTop: spacing.sm }} />
         </View>
 
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>{copy.login.orDivider}</Text>
+          <View style={styles.dividerLine} />
+        </View>
+        <Button
+          title={copy.login.exploreDemo}
+          onPress={onExploreDemo}
+          loading={demoBusy}
+          variant="secondary"
+          icon={<Ionicons name="play-circle-outline" size={18} color={colors.primary} />}
+        />
+        <Text style={styles.demoHint}>{copy.login.exploreDemoHint}</Text>
+
         <PressableScale
           onPress={() => router.push('/server')}
           accessibilityRole="button"
@@ -110,6 +137,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   form: { gap: spacing.sm },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xl },
+  dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
+  dividerText: { ...type.caption, color: colors.textFaint },
+  demoHint: { ...type.caption, color: colors.textFaint, textAlign: 'center', marginTop: spacing.sm },
   serverLink: {
     flexDirection: 'row',
     alignItems: 'center',

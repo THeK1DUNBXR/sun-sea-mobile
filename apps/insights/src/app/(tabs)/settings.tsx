@@ -66,7 +66,7 @@ function ServerRow() {
 
 export default function SettingsScreen() {
   const palette = usePalette();
-  const { user, isSuperAdmin, permissions, logout } = useAuth();
+  const { user, isSuperAdmin, isDemo, permissions, logout } = useAuth();
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: palette.bg }]} edges={['top']}>
@@ -87,7 +87,11 @@ export default function SettingsScreen() {
             <Text style={[typography.bodySm, { color: palette.textMuted, marginTop: 2 }]} numberOfLines={1}>
               {user?.email ?? '—'}
             </Text>
-            {isSuperAdmin ? (
+            {isDemo ? (
+              <View style={[styles.badge, { backgroundColor: palette.warnSoft }]}>
+                <Text style={[typography.label, { color: palette.warn }]}>{copy.demoBadge}</Text>
+              </View>
+            ) : isSuperAdmin ? (
               <View style={[styles.badge, { backgroundColor: palette.goodSoft }]}>
                 <Text style={[typography.label, { color: palette.good }]}>{copy.superAdminBadge}</Text>
               </View>
@@ -95,34 +99,42 @@ export default function SettingsScreen() {
           </View>
         </Card>
 
-        <SectionHeader title={copy.connectionSection} />
-        <Card style={{ gap: spacing.sm }}>
-          <ServerRow />
-          <Row label={copy.overviewRefreshLabel} value={copy.overviewRefreshValue} />
-          <Row label={copy.agentsRefreshLabel} value={copy.agentsRefreshValue} />
-        </Card>
+        {isDemo ? (
+          <Card>
+            <Text style={[typography.bodySm, { color: palette.textMuted }]}>{copy.demoNote}</Text>
+          </Card>
+        ) : (
+          <>
+            <SectionHeader title={copy.connectionSection} />
+            <Card style={{ gap: spacing.sm }}>
+              <ServerRow />
+              <Row label={copy.overviewRefreshLabel} value={copy.overviewRefreshValue} />
+              <Row label={copy.agentsRefreshLabel} value={copy.agentsRefreshValue} />
+            </Card>
 
-        <SectionHeader title={copy.accessSection} />
-        <Card>
-          {permissions.length === 0 && !isSuperAdmin ? (
-            <Text style={[typography.body, { color: palette.textFaint }]}>{copy.noPermissions}</Text>
-          ) : isSuperAdmin ? (
-            <Text style={[typography.bodySm, { color: palette.textMuted }]}>
-              {copy.superAdminNote}
-            </Text>
-          ) : (
-            permissions.map((perm) => (
-              <Text key={perm} style={[typography.bodySm, { color: palette.textMuted, marginBottom: 4 }]}>
-                • {perm}
-              </Text>
-            ))
-          )}
-        </Card>
+            <SectionHeader title={copy.accessSection} />
+            <Card>
+              {permissions.length === 0 && !isSuperAdmin ? (
+                <Text style={[typography.body, { color: palette.textFaint }]}>{copy.noPermissions}</Text>
+              ) : isSuperAdmin ? (
+                <Text style={[typography.bodySm, { color: palette.textMuted }]}>
+                  {copy.superAdminNote}
+                </Text>
+              ) : (
+                permissions.map((perm) => (
+                  <Text key={perm} style={[typography.bodySm, { color: palette.textMuted, marginBottom: 4 }]}>
+                    • {perm}
+                  </Text>
+                ))
+              )}
+            </Card>
+          </>
+        )}
 
         <PressableScale
           onPress={() => logout()}
           accessibilityRole="button"
-          accessibilityLabel={copy.logOut}
+          accessibilityLabel={isDemo ? copy.exitDemo : copy.logOut}
           rippleColor={palette.badSoft}
           style={({ pressed }) => [
             styles.logoutButton,
@@ -131,7 +143,7 @@ export default function SettingsScreen() {
           ]}
         >
           <Icon name="logout" color={palette.bad} size={18} />
-          <Text style={[typography.control, { color: palette.bad }]}>{copy.logOut}</Text>
+          <Text style={[typography.control, { color: palette.bad }]}>{isDemo ? copy.exitDemo : copy.logOut}</Text>
         </PressableScale>
 
         <Text style={[typography.caption, styles.footerNote, { color: palette.textFaint }]}>

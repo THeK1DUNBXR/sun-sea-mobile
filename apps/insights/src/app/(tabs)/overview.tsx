@@ -107,7 +107,7 @@ function greeting(): string {
 export default function OverviewScreen() {
   const palette = usePalette();
   const reducedMotion = useReducedMotion();
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const focused = useIsFocused();
   const [range, setRange] = useState<(typeof RANGE_OPTIONS)[number]>(30);
   const { width: windowWidth } = useWindowDimensions();
@@ -192,7 +192,15 @@ export default function OverviewScreen() {
             </Text>
             <Text style={[typography.headline, { color: palette.text, marginTop: 2 }]}>{copy.headline}</Text>
           </View>
-          {data?.generatedAt ? (
+          {isDemo ? (
+            <View
+              style={[styles.updatedChip, { backgroundColor: palette.overlay }]}
+              accessibilityLabel={copy.demoChipA11y}
+            >
+              <View style={[styles.liveDot, { backgroundColor: palette.warn }]} />
+              <Text style={[typography.caption, { color: palette.textMuted }]}>{copy.demoChipLabel}</Text>
+            </View>
+          ) : data?.generatedAt ? (
             <Reanimated.View
               style={[styles.updatedChip, { backgroundColor: palette.overlay }, chipAnimatedStyle]}
               accessibilityLabel={copy.updatedA11y(formatRelativeTime(data.generatedAt), isShowingStaleData)}

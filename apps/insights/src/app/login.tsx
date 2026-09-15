@@ -27,7 +27,7 @@ import { MEASURE, MIN_TOUCH, radius, spacing, typography, usePalette } from '@/u
 const FORM_MAX_WIDTH = 440;
 
 export default function LoginScreen() {
-  const { login, isAuthenticated, isHydrating, sessionMessage, dismissSessionMessage } = useAuth();
+  const { login, enterDemo, isAuthenticated, isHydrating, sessionMessage, dismissSessionMessage } = useAuth();
   const palette = usePalette();
   const router = useRouter();
   const [serverHost, setServerHost] = useState(getServerHostLabel(getServerUrl()));
@@ -40,6 +40,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const emailRef = useRef<TextInput>(null);
@@ -87,6 +88,18 @@ export default function LoginScreen() {
       setError(getErrorMessage(err, copy.signInFailed));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onExploreDemo = async () => {
+    if (demoBusy) return;
+    setDemoBusy(true);
+    setError(null);
+    dismissSessionMessage();
+    try {
+      await enterDemo();
+    } finally {
+      setDemoBusy(false);
     }
   };
 
@@ -219,6 +232,34 @@ export default function LoginScreen() {
               {copy.accessHint}
             </Text>
 
+            <View style={styles.dividerRow}>
+              <View style={[styles.dividerLine, { backgroundColor: palette.border }]} />
+              <Text style={[typography.caption, { color: palette.textFaint }]}>{copy.orDivider}</Text>
+              <View style={[styles.dividerLine, { backgroundColor: palette.border }]} />
+            </View>
+
+            <PressableScale
+              onPress={onExploreDemo}
+              disabled={demoBusy}
+              accessibilityRole="button"
+              accessibilityLabel={copy.exploreDemoA11y}
+              accessibilityState={{ disabled: demoBusy, busy: demoBusy }}
+              rippleColor={palette.overlay}
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                { borderColor: palette.border, opacity: Platform.OS === 'ios' && pressed ? 0.7 : 1 },
+              ]}
+            >
+              {demoBusy ? (
+                <ActivityIndicator color={palette.text} />
+              ) : (
+                <Text style={[typography.control, { color: palette.text }]}>{copy.exploreDemo}</Text>
+              )}
+            </PressableScale>
+            <Text style={[typography.caption, styles.hint, { color: palette.textFaint }]} maxFontSizeMultiplier={1.6}>
+              {copy.exploreDemoHint}
+            </Text>
+
             <PressableScale
               onPress={() => router.push('/server')}
               haptic={false}
@@ -278,6 +319,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   hint: { textAlign: 'center', marginTop: spacing.md },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xl },
+  dividerLine: { flex: 1, height: StyleSheet.hairlineWidth },
+  secondaryButton: {
+    marginTop: spacing.lg,
+    minHeight: MIN_TOUCH,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   serverLink: {
     alignSelf: 'center',
     marginTop: spacing.sm,

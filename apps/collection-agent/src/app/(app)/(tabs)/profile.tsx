@@ -21,7 +21,7 @@ import { copy } from '@/copy';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, isDemo, logout } = useAuth();
   const sync = useSyncStatus();
   const [tracking, setTracking] = useState(false);
   const [notes, setNotes] = useState<SyncNote[]>([]);
@@ -64,7 +64,14 @@ export default function ProfileScreen() {
           <Text style={styles.name}>{user?.fullName ?? 'Agent'}</Text>
           <Text style={styles.subtitle}>{user?.email ?? user?.username ?? ''}</Text>
         </View>
+        {isDemo ? <Badge label={copy.profile.demoBadge} tone="warning" /> : null}
       </Card>
+
+      {isDemo ? (
+        <Card>
+          <Text style={styles.subtitle}>{copy.profile.demoNote}</Text>
+        </Card>
+      ) : null}
 
       <Card>
         <View style={styles.rowBetween}>
@@ -81,23 +88,25 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
-      <Card>
-        <PressableScale
-          onPress={() => router.push('/server')}
-          accessibilityRole="button"
-          accessibilityLabel={`${copy.server.profileRowLabel}. ${serverHost}`}
-          style={styles.rowBetween}
-        >
-          <View style={styles.trackingLabel}>
-            <Ionicons name="server-outline" size={18} color={colors.primary} />
-            <View>
-              <Text style={styles.cardTitle}>{copy.server.profileRowLabel}</Text>
-              <Text style={styles.subtitle}>{serverHost}</Text>
+      {isDemo ? null : (
+        <Card>
+          <PressableScale
+            onPress={() => router.push('/server')}
+            accessibilityRole="button"
+            accessibilityLabel={`${copy.server.profileRowLabel}. ${serverHost}`}
+            style={styles.rowBetween}
+          >
+            <View style={styles.trackingLabel}>
+              <Ionicons name="server-outline" size={18} color={colors.primary} />
+              <View>
+                <Text style={styles.cardTitle}>{copy.server.profileRowLabel}</Text>
+                <Text style={styles.subtitle}>{serverHost}</Text>
+              </View>
             </View>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
-        </PressableScale>
-      </Card>
+            <Ionicons name="chevron-forward" size={18} color={colors.textFaint} />
+          </PressableScale>
+        </Card>
+      )}
 
       <Card>
         <View style={styles.rowBetween}>
@@ -162,12 +171,14 @@ export default function ProfileScreen() {
       </Card>
 
       <Button
-        title={copy.profile.logOut}
+        title={isDemo ? copy.profile.exitDemo : copy.profile.logOut}
         onPress={() =>
-          Alert.alert(copy.profile.logOutConfirmTitle, copy.profile.logOutConfirmMessage, [
-            { text: 'Cancel', style: 'cancel' },
-            { text: copy.profile.logOut, style: 'destructive', onPress: logout },
-          ])
+          isDemo
+            ? logout()
+            : Alert.alert(copy.profile.logOutConfirmTitle, copy.profile.logOutConfirmMessage, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: copy.profile.logOut, style: 'destructive', onPress: logout },
+              ])
         }
         variant="danger"
         icon={<Ionicons name="log-out-outline" size={20} color={colors.onPrimary} />}

@@ -1,6 +1,8 @@
 import * as FileSystem from 'expo-file-system';
 
 import { apiClient, unwrap } from './client';
+import { isDemoMode } from '@/demo/demoMode';
+import * as demoStore from '@/demo/demoStore';
 import type {
   Assignment,
   AgentCashDeposit,
@@ -55,6 +57,7 @@ export async function fetchMe(): Promise<MeResult> {
 // ---------------------------------------------------------------------------
 
 export async function fetchMySummary(): Promise<AgentSummary> {
+  if (isDemoMode()) return demoStore.getSummary();
   const res = await apiClient.get('/agent/me/summary');
   const data = unwrap<any>(res) ?? {};
   // agent-app.service.ts getMySummary() returns assignedOutstanding /
@@ -82,12 +85,14 @@ export interface FetchAssignmentsParams {
 }
 
 export async function fetchAssignments(params: FetchAssignmentsParams = {}): Promise<Assignment[]> {
+  if (isDemoMode()) return demoStore.getAssignments(params);
   const res = await apiClient.get('/agent/assignments', { params });
   const data = unwrap<any>(res);
   return (Array.isArray(data) ? data : data?.items ?? []) as Assignment[];
 }
 
 export async function fetchAssignment(id: string): Promise<Assignment> {
+  if (isDemoMode()) return demoStore.getAssignment(id);
   const res = await apiClient.get(`/agent/assignments/${id}`);
   return unwrap<Assignment>(res);
 }
@@ -159,6 +164,7 @@ export async function submitCollection(input: SubmitCollectionInput): Promise<{
   receipt?: Receipt;
   droppedFiles: string[];
 }> {
+  if (isDemoMode()) return demoStore.submitCollection(input);
   const form = new FormData();
   Object.entries(input).forEach(([key, value]) => {
     if (key === 'proofUri' || key === 'signatureUri' || value === undefined || value === null) return;
@@ -187,6 +193,7 @@ export async function fetchMyCollections(params: {
   status?: string;
   page?: number;
 } = {}): Promise<CollectionRecord[]> {
+  if (isDemoMode()) return demoStore.getCollections(params);
   const res = await apiClient.get('/agent/collections', { params });
   const data = unwrap<any>(res);
   const rows = (Array.isArray(data) ? data : data?.items ?? []) as any[];
@@ -194,6 +201,7 @@ export async function fetchMyCollections(params: {
 }
 
 export async function fetchReceipt(recordId: string): Promise<Receipt> {
+  if (isDemoMode()) return demoStore.getReceipt(recordId);
   const res = await apiClient.get(`/agent/collections/${recordId}/receipt`);
   return unwrap<Receipt>(res);
 }
@@ -212,6 +220,7 @@ export interface SubmitVisitInput {
 }
 
 export async function submitVisit(input: SubmitVisitInput): Promise<{ visit: CollectionVisit; droppedFiles: string[] }> {
+  if (isDemoMode()) return demoStore.submitVisit(input);
   const form = new FormData();
   Object.entries(input).forEach(([key, value]) => {
     if (key === 'photoUri' || value === undefined || value === null) return;
@@ -241,6 +250,7 @@ export interface LocationPing {
 
 export async function pushLocations(locations: LocationPing[]): Promise<void> {
   if (locations.length === 0) return;
+  if (isDemoMode()) return; // No backend to report to — breadcrumbs are dropped.
   await apiClient.post('/agent/locations', { locations });
 }
 
@@ -249,6 +259,7 @@ function mapDeposit(d: any): AgentCashDeposit {
 }
 
 export async function fetchDeposits(): Promise<AgentCashDeposit[]> {
+  if (isDemoMode()) return demoStore.getDeposits();
   const res = await apiClient.get('/agent/deposits');
   const data = unwrap<any>(res);
   const rows = (Array.isArray(data) ? data : data?.items ?? []) as any[];
@@ -266,6 +277,7 @@ export interface SubmitDepositInput {
 }
 
 export async function submitDeposit(input: SubmitDepositInput): Promise<{ deposit: AgentCashDeposit; droppedFiles: string[] }> {
+  if (isDemoMode()) return demoStore.submitDeposit(input);
   const form = new FormData();
   Object.entries(input).forEach(([key, value]) => {
     if (key === 'proofUri' || value === undefined || value === null) return;
@@ -286,6 +298,7 @@ export async function registerPushToken(input: {
   deviceName?: string;
   appName?: string;
 }): Promise<void> {
+  if (isDemoMode()) return; // No backend to register with in the demo.
   await apiClient.post('/agent/push-token', input);
 }
 
@@ -318,6 +331,7 @@ function mapHistoryEntry(raw: any): HistoryEntry {
 }
 
 export async function fetchHistory(params: { fromDate?: string; toDate?: string } = {}): Promise<HistoryEntry[]> {
+  if (isDemoMode()) return demoStore.getHistory(params);
   const res = await apiClient.get('/agent/history', { params });
   const data = unwrap<any>(res);
   const rows = (Array.isArray(data) ? data : data?.items ?? []) as any[];
@@ -325,6 +339,7 @@ export async function fetchHistory(params: { fromDate?: string; toDate?: string 
 }
 
 export async function fetchCustomerLedger(customerId: string): Promise<CustomerLedger> {
+  if (isDemoMode()) return demoStore.getCustomerLedger(customerId);
   const res = await apiClient.get(`/agent/customers/${customerId}/ledger`);
   const data = unwrap<any>(res);
   // agent-app.service.ts getCustomerLedger() names the array `invoices`.

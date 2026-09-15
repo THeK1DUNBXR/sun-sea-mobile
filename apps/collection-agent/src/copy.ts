@@ -225,6 +225,11 @@ export const copy = {
     logOut: 'Log out',
     logOutConfirmTitle: 'Log out?',
     logOutConfirmMessage: 'Location sharing will stop and any unsynced items will stay queued until you log back in.',
+    exitDemo: 'Exit demo',
+    exitDemoConfirmTitle: 'Exit demo?',
+    exitDemoConfirmMessage: 'This leaves the seeded demo data behind. Nothing you entered here was sent anywhere.',
+    demoBadge: 'Demo data',
+    demoNote: 'Exploring seeded demo data — nothing here is sent anywhere. Exit demo to sign in to a real server.',
   },
 
   login: {
@@ -239,6 +244,10 @@ export const copy = {
       return `Server: ${host}`;
     },
     serverLinkA11y: 'Server address. Change which backend the app connects to.',
+    orDivider: 'OR',
+    exploreDemo: 'Explore the demo (no server needed)',
+    exploreDemoA11y: 'Explore the demo, no sign-in needed',
+    exploreDemoHint: 'Loads sample assignments, collections and deposits on this device. Nothing is sent anywhere.',
   },
 
   server: {

@@ -2,6 +2,7 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 import { hydrateServerUrl } from './serverUrl';
+import { isDemoMode } from '@/demo/demoMode';
 
 export const ACCESS_TOKEN_KEY = 'sunsea.collection.accessToken';
 
@@ -46,6 +47,22 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
   // cheap even from a headless context); on the very first request of a cold
   // start it awaits the one-time AsyncStorage read.
   config.baseURL = await hydrateServerUrl();
+  // Demo mode never touches the network. Every route agentApi.ts exposes is
+  // already answered locally (see demo/demoStore.ts); this is a safety net
+  // for anything that reaches apiClient directly without going through one
+  // of those branches, so a stray call can never 401 the demo session out —
+  // there's no token to send anyway.
+  if (isDemoMode()) {
+    config.adapter = async () => ({
+      data: { success: true, data: {} },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config,
+      request: {},
+    });
+    return config;
+  }
   const token = await getStoredToken();
   if (token) {
     config.headers = config.headers ?? {};
